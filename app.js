@@ -22,6 +22,7 @@ let currentStep = 1;
 let formData = {};
 let allResults = [];
 let activeFilter = 'all';
+let searchTimer = null;
 
 // ── INIT ──
 function initApp() {
@@ -29,36 +30,42 @@ function initApp() {
   populateStatesGrid();
   populateStateSelect();
   updateProgress();
+  initBackToTop();
 }
 
 function buildProgress() {
   const stepsEl = document.getElementById('progressSteps');
   const labelsEl = document.getElementById('progressLabels');
-  // Add fill bar first (already has the fill div)
+  const frag = document.createDocumentFragment();
+  const fragL = document.createDocumentFragment();
   STEPS.forEach(s => {
     const dot = document.createElement('div');
     dot.className = 'step-dot' + (s.num === 1 ? ' active' : '');
     dot.id = `dot-${s.num}`;
     dot.textContent = s.num;
-    stepsEl.appendChild(dot);
+    frag.appendChild(dot);
 
     const lbl = document.createElement('div');
     lbl.className = 'progress-label' + (s.num === 1 ? ' active' : '');
     lbl.id = `lbl-${s.num}`;
     lbl.textContent = s.label;
-    labelsEl.appendChild(lbl);
+    fragL.appendChild(lbl);
   });
+  stepsEl.appendChild(frag);
+  labelsEl.appendChild(fragL);
 }
 
 function populateStatesGrid() {
   const grid = document.getElementById('statesGrid');
+  const frag = document.createDocumentFragment();
   INDIAN_STATES.forEach(state => {
     const chip = document.createElement('label');
     chip.className = 'state-chip';
     chip.dataset.state = state;
     chip.innerHTML = `<input type="checkbox" value="${state}" onchange="toggleStateChip(this)"> ${state}`;
-    grid.appendChild(chip);
+    frag.appendChild(chip);
   });
+  grid.appendChild(frag);
 }
 
 function toggleStateChip(cb) {
@@ -67,11 +74,21 @@ function toggleStateChip(cb) {
 
 function populateStateSelect() {
   const sel = document.getElementById('stateOfReg');
+  const frag = document.createDocumentFragment();
   INDIAN_STATES.forEach(s => {
     const opt = document.createElement('option');
     opt.value = s; opt.textContent = s;
-    sel.appendChild(opt);
+    frag.appendChild(opt);
   });
+  sel.appendChild(frag);
+}
+
+function initBackToTop() {
+  const btn = document.getElementById('backTop');
+  if (!btn) return;
+  window.addEventListener('scroll', () => {
+    btn.classList.toggle('visible', window.scrollY > 400);
+  }, { passive: true });
 }
 
 function updateProgress() {
@@ -100,13 +117,21 @@ function resetTool() {
   activeFilter = 'all';
   document.getElementById('results').style.display = 'none';
   document.getElementById('landing').style.display = 'flex';
-  // reset form
   document.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = false);
   document.querySelectorAll('input[type=radio]').forEach(r => r.checked = false);
   document.querySelectorAll('.radio-pill').forEach(p => p.classList.remove('selected'));
   document.querySelectorAll('.state-chip').forEach(c => c.classList.remove('checked'));
   document.querySelectorAll('.conditional').forEach(c => c.classList.remove('show'));
   document.querySelectorAll('input[type=text],input[type=number],select').forEach(i => i.value='');
+  const sb = document.getElementById('searchBox');
+  if (sb) sb.value = '';
+  // Reset form-section state without showing it
+  document.getElementById('form-section').style.display = 'none';
+  currentStep = 1;
+  document.querySelectorAll('.form-step').forEach((s,i) => {
+    s.classList.toggle('active', i === 0);
+  });
+  updateProgress();
   window.scrollTo(0,0);
 }
 
@@ -150,8 +175,7 @@ function validateStep(step) {
     if (!document.getElementById('stateOfReg').value) {
       alert('Please select state of registration.'); return false;
     }
-    const states = getCheckedStates();
-    if (states.length === 0) {
+    if (getCheckedStates().length === 0) {
       alert('Please select at least one state of operation.'); return false;
     }
   }
@@ -183,84 +207,89 @@ function getRadioVal(name) {
   return r ? r.value : 'no';
 }
 
+function safeCheckbox(id) {
+  const el = document.getElementById(id);
+  return el ? el.checked : false;
+}
+
 // ── COLLECT FORM DATA ──
 function collectFormData() {
-  const totalEmployees = parseInt(document.getElementById('totalEmployees').value) || 0;
-  const contractWorkers = parseInt(document.getElementById('contractWorkers').value) || 0;
-  const womenEmployees = parseInt(document.getElementById('womenEmployees').value) || 0;
-  const migrantWorkers = parseInt(document.getElementById('migrantWorkers').value) || 0;
+  const totalEmployees     = parseInt(document.getElementById('totalEmployees').value) || 0;
+  const contractWorkers    = parseInt(document.getElementById('contractWorkers').value) || 0;
+  const womenEmployees     = parseInt(document.getElementById('womenEmployees').value) || 0;
+  const migrantWorkers     = parseInt(document.getElementById('migrantWorkers').value) || 0;
   const permanentEmployees = parseInt(document.getElementById('permanentEmployees').value) || 0;
-  const pwdEmployees = parseInt(document.getElementById('pwdEmployees').value) || 0;
-  const factoryWorkers = parseInt(document.getElementById('factoryWorkers').value) || 0;
-  const annualTurnover = parseInt(document.getElementById('annualTurnover').value) || 0;
-  const netWorth = parseInt(document.getElementById('netWorth').value) || 0;
-  const netProfit = parseInt(document.getElementById('netProfit').value) || 0;
-  const paidUpCapital = parseInt(document.getElementById('paidUpCapital').value) || 0;
+  const pwdEmployees       = parseInt(document.getElementById('pwdEmployees').value) || 0;
+  const factoryWorkers     = parseInt(document.getElementById('factoryWorkers').value) || 0;
+  const annualTurnover     = parseInt(document.getElementById('annualTurnover').value) || 0;
+  const netWorth           = parseInt(document.getElementById('netWorth').value) || 0;
+  const netProfit          = parseInt(document.getElementById('netProfit').value) || 0;
+  const paidUpCapital      = parseInt(document.getElementById('paidUpCapital').value) || 0;
+  const sector             = document.getElementById('primarySector').value;
 
   formData = {
-    companyName: document.getElementById('companyName').value.trim(),
-    entityType: document.getElementById('entityType').value,
-    stateOfReg: document.getElementById('stateOfReg').value,
+    companyName:     document.getElementById('companyName').value.trim(),
+    entityType:      document.getElementById('entityType').value,
+    stateOfReg:      document.getElementById('stateOfReg').value,
     statesOfOperation: getCheckedStates(),
-    isListed: getRadioVal('isListed') === 'yes',
+    isListed:        getRadioVal('isListed') === 'yes',
 
-    primarySector: document.getElementById('primarySector').value,
-    isManufacturing: document.getElementById('isManufacturing').checked,
-    isTrading: document.getElementById('isTrading').checked,
-    isECommerce: document.getElementById('isECommerce').checked || document.getElementById('primarySector').value === 'ecommerce',
-    dealsFoodBeverages: document.getElementById('dealsFoodBeverages').checked,
-    dealsPharma: document.getElementById('dealsPharma').checked,
-    dealsPetroleum: document.getElementById('dealsPetroleum').checked,
-    dealsExplosives: document.getElementById('dealsExplosives').checked,
-    dealsChemicals: document.getElementById('dealsChemicals').checked,
-    hasBoilers: document.getElementById('hasBoilers').checked,
-    hasMines: document.getElementById('hasMines').checked,
-    hasConstruction: document.getElementById('hasConstruction').checked,
-    isRealEstate: document.getElementById('isRealEstate').checked,
-    isNBFC: document.getElementById('isNBFC').checked,
-    isInsurance: document.getElementById('isInsurance').checked,
-    isBanking: document.getElementById('isBanking').checked,
+    primarySector:   sector,
+    isManufacturing: safeCheckbox('isManufacturing'),
+    isTrading:       safeCheckbox('isTrading'),
+    isECommerce:     safeCheckbox('isECommerce') || sector === 'ecommerce',
+    dealsFoodBeverages: safeCheckbox('dealsFoodBeverages'),
+    dealsPharma:     safeCheckbox('dealsPharma'),
+    dealsPetroleum:  safeCheckbox('dealsPetroleum'),
+    dealsExplosives: safeCheckbox('dealsExplosives'),
+    dealsChemicals:  safeCheckbox('dealsChemicals'),
+    hasBoilers:      safeCheckbox('hasBoilers'),
+    hasMines:        safeCheckbox('hasMines'),
+    hasConstruction: safeCheckbox('hasConstruction'),
+    isRealEstate:    safeCheckbox('isRealEstate'),
+    isNBFC:          safeCheckbox('isNBFC'),
+    isInsurance:     safeCheckbox('isInsurance'),
+    isBanking:       safeCheckbox('isBanking'),
+    // New fields
+    isHealthcare:    safeCheckbox('isHealthcare'),
+    hasVehicleFleet: safeCheckbox('hasVehicleFleet'),
+    isDigitalPlatform: safeCheckbox('isDigitalPlatform'),
 
-    annualTurnover,
-    netWorth,
-    netProfit,
-    paidUpCapital,
-    hasFDI: getRadioVal('hasFDI') === 'yes',
+    annualTurnover, netWorth, netProfit, paidUpCapital,
+    hasFDI:          getRadioVal('hasFDI') === 'yes',
     doesImportExport: getRadioVal('doesImportExport') === 'yes',
-    isMSME: getRadioVal('isMSME') === 'yes',
-    hasForex: getRadioVal('hasForex') === 'yes',
+    isMSME:          getRadioVal('isMSME') === 'yes',
+    hasForex:        getRadioVal('hasForex') === 'yes',
 
-    totalEmployees,
-    permanentEmployees,
-    contractWorkers,
-    womenEmployees,
-    migrantWorkers,
-    pwdEmployees,
-    hasApprentices: getRadioVal('hasApprentices') === 'yes',
-    employsMinors: getRadioVal('employsMinors') === 'yes',
+    totalEmployees, permanentEmployees, contractWorkers,
+    womenEmployees, migrantWorkers, pwdEmployees,
+    hasApprentices:  getRadioVal('hasApprentices') === 'yes',
+    employsMinors:   getRadioVal('employsMinors') === 'yes',
 
-    hasFactory: getRadioVal('hasFactory') === 'yes',
+    hasFactory:      getRadioVal('hasFactory') === 'yes',
     factoryHasPower: getRadioVal('factoryHasPower') === 'yes',
     factoryWorkers,
-    hasShop: getRadioVal('hasShop') === 'yes',
-    generatesHazardousWaste: document.getElementById('generatesHazardousWaste').checked,
-    generatesEWaste: document.getElementById('generatesEWaste').checked,
-    usesPlastic: document.getElementById('usesPlastic').checked,
-    dischargesWastewater: document.getElementById('dischargesWastewater').checked,
-    emitsAirPollutants: document.getElementById('emitsAirPollutants').checked,
-    hasLargeElectrical: document.getElementById('hasLargeElectrical').checked,
+    hasShop:         getRadioVal('hasShop') === 'yes',
+    generatesHazardousWaste: safeCheckbox('generatesHazardousWaste'),
+    generatesEWaste:         safeCheckbox('generatesEWaste'),
+    usesPlastic:             safeCheckbox('usesPlastic'),
+    dischargesWastewater:    safeCheckbox('dischargesWastewater'),
+    emitsAirPollutants:      safeCheckbox('emitsAirPollutants'),
+    hasLargeElectrical:      safeCheckbox('hasLargeElectrical'),
 
-    hasWeb: getRadioVal('hasWeb') === 'yes',
-    collectsData: getRadioVal('collectsData') === 'yes',
-    hasPayment: getRadioVal('hasPayment') === 'yes',
-    isITService: getRadioVal('isITService') === 'yes',
-    isPMLA: getRadioVal('isPMLA') === 'yes',
-    hasIP: getRadioVal('hasIP') === 'yes',
+    hasWeb:           getRadioVal('hasWeb') === 'yes',
+    collectsData:     getRadioVal('collectsData') === 'yes',
+    hasPayment:       getRadioVal('hasPayment') === 'yes',
+    isITService:      getRadioVal('isITService') === 'yes',
+    isPMLA:           getRadioVal('isPMLA') === 'yes',
+    hasIP:            getRadioVal('hasIP') === 'yes',
+    receivesForeignContrib: getRadioVal('receivesForeignContrib') === 'yes',
   };
 
   // Derived flags
-  formData.isITSector = formData.primarySector === 'it' || formData.isITService;
-  formData.isFinancialSector = ['financial','nbfc','insurance'].includes(formData.primarySector) || formData.isNBFC || formData.isBanking || formData.isInsurance;
+  formData.isITSector = sector === 'it' || formData.isITService;
+  formData.isFinancialSector = ['financial','nbfc','insurance'].includes(sector) ||
+    formData.isNBFC || formData.isBanking || formData.isInsurance;
 }
 
 // ── ANALYZE ──
@@ -272,13 +301,13 @@ function analyzeCompliance() {
   setTimeout(() => {
     allResults = INDIAN_LAWS
       .map(law => ({ ...law, applicableReason: law.reason(formData) }))
-      .filter(law => law.applicableReason !== null && law.applicableReason !== undefined);
+      .filter(law => law.applicableReason != null);
 
     document.getElementById('loading').style.display = 'none';
     renderResults();
     document.getElementById('results').style.display = 'block';
     window.scrollTo(0,0);
-  }, 1400);
+  }, 1200);
 }
 
 // ── RENDER RESULTS ──
@@ -290,22 +319,42 @@ function renderResults() {
   document.getElementById('resultsCompanyTag').textContent = `📋 ${co}`;
 
   const counts = { critical:0, high:0, medium:0, low:0 };
-  allResults.forEach(l => counts[l.priority] = (counts[l.priority]||0) + 1);
+  allResults.forEach(l => { counts[l.priority] = (counts[l.priority]||0) + 1; });
+
+  const totalActions = allResults.reduce((s, l) => s + l.actions.length, 0);
 
   document.getElementById('resultsSubtitle').textContent =
-    `${allResults.length} laws are applicable to your company based on the provided profile. Review each law and its compliance requirements below.`;
+    `${allResults.length} laws apply to ${co} across ${Object.keys(counts).filter(k=>counts[k]).length} priority levels. ${totalActions} compliance actions identified.`;
 
   // Summary cards
-  const sg = document.getElementById('summaryGrid');
-  sg.innerHTML = `
+  document.getElementById('summaryGrid').innerHTML = `
     <div class="summary-card total"><div class="s-num">${allResults.length}</div><div class="s-label">Total Laws</div></div>
-    <div class="summary-card critical"><div class="s-num">${counts.critical||0}</div><div class="s-label">Critical Priority</div></div>
+    <div class="summary-card critical"><div class="s-num">${counts.critical||0}</div><div class="s-label">Critical</div></div>
     <div class="summary-card high"><div class="s-num">${counts.high||0}</div><div class="s-label">High Priority</div></div>
-    <div class="summary-card medium"><div class="s-num">${counts.medium||0}</div><div class="s-label">Medium Priority</div></div>
+    <div class="summary-card medium"><div class="s-num">${counts.medium||0}</div><div class="s-label">Medium</div></div>
     <div class="summary-card low"><div class="s-num">${counts.low||0}</div><div class="s-label">Low Priority</div></div>
   `;
 
+  // Meta bar
+  const mb = document.getElementById('resultsMetaBar');
+  if (mb) {
+    mb.innerHTML = `<span>Generated: <strong>${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</strong></span>
+    <span>Total compliance actions: <strong>${totalActions}</strong></span>
+    <span style="color:var(--danger)">Critical actions needing immediate attention: <strong>${allResults.filter(l=>l.priority==='critical').reduce((s,l)=>s+l.actions.length,0)}</strong></span>`;
+  }
+
+  // Update filter button counts
+  updateFilterCounts(counts);
+
   renderFilteredLaws(allResults);
+}
+
+function updateFilterCounts(counts) {
+  const map = { fbAll: allResults.length, fbCrit: counts.critical||0, fbHigh: counts.high||0, fbMed: counts.medium||0, fbLow: counts.low||0 };
+  Object.entries(map).forEach(([id, n]) => {
+    const el = document.getElementById(id);
+    if (el) { const badge = el.querySelector('.f-count'); if(badge) badge.textContent = n; }
+  });
 }
 
 function renderFilteredLaws(laws) {
@@ -315,28 +364,29 @@ function renderFilteredLaws(laws) {
     return;
   }
 
-  // Group by category
+  // Sort by priority, then group by category
   const byCategory = {};
-  laws.sort((a,b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority])
-      .forEach(l => {
-        if(!byCategory[l.category]) byCategory[l.category] = [];
-        byCategory[l.category].push(l);
-      });
+  [...laws].sort((a,b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority])
+    .forEach(l => {
+      (byCategory[l.category] = byCategory[l.category] || []).push(l);
+    });
 
-  let html = '';
+  const frag = document.createDocumentFragment();
   Object.entries(byCategory).forEach(([cat, catLaws]) => {
-    html += `<div class="cat-section">
-      <div class="cat-label-row">
+    const section = document.createElement('div');
+    section.className = 'cat-section';
+    section.innerHTML = `
+      <div class="cat-label-row" data-cat="${cat}">
         <div class="cat-label">${cat}</div>
         <div class="cat-line"></div>
         <div class="cat-count">${catLaws.length} law${catLaws.length>1?'s':''}</div>
       </div>
-      <div class="laws-grid">`;
-    catLaws.forEach(law => { html += buildLawCard(law); });
-    html += `</div></div>`;
+      <div class="laws-grid">${catLaws.map(buildLawCard).join('')}</div>`;
+    frag.appendChild(section);
   });
 
-  out.innerHTML = html;
+  out.innerHTML = '';
+  out.appendChild(frag);
 }
 
 function buildLawCard(law) {
@@ -350,20 +400,17 @@ function buildLawCard(law) {
         <span class="action-tag pen">⚠ ${a.penalty}</span>
       </div>
       ${a.desc ? `<div class="action-desc">${a.desc}</div>` : ''}
-    </div>
-  `).join('');
+    </div>`).join('');
 
   return `
-    <div class="law-card" id="law-${law.id}" data-priority="${law.priority}" data-name="${law.name.toLowerCase()}">
+    <div class="law-card" id="law-${law.id}" data-priority="${law.priority}">
       <div class="law-header" onclick="toggleLaw('${law.id}')">
         <div class="law-priority ${law.priority}"></div>
         <div class="law-meta">
-          <div class="law-name">
-            ${law.name}
-            <span class="law-cat">${law.category}</span>
-          </div>
+          <div class="law-name">${law.name}<span class="law-cat">${law.category}</span></div>
           <div class="law-reason">✓ ${law.applicableReason}</div>
         </div>
+        <span class="law-actions-count">${law.actions.length} action${law.actions.length>1?'s':''}</span>
         <div class="law-badge ${law.priority}">${PRIORITY_LABEL[law.priority]}</div>
         <div class="expand-icon">▼</div>
       </div>
@@ -376,8 +423,27 @@ function buildLawCard(law) {
 }
 
 function toggleLaw(id) {
-  const card = document.getElementById(`law-${id}`);
-  card.classList.toggle('expanded');
+  document.getElementById(`law-${id}`).classList.toggle('expanded');
+}
+
+// ── EXPAND / COLLAPSE ALL ──
+function expandAllLaws() {
+  document.querySelectorAll('.law-card:not(.expanded)').forEach(c => c.classList.add('expanded'));
+  showToast('All laws expanded');
+}
+
+function collapseAllLaws() {
+  document.querySelectorAll('.law-card.expanded').forEach(c => c.classList.remove('expanded'));
+  showToast('All laws collapsed');
+}
+
+// ── TOAST ──
+function showToast(msg, ms = 2000) {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), ms);
 }
 
 // ── FILTER ──
@@ -388,18 +454,22 @@ function filterLaws(priority, btn) {
   applyFilters();
 }
 
+// ── DEBOUNCED SEARCH ──
 function searchLaws(query) {
-  applyFilters(query);
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => applyFilters(query), 250);
 }
 
 function applyFilters(query) {
-  const q = (query !== undefined ? query : document.querySelector('.search-box').value).toLowerCase();
+  const sb = document.getElementById('searchBox');
+  const q = (query !== undefined ? query : (sb ? sb.value : '')).toLowerCase().trim();
   let filtered = allResults;
   if (activeFilter !== 'all') filtered = filtered.filter(l => l.priority === activeFilter);
   if (q) filtered = filtered.filter(l =>
     l.name.toLowerCase().includes(q) ||
     l.category.toLowerCase().includes(q) ||
-    l.description.toLowerCase().includes(q)
+    l.description.toLowerCase().includes(q) ||
+    l.applicableReason.toLowerCase().includes(q)
   );
   renderFilteredLaws(filtered);
 }

@@ -209,10 +209,18 @@ select option{background:var(--bg2);}
 .no-results{text-align:center;padding:3rem;color:var(--muted);}
 
 /* Loading */
-#loading{display:none;min-height:calc(100vh - 64px);align-items:center;justify-content:center;flex-direction:column;gap:1rem;}
-.spinner{width:48px;height:48px;border:4px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;}
+#loading{display:none;min-height:calc(100vh - 64px);align-items:center;justify-content:center;flex-direction:column;gap:1.5rem;}
+.spinner-wrap{position:relative;width:64px;height:64px;}
+.spinner{width:64px;height:64px;border:3px solid var(--border);border-top-color:var(--primary);border-right-color:var(--gold);border-radius:50%;animation:spin .9s linear infinite;position:absolute;}
+.spinner-inner{width:44px;height:44px;border:2px solid transparent;border-bottom-color:var(--primary-light);border-radius:50%;animation:spin .6s linear infinite reverse;position:absolute;top:10px;left:10px;}
 @keyframes spin{to{transform:rotate(360deg);}}
-.loading-text{color:var(--muted);font-size:.95rem;}
+.loading-title{color:var(--text);font-size:1.1rem;font-weight:600;}
+.loading-text{color:var(--muted);font-size:.88rem;}
+.loading-steps{display:flex;flex-direction:column;gap:.4rem;align-items:center;margin-top:.5rem;}
+.loading-step{font-size:.78rem;color:var(--dim);animation:pulse 2s ease-in-out infinite;}
+.loading-step:nth-child(2){animation-delay:.5s;}
+.loading-step:nth-child(3){animation-delay:1s;}
+@keyframes pulse{0%,100%{opacity:.4;}50%{opacity:1;}}
 
 /* Category section in results */
 .cat-section{margin-bottom:.5rem;}
@@ -263,6 +271,77 @@ select option{background:var(--bg2);}
   .hero h1{font-size:1.8rem;}
   .summary-grid{grid-template-columns:1fr 1fr;}
 }
+
+/* ── STICKY FILTER BAR ── */
+.filter-bar{
+  position:sticky;top:64px;z-index:90;
+  background:linear-gradient(to bottom,var(--bg) 80%,transparent);
+  padding:.6rem 0 .75rem;
+  backdrop-filter:blur(8px);
+}
+
+/* ── FILTER COUNT BADGE ── */
+.f-count{display:inline-block;background:rgba(255,255,255,.12);border-radius:8px;padding:0 5px;font-size:.68rem;margin-left:4px;font-weight:700;}
+.filter-btn.active .f-count{background:rgba(255,255,255,.28);}
+
+/* ── EXPAND / COLLAPSE BUTTONS ── */
+.btn-expand,.btn-collapse{padding:6px 12px;border-radius:var(--radius-sm);font-size:.78rem;font-weight:600;border:1px solid var(--border);background:var(--card);color:var(--muted);transition:all .2s;cursor:pointer;}
+.btn-expand:hover,.btn-collapse:hover{background:var(--bg3);color:var(--text);border-color:var(--primary-light);}
+
+/* ── LAW CARD IMPROVEMENTS ── */
+.law-card{transition:border-color .2s,box-shadow .2s;}
+.law-card:hover{box-shadow:0 2px 16px rgba(0,0,0,.25);}
+.law-body{animation:slideDown .2s ease;}
+@keyframes slideDown{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── ACTION COUNT BADGE on collapsed card ── */
+.law-actions-count{font-size:.72rem;color:var(--dim);background:var(--bg2);padding:2px 8px;border-radius:10px;flex-shrink:0;border:1px solid var(--border);}
+
+/* ── CATEGORY LABEL COLORS ── */
+[data-cat="Social Security"] .cat-label{color:#f87171;}
+[data-cat="Labour"] .cat-label{color:#fb923c;}
+[data-cat="Tax"] .cat-label{color:#facc15;}
+[data-cat="Corporate"] .cat-label{color:#60a5fa;}
+[data-cat="Environment"] .cat-label{color:#34d399;}
+[data-cat="Technology & Data"] .cat-label{color:#a78bfa;}
+[data-cat="Sector-Specific"] .cat-label{color:#fb7185;}
+[data-cat="Securities"] .cat-label{color:#f59e0b;}
+[data-cat="Financial"] .cat-label{color:#2dd4bf;}
+[data-cat="Intellectual Property"] .cat-label{color:#e879f9;}
+[data-cat="MSME & Trade"] .cat-label{color:#4ade80;}
+[data-cat="Transport"] .cat-label{color:#38bdf8;}
+[data-cat="Infrastructure"] .cat-label{color:#94a3b8;}
+[data-cat="Consumer"] .cat-label{color:#fbbf24;}
+
+/* ── PRIORITY COLORS on left bar (vivid) ── */
+.law-priority.critical{background:linear-gradient(180deg,#ef4444,#b91c1c);}
+.law-priority.high{background:linear-gradient(180deg,#f59e0b,#b45309);}
+.law-priority.medium{background:linear-gradient(180deg,#06b6d4,#0284c7);}
+.law-priority.low{background:linear-gradient(180deg,#10b981,#059669);}
+
+/* ── BACK TO TOP ── */
+#backTop{position:fixed;bottom:2rem;right:2rem;width:38px;height:38px;border-radius:50%;background:var(--primary);color:#fff;border:none;font-size:1.1rem;cursor:pointer;box-shadow:0 4px 12px rgba(29,78,216,.5);z-index:200;opacity:0;pointer-events:none;transition:opacity .3s;}
+#backTop.visible{opacity:1;pointer-events:auto;}
+
+/* ── RESULTS HEADER STRIP ── */
+.results-meta-bar{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;font-size:.82rem;color:var(--muted);}
+.results-meta-bar strong{color:var(--gold-light);}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:5rem;left:50%;transform:translateX(-50%) translateY(20px);background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:.6rem 1.4rem;font-size:.85rem;color:var(--text);z-index:500;opacity:0;pointer-events:none;transition:all .3s;box-shadow:0 8px 24px rgba(0,0,0,.4);}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ── FOOTER ── */
+.site-footer{text-align:center;padding:2rem 1rem 3rem;color:var(--dim);font-size:.78rem;border-top:1px solid var(--border);margin-top:3rem;}
+.site-footer a{color:var(--muted);}
+
+/* ── HERO ANIMATION ── */
+.hero-eyebrow{animation:fadeUp .5s ease both;}
+.hero h1{animation:fadeUp .6s .1s ease both;}
+.hero p{animation:fadeUp .6s .2s ease both;}
+.hero-stats{animation:fadeUp .6s .3s ease both;}
+.hero-actions{animation:fadeUp .6s .4s ease both;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
 </style>
 </head>
 <body>
@@ -283,25 +362,35 @@ select option{background:var(--bg2);}
 <!-- LANDING -->
 <section id="landing">
   <div class="hero">
-    <div class="hero-eyebrow">⚖️ Powered by 60+ Indian Laws</div>
-    <h1>Know Every Law That Applies to Your Business</h1>
-    <p>Enter your company's details and instantly get a comprehensive compliance report — exactly which Indian laws apply to you and precisely what you must do to comply.</p>
+    <div class="hero-eyebrow">⚖ Powered by 70+ Indian Laws · Updated 2024–25</div>
+    <h1>Know Every Law That<br>Applies to Your Business</h1>
+    <p>Answer 6 quick steps about your company and instantly receive a comprehensive compliance report — exactly which Indian laws apply and precisely what you must do.</p>
     <div class="hero-stats">
-      <div class="stat"><div class="stat-num">60+</div><div class="stat-label">Laws Covered</div></div>
-      <div class="stat"><div class="stat-num">10</div><div class="stat-label">Law Categories</div></div>
-      <div class="stat"><div class="stat-num">200+</div><div class="stat-label">Compliance Actions</div></div>
-      <div class="stat"><div class="stat-num">100%</div><div class="stat-label">India-Specific</div></div>
+      <div class="stat"><div class="stat-num" data-target="70">70+</div><div class="stat-label">Laws Covered</div></div>
+      <div class="stat"><div class="stat-num" data-target="14">14</div><div class="stat-label">Law Categories</div></div>
+      <div class="stat"><div class="stat-num" data-target="300">300+</div><div class="stat-label">Compliance Actions</div></div>
+      <div class="stat"><div class="stat-num" data-target="100">100%</div><div class="stat-label">India-Specific</div></div>
     </div>
     <div class="hero-actions">
-      <button class="btn-primary" onclick="startTool()">▶ Start Compliance Check</button>
+      <button class="btn-primary" onclick="startTool()">▶ Start Free Compliance Check</button>
+      <span style="color:var(--dim);font-size:.85rem;align-self:center;">Takes ~3 minutes</span>
     </div>
   </div>
 </section>
 
 <!-- LOADING -->
 <div id="loading">
-  <div class="spinner"></div>
-  <div class="loading-text">Analyzing your company profile against Indian laws…</div>
+  <div class="spinner-wrap">
+    <div class="spinner"></div>
+    <div class="spinner-inner"></div>
+  </div>
+  <div class="loading-title">Analyzing Compliance Profile…</div>
+  <div class="loading-text">Checking your company against 70+ Indian laws</div>
+  <div class="loading-steps">
+    <div class="loading-step">⚖ Evaluating labour law thresholds…</div>
+    <div class="loading-step">📊 Calculating tax obligations…</div>
+    <div class="loading-step">🏭 Checking sector-specific regulations…</div>
+  </div>
 </div>
 
 <!-- FORM SECTION -->
@@ -432,6 +521,9 @@ select option{background:var(--bg2);}
           <label class="check-row"><input type="checkbox" id="isNBFC"> <span class="check-label">🏦 NBFC / lending / fintech lending</span></label>
           <label class="check-row"><input type="checkbox" id="isInsurance"> <span class="check-label">🛡️ Insurance business</span></label>
           <label class="check-row"><input type="checkbox" id="isBanking"> <span class="check-label">🏛️ Banking / cooperative bank</span></label>
+          <label class="check-row"><input type="checkbox" id="isHealthcare"> <span class="check-label">🏥 Healthcare facility (hospital / clinic / diagnostic lab)</span></label>
+          <label class="check-row"><input type="checkbox" id="hasVehicleFleet"> <span class="check-label">🚛 Operates fleet of commercial vehicles (5+)</span></label>
+          <label class="check-row"><input type="checkbox" id="isDigitalPlatform"> <span class="check-label">📱 Digital platform / app marketplace / aggregator</span></label>
         </div>
       </div>
       <div class="form-nav">
@@ -692,6 +784,13 @@ select option{background:var(--bg2);}
               <label class="radio-pill" onclick="selectPill(this,'hasIP','yes')"><input type="radio" name="hasIP" value="yes"> Yes / Wants to protect</label>
             </div>
           </div>
+          <div class="field">
+            <label>Does the company receive foreign contributions / donations from abroad? (FCRA)</label>
+            <div class="radio-group" id="receivesForeignContribGroup">
+              <label class="radio-pill" onclick="selectPill(this,'receivesForeignContrib','no')"><input type="radio" name="receivesForeignContrib" value="no"> No</label>
+              <label class="radio-pill" onclick="selectPill(this,'receivesForeignContrib','yes')"><input type="radio" name="receivesForeignContrib" value="yes"> Yes</label>
+            </div>
+          </div>
         </div>
       </div>
       <div class="form-nav">
@@ -711,22 +810,32 @@ select option{background:var(--bg2);}
       <p id="resultsSubtitle"></p>
     </div>
     <div class="summary-grid" id="summaryGrid"></div>
+    <div class="results-meta-bar" id="resultsMetaBar"></div>
     <div class="filter-bar">
-      <button class="filter-btn active" onclick="filterLaws('all',this)">All Laws</button>
-      <button class="filter-btn" onclick="filterLaws('critical',this)">🔴 Critical</button>
-      <button class="filter-btn" onclick="filterLaws('high',this)">🟠 High</button>
-      <button class="filter-btn" onclick="filterLaws('medium',this)">🔵 Medium</button>
-      <button class="filter-btn" onclick="filterLaws('low',this)">🟢 Low</button>
-      <input class="search-box" type="text" placeholder="Search laws…" oninput="searchLaws(this.value)">
+      <button id="fbAll" class="filter-btn active" onclick="filterLaws('all',this)">All <span class="f-count">—</span></button>
+      <button id="fbCrit" class="filter-btn" onclick="filterLaws('critical',this)">🔴 Critical <span class="f-count">—</span></button>
+      <button id="fbHigh" class="filter-btn" onclick="filterLaws('high',this)">🟠 High <span class="f-count">—</span></button>
+      <button id="fbMed" class="filter-btn" onclick="filterLaws('medium',this)">🔵 Medium <span class="f-count">—</span></button>
+      <button id="fbLow" class="filter-btn" onclick="filterLaws('low',this)">🟢 Low <span class="f-count">—</span></button>
+      <input class="search-box" id="searchBox" type="text" placeholder="🔍 Search laws, categories…" oninput="searchLaws(this.value)">
       <div class="result-actions">
-        <button id="xlsBtn" class="btn-excel" onclick="exportToExcel()">📊 Download Excel Report</button>
-        <button class="btn-print" onclick="window.print()">🖨 Print / PDF</button>
+        <button class="btn-expand" onclick="expandAllLaws()" title="Expand all cards">⊕ Expand</button>
+        <button class="btn-collapse" onclick="collapseAllLaws()" title="Collapse all cards">⊖ Collapse</button>
+        <button id="xlsBtn" class="btn-excel" onclick="exportToExcel()">📊 Excel</button>
+        <button class="btn-print" onclick="window.print()">🖨 PDF</button>
         <button class="btn-reset" onclick="resetTool()">↩ Start Over</button>
       </div>
     </div>
     <div id="lawsOutput"></div>
   </div>
 </section>
+
+<footer class="site-footer">
+  <p>LexComply India · <strong>Disclaimer:</strong> This tool is for general informational purposes only and does not constitute legal advice. Laws and thresholds may change; always consult a qualified lawyer or CA for your specific situation.</p>
+</footer>
+
+<button id="backTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+<div id="toast"></div>
 
 <script src="laws.js"></script>
 <script src="excel-export.js"></script>
