@@ -328,8 +328,21 @@ function buildDashboardSheet() {
   let rows = '';
 
   // Title block
-  rows += `<Row ss:Height="50">${C('⚖  LexComply India — Compliance Report','title')}</Row>`;
-  rows += `<Row ss:Height="18">${C('Generated on ' + today + '  |  Indian Law Compliance Analyzer','subtitle')}</Row>`;
+  rows += `<Row ss:Height="50">${C('⚖  Indian Law Compliance Report | Sagar Khatri & Associates, Chartered Accountants','title')}</Row>`;
+  rows += `<Row ss:Height="18">${C('Generated on ' + today + '  |  Expert Compliance · Audit · Advisory · Tax · Business Consulting','subtitle')}</Row>`;
+  rows += `<Row ss:Height="8">${C('','blank')}</Row>`;
+
+  // Client contact section
+  rows += `<Row ss:Height="24">${C('CLIENT CONTACT DETAILS','secHdr')}</Row>`;
+  const contactRows = [
+    ['Contact Person', d.contactName || '—'],
+    ['Mobile Number', d.mobileNumber || '—'],
+    ['Email Address', d.emailAddress || '—'],
+    ['Report Date', today],
+  ];
+  contactRows.forEach(([lbl, val]) => {
+    rows += `<Row ss:Height="18">${C(lbl,'label')}${C(val,'val')}</Row>`;
+  });
   rows += `<Row ss:Height="8">${C('','blank')}</Row>`;
 
   // Company profile section

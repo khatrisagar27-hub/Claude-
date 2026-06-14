@@ -1,3 +1,12 @@
+// ── FIRM CONFIGURATION ──
+const FIRM_CONFIG = {
+  name: 'Sagar Khatri & Associates, Chartered Accountants',
+  shortName: 'SK & Associates, CA',
+  email: 'khatrisagar27@gmail.com',
+  whatsapp: '919000000000', // update with actual WhatsApp number (country code + number, no +)
+  tagline: 'Expert Compliance | Audit | Advisory | Tax | Business Consulting'
+};
+
 // ── INDIAN STATES DATA ──
 const INDIAN_STATES = [
   'Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh',
@@ -122,7 +131,7 @@ function resetTool() {
   document.querySelectorAll('.radio-pill').forEach(p => p.classList.remove('selected'));
   document.querySelectorAll('.state-chip').forEach(c => c.classList.remove('checked'));
   document.querySelectorAll('.conditional').forEach(c => c.classList.remove('show'));
-  document.querySelectorAll('input[type=text],input[type=number],select').forEach(i => i.value='');
+  document.querySelectorAll('input[type=text],input[type=number],input[type=tel],input[type=email],select').forEach(i => i.value='');
   const sb = document.getElementById('searchBox');
   if (sb) sb.value = '';
   // Reset form-section state without showing it
@@ -166,6 +175,17 @@ function selectPill(el, name, value) {
 // ── VALIDATION ──
 function validateStep(step) {
   if (step === 1) {
+    if (!document.getElementById('contactName').value.trim()) {
+      alert('Please enter your name (contact person).'); return false;
+    }
+    const mobile = document.getElementById('mobileNumber').value.trim();
+    if (!mobile || !/^[6-9]\d{9}$/.test(mobile)) {
+      alert('Please enter a valid 10-digit Indian mobile number (starting with 6–9).'); return false;
+    }
+    const email = document.getElementById('emailAddress').value.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      alert('Please enter a valid email address.'); return false;
+    }
     if (!document.getElementById('companyName').value.trim()) {
       alert('Please enter the company name.'); return false;
     }
@@ -228,6 +248,9 @@ function collectFormData() {
   const sector             = document.getElementById('primarySector').value;
 
   formData = {
+    contactName:     document.getElementById('contactName').value.trim(),
+    mobileNumber:    document.getElementById('mobileNumber').value.trim(),
+    emailAddress:    document.getElementById('emailAddress').value.trim(),
     companyName:     document.getElementById('companyName').value.trim(),
     entityType:      document.getElementById('entityType').value,
     stateOfReg:      document.getElementById('stateOfReg').value,
@@ -334,6 +357,17 @@ function renderResults() {
     <div class="summary-card medium"><div class="s-num">${counts.medium||0}</div><div class="s-label">Medium</div></div>
     <div class="summary-card low"><div class="s-num">${counts.low||0}</div><div class="s-label">Low Priority</div></div>
   `;
+
+  // Client info bar
+  const cib = document.getElementById('clientInfoBar');
+  if (cib) {
+    cib.innerHTML = `
+      <div class="cib-item"><span class="cib-label">Contact</span><strong>${xe(formData.contactName || '—')}</strong></div>
+      <div class="cib-item"><span class="cib-label">Mobile</span><strong>${xe(formData.mobileNumber || '—')}</strong></div>
+      <div class="cib-item"><span class="cib-label">Email</span><strong>${xe(formData.emailAddress || '—')}</strong></div>
+      <div class="cib-item"><span class="cib-label">Company</span><strong>${xe(formData.companyName || '—')}</strong></div>
+      <div class="cib-item"><span class="cib-label">Date</span><strong>${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</strong></div>`;
+  }
 
   // Meta bar
   const mb = document.getElementById('resultsMetaBar');
@@ -472,6 +506,104 @@ function applyFilters(query) {
     l.applicableReason.toLowerCase().includes(q)
   );
   renderFilteredLaws(filtered);
+}
+
+// ── HTML ESCAPE ──
+function xe(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── LEAD CAPTURE — WHATSAPP ──
+function sendToWhatsApp() {
+  const fd = formData;
+  const lawsCount = allResults.length;
+  const critCount = allResults.filter(l=>l.priority==='critical').length;
+  const highCount = allResults.filter(l=>l.priority==='high').length;
+  const totalActions = allResults.reduce((s,l)=>s+l.actions.length,0);
+
+  const msg = [
+    `Hello ${FIRM_CONFIG.name},`,
+    ``,
+    `I have used your Indian Law Compliance Tool and would like professional assistance.`,
+    ``,
+    `*My Details:*`,
+    `Name: ${fd.contactName}`,
+    `Mobile: ${fd.mobileNumber}`,
+    `Email: ${fd.emailAddress}`,
+    ``,
+    `*Company Profile:*`,
+    `Company: ${fd.companyName}`,
+    `Entity: ${fd.entityType || '—'}`,
+    `Sector: ${fd.primarySector || '—'}`,
+    `State of Reg: ${fd.stateOfReg || '—'}`,
+    `Employees: ${fd.totalEmployees}`,
+    `Annual Turnover: ${fd.annualTurnover ? '₹'+fd.annualTurnover+' L' : '—'}`,
+    ``,
+    `*Compliance Summary:*`,
+    `Total Applicable Laws: ${lawsCount}`,
+    `Critical Priority: ${critCount}`,
+    `High Priority: ${highCount}`,
+    `Total Actions Required: ${totalActions}`,
+    ``,
+    `Please contact me to discuss compliance requirements.`
+  ].join('\n');
+
+  const url = `https://wa.me/${FIRM_CONFIG.whatsapp}?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+}
+
+// ── LEAD CAPTURE — EMAIL ──
+function sendToEmail() {
+  const fd = formData;
+  const lawsCount = allResults.length;
+  const critCount = allResults.filter(l=>l.priority==='critical').length;
+  const highCount = allResults.filter(l=>l.priority==='high').length;
+  const totalActions = allResults.reduce((s,l)=>s+l.actions.length,0);
+
+  const subject = `Compliance Inquiry — ${fd.companyName} | Indian Law Compliance Tool`;
+
+  const topLaws = allResults
+    .filter(l=>l.priority==='critical')
+    .slice(0,5)
+    .map(l=>`  • ${l.shortName || l.name}`)
+    .join('\n');
+
+  const body = [
+    `Dear ${FIRM_CONFIG.name},`,
+    ``,
+    `I have used your Indian Law Compliance Tool and would like professional assistance with implementing the identified compliance requirements.`,
+    ``,
+    `CONTACT DETAILS`,
+    `Name: ${fd.contactName}`,
+    `Mobile: ${fd.mobileNumber}`,
+    `Email: ${fd.emailAddress}`,
+    ``,
+    `COMPANY PROFILE`,
+    `Company Name: ${fd.companyName}`,
+    `Entity Type: ${fd.entityType || '—'}`,
+    `Primary Sector: ${fd.primarySector || '—'}`,
+    `State of Registration: ${fd.stateOfReg || '—'}`,
+    `States of Operation: ${(fd.statesOfOperation||[]).join(', ') || '—'}`,
+    `Total Employees: ${fd.totalEmployees}`,
+    `Annual Turnover: ${fd.annualTurnover ? '₹'+fd.annualTurnover+' Lakhs' : '—'}`,
+    `Listed Company: ${fd.isListed ? 'Yes' : 'No'}`,
+    `MSME Registered: ${fd.isMSME ? 'Yes' : 'No'}`,
+    ``,
+    `COMPLIANCE SUMMARY`,
+    `Total Applicable Laws: ${lawsCount}`,
+    `Critical Priority: ${critCount}`,
+    `High Priority: ${highCount}`,
+    `Total Compliance Actions: ${totalActions}`,
+    ``,
+    topLaws ? `TOP CRITICAL LAWS:\n${topLaws}\n` : '',
+    `Please contact me at your earliest convenience.`,
+    ``,
+    `Regards,`,
+    `${fd.contactName}`,
+    `${fd.mobileNumber}`
+  ].join('\n');
+
+  window.location.href = `mailto:${FIRM_CONFIG.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
 // ── BOOTSTRAP ──

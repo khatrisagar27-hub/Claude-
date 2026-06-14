@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LexComply India — Indian Law Compliance Analyzer</title>
+<title>Indian Law Compliance Tool | Sagar Khatri & Associates, Chartered Accountants</title>
 <style>
 :root {
   --bg: #060f1e;
@@ -323,6 +323,31 @@ select option{background:var(--bg2);}
 #backTop{position:fixed;bottom:2rem;right:2rem;width:38px;height:38px;border-radius:50%;background:var(--primary);color:#fff;border:none;font-size:1.1rem;cursor:pointer;box-shadow:0 4px 12px rgba(29,78,216,.5);z-index:200;opacity:0;pointer-events:none;transition:opacity .3s;}
 #backTop.visible{opacity:1;pointer-events:auto;}
 
+/* ── CLIENT INFO BAR ── */
+.client-info-bar{display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;background:var(--card2);border:1px solid var(--border);border-radius:var(--radius);padding:.75rem 1.25rem;margin-bottom:1.25rem;font-size:.84rem;}
+.cib-item{display:flex;align-items:center;gap:.4rem;color:var(--muted);}
+.cib-item strong{color:var(--text);}
+.cib-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--dim);}
+
+/* ── LEAD CAPTURE PANEL ── */
+.lead-panel{background:linear-gradient(135deg,#0d1b3e 0%,#1a2d50 100%);border:1px solid var(--gold);border-radius:var(--radius);padding:1.5rem 2rem;margin:1.5rem 0;display:flex;align-items:center;gap:2rem;flex-wrap:wrap;}
+.lead-left{flex:1;min-width:220px;}
+.lead-firm{font-size:1rem;font-weight:700;color:var(--gold-light);margin-bottom:.35rem;}
+.lead-firm-sub{font-size:.8rem;color:var(--muted);}
+.lead-desc{font-size:.85rem;color:var(--muted);margin-top:.5rem;line-height:1.5;}
+.lead-right{display:flex;flex-direction:column;gap:.6rem;flex-shrink:0;}
+.btn-wa{background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;border:none;padding:10px 20px;border-radius:var(--radius-sm);font-size:.88rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .2s;}
+.btn-wa:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(37,211,102,.4);}
+.btn-ca-email{background:linear-gradient(135deg,var(--primary),#1e40af);color:#fff;border:none;padding:10px 20px;border-radius:var(--radius-sm);font-size:.88rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .2s;}
+.btn-ca-email:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(29,78,216,.4);}
+@media(max-width:640px){.lead-panel{padding:1.25rem;}.lead-right{flex-direction:row;flex-wrap:wrap;}}
+
+/* ── CONTACT FIELDS REQUIRED INDICATOR ── */
+.contact-section-note{background:rgba(200,169,81,.08);border:1px solid rgba(200,169,81,.25);border-radius:var(--radius-sm);padding:.6rem 1rem;font-size:.8rem;color:var(--gold);margin-bottom:1rem;}
+
+/* ── FIRM WATERMARK on results ── */
+.firm-watermark{font-size:.72rem;color:var(--dim);text-align:right;padding:.25rem 0;letter-spacing:.02em;}
+
 /* ── RESULTS HEADER STRIP ── */
 .results-meta-bar{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;font-size:.82rem;color:var(--muted);}
 .results-meta-bar strong{color:var(--gold-light);}
@@ -349,22 +374,22 @@ select option{background:var(--bg2);}
 <header>
   <div class="header-inner">
     <div class="logo">
-      <div class="logo-icon">L</div>
+      <div class="logo-icon">⚖</div>
       <div>
-        <div class="logo-text">LexComply India</div>
-        <div class="logo-sub">Legal Compliance Analyzer</div>
+        <div class="logo-text">Indian Law Compliance Tool</div>
+        <div class="logo-sub">Sagar Khatri & Associates, Chartered Accountants</div>
       </div>
     </div>
-    <div class="header-badge">Premium Tool</div>
+    <div class="header-badge">Professional CA Tool</div>
   </div>
 </header>
 
 <!-- LANDING -->
 <section id="landing">
   <div class="hero">
-    <div class="hero-eyebrow">⚖ Powered by 70+ Indian Laws · Updated 2024–25</div>
-    <h1>Know Every Law That<br>Applies to Your Business</h1>
-    <p>Answer 6 quick steps about your company and instantly receive a comprehensive compliance report — exactly which Indian laws apply and precisely what you must do.</p>
+    <div class="hero-eyebrow">⚖ By Sagar Khatri & Associates, CA · 70+ Indian Laws · 2024–25</div>
+    <h1>Indian Law Compliance Tool</h1>
+    <p>Professional compliance analysis by <strong style="color:var(--gold-light)">Sagar Khatri & Associates, Chartered Accountants</strong>. Answer 6 quick steps and instantly know which Indian laws apply to your business and exactly what you must do.</p>
     <div class="hero-stats">
       <div class="stat"><div class="stat-num" data-target="70">70+</div><div class="stat-label">Laws Covered</div></div>
       <div class="stat"><div class="stat-num" data-target="14">14</div><div class="stat-label">Law Categories</div></div>
@@ -409,10 +434,26 @@ select option{background:var(--bg2);}
       <div class="form-card">
         <h2><span class="step-icon">🏢</span> Company Identity</h2>
         <div class="form-subtitle">Tell us about your company's basic information</div>
+        <div class="contact-section-note">📋 Your contact details are required so our CA team can reach you with expert compliance guidance.</div>
         <div class="form-grid cols-1">
           <div class="field">
             <label>Company / Business Name <span class="req">*</span></label>
             <input type="text" id="companyName" placeholder="e.g., Acme Technologies Pvt. Ltd.">
+          </div>
+        </div>
+        <div class="form-grid cols-3" style="margin-top:1.25rem;">
+          <div class="field">
+            <label>Your Name (Contact Person) <span class="req">*</span></label>
+            <input type="text" id="contactName" placeholder="e.g., Rahul Sharma">
+          </div>
+          <div class="field">
+            <label>Mobile Number <span class="req">*</span></label>
+            <input type="tel" id="mobileNumber" placeholder="e.g., 9876543210" maxlength="10" pattern="[6-9][0-9]{9}">
+            <div class="field-hint">10-digit Indian mobile number</div>
+          </div>
+          <div class="field">
+            <label>Email Address <span class="req">*</span></label>
+            <input type="email" id="emailAddress" placeholder="e.g., rahul@company.com">
           </div>
         </div>
         <div class="form-grid" style="margin-top:1.25rem;">
@@ -805,12 +846,25 @@ select option{background:var(--bg2);}
 <section id="results">
   <div class="results-container">
     <div class="results-header">
+      <div class="firm-watermark">Prepared by Sagar Khatri & Associates, Chartered Accountants</div>
       <div class="company-tag" id="resultsCompanyTag"></div>
       <h2>Indian Law Compliance Report</h2>
       <p id="resultsSubtitle"></p>
     </div>
+    <div class="client-info-bar" id="clientInfoBar"></div>
     <div class="summary-grid" id="summaryGrid"></div>
     <div class="results-meta-bar" id="resultsMetaBar"></div>
+    <div class="lead-panel">
+      <div class="lead-left">
+        <div class="lead-firm">⚖ Sagar Khatri & Associates, Chartered Accountants</div>
+        <div class="lead-firm-sub">Expert Compliance, Audit & Advisory Services</div>
+        <div class="lead-desc">Our CA team can help you implement all these compliance requirements efficiently — registrations, filings, returns, audits, and ongoing advisory. Contact us for a free initial consultation.</div>
+      </div>
+      <div class="lead-right">
+        <button class="btn-wa" onclick="sendToWhatsApp()">💬 WhatsApp Us Now</button>
+        <button class="btn-ca-email" onclick="sendToEmail()">📧 Email This Report</button>
+      </div>
+    </div>
     <div class="filter-bar">
       <button id="fbAll" class="filter-btn active" onclick="filterLaws('all',this)">All <span class="f-count">—</span></button>
       <button id="fbCrit" class="filter-btn" onclick="filterLaws('critical',this)">🔴 Critical <span class="f-count">—</span></button>
@@ -831,7 +885,10 @@ select option{background:var(--bg2);}
 </section>
 
 <footer class="site-footer">
-  <p>LexComply India · <strong>Disclaimer:</strong> This tool is for general informational purposes only and does not constitute legal advice. Laws and thresholds may change; always consult a qualified lawyer or CA for your specific situation.</p>
+  <p style="font-size:.9rem;font-weight:600;color:var(--gold-light);margin-bottom:.5rem;">Sagar Khatri & Associates, Chartered Accountants</p>
+  <p>Expert Compliance | Audit | Advisory | Tax | Business Consulting</p>
+  <p style="margin-top:.75rem;"><strong>Disclaimer:</strong> This tool is for general informational purposes only and does not constitute legal advice. Laws and thresholds may change. Always consult our qualified CA team for advice specific to your situation.</p>
+  <p style="margin-top:.5rem;">© 2025 Sagar Khatri & Associates. All rights reserved.</p>
 </footer>
 
 <button id="backTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
@@ -2138,8 +2195,21 @@ function buildDashboardSheet() {
   let rows = '';
 
   // Title block
-  rows += `<Row ss:Height="50">${C('⚖  LexComply India — Compliance Report','title')}</Row>`;
-  rows += `<Row ss:Height="18">${C('Generated on ' + today + '  |  Indian Law Compliance Analyzer','subtitle')}</Row>`;
+  rows += `<Row ss:Height="50">${C('⚖  Indian Law Compliance Report | Sagar Khatri & Associates, Chartered Accountants','title')}</Row>`;
+  rows += `<Row ss:Height="18">${C('Generated on ' + today + '  |  Expert Compliance · Audit · Advisory · Tax · Business Consulting','subtitle')}</Row>`;
+  rows += `<Row ss:Height="8">${C('','blank')}</Row>`;
+
+  // Client contact section
+  rows += `<Row ss:Height="24">${C('CLIENT CONTACT DETAILS','secHdr')}</Row>`;
+  const contactRows = [
+    ['Contact Person', d.contactName || '—'],
+    ['Mobile Number', d.mobileNumber || '—'],
+    ['Email Address', d.emailAddress || '—'],
+    ['Report Date', today],
+  ];
+  contactRows.forEach(([lbl, val]) => {
+    rows += `<Row ss:Height="18">${C(lbl,'label')}${C(val,'val')}</Row>`;
+  });
   rows += `<Row ss:Height="8">${C('','blank')}</Row>`;
 
   // Company profile section
@@ -2556,6 +2626,15 @@ function exportToExcel() {
 
 </script>
 <script>
+// ── FIRM CONFIGURATION ──
+const FIRM_CONFIG = {
+  name: 'Sagar Khatri & Associates, Chartered Accountants',
+  shortName: 'SK & Associates, CA',
+  email: 'khatrisagar27@gmail.com',
+  whatsapp: '919000000000', // update with actual WhatsApp number (country code + number, no +)
+  tagline: 'Expert Compliance | Audit | Advisory | Tax | Business Consulting'
+};
+
 // ── INDIAN STATES DATA ──
 const INDIAN_STATES = [
   'Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh',
@@ -2680,7 +2759,7 @@ function resetTool() {
   document.querySelectorAll('.radio-pill').forEach(p => p.classList.remove('selected'));
   document.querySelectorAll('.state-chip').forEach(c => c.classList.remove('checked'));
   document.querySelectorAll('.conditional').forEach(c => c.classList.remove('show'));
-  document.querySelectorAll('input[type=text],input[type=number],select').forEach(i => i.value='');
+  document.querySelectorAll('input[type=text],input[type=number],input[type=tel],input[type=email],select').forEach(i => i.value='');
   const sb = document.getElementById('searchBox');
   if (sb) sb.value = '';
   // Reset form-section state without showing it
@@ -2724,6 +2803,17 @@ function selectPill(el, name, value) {
 // ── VALIDATION ──
 function validateStep(step) {
   if (step === 1) {
+    if (!document.getElementById('contactName').value.trim()) {
+      alert('Please enter your name (contact person).'); return false;
+    }
+    const mobile = document.getElementById('mobileNumber').value.trim();
+    if (!mobile || !/^[6-9]\d{9}$/.test(mobile)) {
+      alert('Please enter a valid 10-digit Indian mobile number (starting with 6–9).'); return false;
+    }
+    const email = document.getElementById('emailAddress').value.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      alert('Please enter a valid email address.'); return false;
+    }
     if (!document.getElementById('companyName').value.trim()) {
       alert('Please enter the company name.'); return false;
     }
@@ -2786,6 +2876,9 @@ function collectFormData() {
   const sector             = document.getElementById('primarySector').value;
 
   formData = {
+    contactName:     document.getElementById('contactName').value.trim(),
+    mobileNumber:    document.getElementById('mobileNumber').value.trim(),
+    emailAddress:    document.getElementById('emailAddress').value.trim(),
     companyName:     document.getElementById('companyName').value.trim(),
     entityType:      document.getElementById('entityType').value,
     stateOfReg:      document.getElementById('stateOfReg').value,
@@ -2892,6 +2985,17 @@ function renderResults() {
     <div class="summary-card medium"><div class="s-num">${counts.medium||0}</div><div class="s-label">Medium</div></div>
     <div class="summary-card low"><div class="s-num">${counts.low||0}</div><div class="s-label">Low Priority</div></div>
   `;
+
+  // Client info bar
+  const cib = document.getElementById('clientInfoBar');
+  if (cib) {
+    cib.innerHTML = `
+      <div class="cib-item"><span class="cib-label">Contact</span><strong>${xe(formData.contactName || '—')}</strong></div>
+      <div class="cib-item"><span class="cib-label">Mobile</span><strong>${xe(formData.mobileNumber || '—')}</strong></div>
+      <div class="cib-item"><span class="cib-label">Email</span><strong>${xe(formData.emailAddress || '—')}</strong></div>
+      <div class="cib-item"><span class="cib-label">Company</span><strong>${xe(formData.companyName || '—')}</strong></div>
+      <div class="cib-item"><span class="cib-label">Date</span><strong>${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</strong></div>`;
+  }
 
   // Meta bar
   const mb = document.getElementById('resultsMetaBar');
@@ -3030,6 +3134,104 @@ function applyFilters(query) {
     l.applicableReason.toLowerCase().includes(q)
   );
   renderFilteredLaws(filtered);
+}
+
+// ── HTML ESCAPE ──
+function xe(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── LEAD CAPTURE — WHATSAPP ──
+function sendToWhatsApp() {
+  const fd = formData;
+  const lawsCount = allResults.length;
+  const critCount = allResults.filter(l=>l.priority==='critical').length;
+  const highCount = allResults.filter(l=>l.priority==='high').length;
+  const totalActions = allResults.reduce((s,l)=>s+l.actions.length,0);
+
+  const msg = [
+    `Hello ${FIRM_CONFIG.name},`,
+    ``,
+    `I have used your Indian Law Compliance Tool and would like professional assistance.`,
+    ``,
+    `*My Details:*`,
+    `Name: ${fd.contactName}`,
+    `Mobile: ${fd.mobileNumber}`,
+    `Email: ${fd.emailAddress}`,
+    ``,
+    `*Company Profile:*`,
+    `Company: ${fd.companyName}`,
+    `Entity: ${fd.entityType || '—'}`,
+    `Sector: ${fd.primarySector || '—'}`,
+    `State of Reg: ${fd.stateOfReg || '—'}`,
+    `Employees: ${fd.totalEmployees}`,
+    `Annual Turnover: ${fd.annualTurnover ? '₹'+fd.annualTurnover+' L' : '—'}`,
+    ``,
+    `*Compliance Summary:*`,
+    `Total Applicable Laws: ${lawsCount}`,
+    `Critical Priority: ${critCount}`,
+    `High Priority: ${highCount}`,
+    `Total Actions Required: ${totalActions}`,
+    ``,
+    `Please contact me to discuss compliance requirements.`
+  ].join('\n');
+
+  const url = `https://wa.me/${FIRM_CONFIG.whatsapp}?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+}
+
+// ── LEAD CAPTURE — EMAIL ──
+function sendToEmail() {
+  const fd = formData;
+  const lawsCount = allResults.length;
+  const critCount = allResults.filter(l=>l.priority==='critical').length;
+  const highCount = allResults.filter(l=>l.priority==='high').length;
+  const totalActions = allResults.reduce((s,l)=>s+l.actions.length,0);
+
+  const subject = `Compliance Inquiry — ${fd.companyName} | Indian Law Compliance Tool`;
+
+  const topLaws = allResults
+    .filter(l=>l.priority==='critical')
+    .slice(0,5)
+    .map(l=>`  • ${l.shortName || l.name}`)
+    .join('\n');
+
+  const body = [
+    `Dear ${FIRM_CONFIG.name},`,
+    ``,
+    `I have used your Indian Law Compliance Tool and would like professional assistance with implementing the identified compliance requirements.`,
+    ``,
+    `CONTACT DETAILS`,
+    `Name: ${fd.contactName}`,
+    `Mobile: ${fd.mobileNumber}`,
+    `Email: ${fd.emailAddress}`,
+    ``,
+    `COMPANY PROFILE`,
+    `Company Name: ${fd.companyName}`,
+    `Entity Type: ${fd.entityType || '—'}`,
+    `Primary Sector: ${fd.primarySector || '—'}`,
+    `State of Registration: ${fd.stateOfReg || '—'}`,
+    `States of Operation: ${(fd.statesOfOperation||[]).join(', ') || '—'}`,
+    `Total Employees: ${fd.totalEmployees}`,
+    `Annual Turnover: ${fd.annualTurnover ? '₹'+fd.annualTurnover+' Lakhs' : '—'}`,
+    `Listed Company: ${fd.isListed ? 'Yes' : 'No'}`,
+    `MSME Registered: ${fd.isMSME ? 'Yes' : 'No'}`,
+    ``,
+    `COMPLIANCE SUMMARY`,
+    `Total Applicable Laws: ${lawsCount}`,
+    `Critical Priority: ${critCount}`,
+    `High Priority: ${highCount}`,
+    `Total Compliance Actions: ${totalActions}`,
+    ``,
+    topLaws ? `TOP CRITICAL LAWS:\n${topLaws}\n` : '',
+    `Please contact me at your earliest convenience.`,
+    ``,
+    `Regards,`,
+    `${fd.contactName}`,
+    `${fd.mobileNumber}`
+  ].join('\n');
+
+  window.location.href = `mailto:${FIRM_CONFIG.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
 // ── BOOTSTRAP ──
