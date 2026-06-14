@@ -158,8 +158,11 @@ select option{background:var(--bg2);}
 .search-box{flex:1;min-width:200px;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:7px 16px;color:var(--text);font-size:.85rem;}
 .search-box:focus{outline:none;border-color:var(--primary-light);}
 .result-actions{margin-left:auto;display:flex;gap:.5rem;}
-.btn-print,.btn-reset{padding:8px 18px;border-radius:var(--radius-sm);font-size:.82rem;font-weight:600;border:none;}
+.btn-print,.btn-reset,.btn-excel{padding:8px 18px;border-radius:var(--radius-sm);font-size:.82rem;font-weight:600;border:none;}
 .btn-print{background:linear-gradient(135deg,var(--gold),#8a6018);color:#fff;}
+.btn-excel{background:linear-gradient(135deg,#1a7340,#0d4d28);color:#fff;box-shadow:0 2px 8px rgba(16,185,129,.3);}
+.btn-excel:hover{opacity:.9;transform:translateY(-1px);}
+.btn-excel:disabled{opacity:.6;cursor:not-allowed;transform:none;}
 .btn-reset{background:var(--bg2);border:1px solid var(--border);color:var(--muted);}
 .btn-print:hover{opacity:.9;}
 .btn-reset:hover{background:var(--bg3);color:var(--text);}
@@ -716,6 +719,7 @@ select option{background:var(--bg2);}
       <button class="filter-btn" onclick="filterLaws('low',this)">🟢 Low</button>
       <input class="search-box" type="text" placeholder="Search laws…" oninput="searchLaws(this.value)">
       <div class="result-actions">
+        <button id="xlsBtn" class="btn-excel" onclick="exportToExcel()">📊 Download Excel Report</button>
         <button class="btn-print" onclick="window.print()">🖨 Print / PDF</button>
         <button class="btn-reset" onclick="resetTool()">↩ Start Over</button>
       </div>
@@ -725,6 +729,7 @@ select option{background:var(--bg2);}
 </section>
 
 <script src="laws.js"></script>
+<script src="excel-export.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
