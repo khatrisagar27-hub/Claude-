@@ -3,7 +3,7 @@ const FIRM_CONFIG = {
   name: 'Sagar Khatri & Associates, Chartered Accountants',
   shortName: 'SK & Associates, CA',
   email: 'khatrisagar27@gmail.com',
-  whatsapp: '919000000000', // update with actual WhatsApp number (country code + number, no +)
+  whatsapp: '918866262545', // +91 8866262545
   tagline: 'Expert Compliance | Audit | Advisory | Tax | Business Consulting'
 };
 
