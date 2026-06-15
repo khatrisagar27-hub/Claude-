@@ -524,7 +524,7 @@ function sendToWhatsApp() {
   const msg = [
     `Hello ${FIRM_CONFIG.name},`,
     ``,
-    `I have used your Indian Law Compliance Tool and would like professional assistance.`,
+    `I have used Indian Law Compliance by Sagar Khatri & Associates, CA and would like professional assistance.`,
     ``,
     `*My Details:*`,
     `Name: ${fd.contactName}`,
@@ -560,7 +560,7 @@ function sendToEmail() {
   const highCount = allResults.filter(l=>l.priority==='high').length;
   const totalActions = allResults.reduce((s,l)=>s+l.actions.length,0);
 
-  const subject = `Compliance Inquiry — ${fd.companyName} | Indian Law Compliance Tool`;
+  const subject = `Compliance Inquiry — ${fd.companyName} | Indian Law Compliance by Sagar Khatri & Associates`;
 
   const topLaws = allResults
     .filter(l=>l.priority==='critical')
@@ -571,7 +571,7 @@ function sendToEmail() {
   const body = [
     `Dear ${FIRM_CONFIG.name},`,
     ``,
-    `I have used your Indian Law Compliance Tool and would like professional assistance with implementing the identified compliance requirements.`,
+    `I have used Indian Law Compliance by Sagar Khatri & Associates, CA and would like professional assistance with implementing the identified compliance requirements.`,
     ``,
     `CONTACT DETAILS`,
     `Name: ${fd.contactName}`,
