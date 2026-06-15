@@ -287,7 +287,7 @@ function rowStyle(p) { return p+'_row'; }
 function lawStyle(p) { return p+'_law'; }
 
 function getPriorityLabel(p) {
-  return { critical:'🔴 CRITICAL', high:'🟠 HIGH', medium:'🔵 MEDIUM', low:'🟢 LOW' }[p] || p.toUpperCase();
+  return { critical:'CRITICAL', high:'HIGH', medium:'MEDIUM', low:'LOW' }[p] || p.toUpperCase();
 }
 
 // ── SHEET 1: DASHBOARD ──
@@ -328,7 +328,7 @@ function buildDashboardSheet() {
   let rows = '';
 
   // Title block
-  rows += `<Row ss:Height="50">${C('⚖  Indian Law Compliance Report | Sagar Khatri & Associates, Chartered Accountants','title')}</Row>`;
+  rows += `<Row ss:Height="50">${C('Indian Law Compliance Report | Sagar Khatri & Associates, Chartered Accountants','title')}</Row>`;
   rows += `<Row ss:Height="18">${C('Generated on ' + today + '  |  Expert Compliance · Audit · Advisory · Tax · Business Consulting','subtitle')}</Row>`;
   rows += `<Row ss:Height="8">${C('','blank')}</Row>`;
 
@@ -414,7 +414,7 @@ function buildDashboardSheet() {
   rows += `<Row ss:Height="12">${C('','blank')}</Row>`;
   rows += `<Row ss:Height="18">${C('DISCLAIMER: This report is for informational purposes only and does not constitute legal advice. Consult a qualified lawyer or compliance professional for specific guidance.','subtitle')}</Row>`;
 
-  return `<Worksheet ss:Name="📋 Dashboard">
+  return `<Worksheet ss:Name="Dashboard">
     <Table ss:DefaultColumnWidth="200" ss:DefaultRowHeight="16">
       <Column ss:Width="180"/>
       <Column ss:Width="320"/>
@@ -440,7 +440,7 @@ function buildLawsSheet() {
   });
 
   let rows = '';
-  rows += `<Row ss:Height="14">${C('⚖  Applicable Laws — Priority Overview','secHdr')}</Row>`;
+  rows += `<Row ss:Height="14">${C('Applicable Laws - Priority Overview','secHdr')}</Row>`;
   rows += R(
     C('#','colHdr'),
     C('Priority','colHdr'),
@@ -465,7 +465,7 @@ function buildLawsSheet() {
     );
   });
 
-  return `<Worksheet ss:Name="📜 Laws Overview">
+  return `<Worksheet ss:Name="Laws Overview">
     <Table ss:DefaultRowHeight="28">
       <Column ss:Width="30"/>
       <Column ss:Width="90"/>
@@ -491,7 +491,7 @@ function buildChecklistSheet() {
   });
 
   let rows = '';
-  rows += `<Row ss:Height="14">${C('✅  Master Compliance Checklist — All Required Actions','secHdr')}</Row>`;
+  rows += `<Row ss:Height="14">${C('Master Compliance Checklist - All Required Actions','secHdr')}</Row>`;
   rows += R(
     C('Sr.','colHdr'),
     C('Priority','colHdr'),
@@ -521,12 +521,12 @@ function buildChecklistSheet() {
         C(a.authority, 'auth_cell'),
         C(a.penalty, 'pen_cell'),
         C(a.desc || '', 'norm'),
-        C('☐ Pending', 'norm')
+        C('[ ] Pending', 'norm')
       );
     });
   });
 
-  return `<Worksheet ss:Name="✅ Compliance Checklist">
+  return `<Worksheet ss:Name="Compliance Checklist">
     <Table ss:DefaultRowHeight="36">
       <Column ss:Width="35"/>
       <Column ss:Width="85"/>
@@ -597,16 +597,16 @@ function buildCalendarSheet() {
   };
 
   const bucketEmojis = {
-    'One-time':'🔷 ONE-TIME SETUP',
-    'Monthly':'🔴 MONTHLY (Recurring)',
-    'Quarterly':'🟠 QUARTERLY',
-    'Half-yearly':'🟣 HALF-YEARLY',
-    'Annual':'🟢 ANNUAL',
-    'As required':'🔵 AS REQUIRED / ONGOING'
+    'One-time':'ONE-TIME SETUP',
+    'Monthly':'MONTHLY (Recurring)',
+    'Quarterly':'QUARTERLY',
+    'Half-yearly':'HALF-YEARLY',
+    'Annual':'ANNUAL',
+    'As required':'AS REQUIRED / ONGOING'
   };
 
   let rows = '';
-  rows += `<Row ss:Height="14">${C('📅  Compliance Calendar — Actions Grouped by Frequency','secHdr')}</Row>`;
+  rows += `<Row ss:Height="14">${C('Compliance Calendar - Actions Grouped by Frequency','secHdr')}</Row>`;
 
   Object.entries(buckets).forEach(([bucket, items]) => {
     if(!items.length) return;
@@ -633,7 +633,7 @@ function buildCalendarSheet() {
     });
   });
 
-  return `<Worksheet ss:Name="📅 Compliance Calendar">
+  return `<Worksheet ss:Name="Compliance Calendar">
     <Table ss:DefaultRowHeight="32">
       <Column ss:Width="90"/>
       <Column ss:Width="190"/>
@@ -657,7 +657,7 @@ function buildUrgentSheet() {
     .sort((a,b)=>{ const po={critical:0,high:1}; return po[a.priority]-po[b.priority]; });
 
   let rows = '';
-  rows += `<Row ss:Height="14">${C('🚨  Urgent Action Required — Critical & High Priority Only','secHdr')}</Row>`;
+  rows += `<Row ss:Height="14">${C('Urgent Action Required - Critical & High Priority Only','secHdr')}</Row>`;
   rows += `<Row ss:Height="14">${C('These compliance actions carry the highest risk of penalties, business closure, or imprisonment. Address these IMMEDIATELY.','subtitle')}</Row>`;
   rows += `<Row ss:Height="8">${C('','blank')}</Row>`;
   rows += R(
@@ -680,12 +680,12 @@ function buildUrgentSheet() {
         C(a.deadline, 'dead_cell'),
         C(a.penalty, 'pen_cell'),
         C(a.authority, 'auth_cell'),
-        C('☐', rowStyle(p))
+        C('[ ]', rowStyle(p))
       );
     });
   });
 
-  return `<Worksheet ss:Name="🚨 Urgent Actions">
+  return `<Worksheet ss:Name="Urgent Actions">
     <Table ss:DefaultRowHeight="32">
       <Column ss:Width="90"/>
       <Column ss:Width="180"/>
@@ -716,7 +716,7 @@ function exportToExcel() {
 
   setTimeout(() => {
     try {
-      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+      const xml = '﻿' + `<?xml version="1.0" encoding="UTF-8"?>
 <?mso-application progid="Excel.Sheet"?>
 <Workbook
   xmlns="urn:schemas-microsoft-com:office:spreadsheet"
