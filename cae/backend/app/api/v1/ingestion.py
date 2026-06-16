@@ -43,11 +43,37 @@ class UploadedFileOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+@router.post("/analyze")
+async def analyze_file(
+    company_id: uuid.UUID = Form(...),
+    file: UploadFile = File(...),
+    current_user: User = Depends(require_roles("super_admin", "partner", "manager", "auditor")),
+):
+    """Detect data type and column mapping from any uploaded file — no DB writes."""
+    import tempfile, os
+
+    ext = os.path.splitext(file.filename or "upload")[1] or ".xlsx"
+    contents = await file.read()
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+        tmp.write(contents)
+        tmp_path = tmp.name
+
+    try:
+        from app.connectors.excel_importer import ExcelImporter
+        result = ExcelImporter.detect_schema(tmp_path)
+    finally:
+        os.unlink(tmp_path)
+
+    return result
+
+
 @router.post("/upload", response_model=UploadedFileOut, status_code=status.HTTP_201_CREATED)
 async def upload_file(
     company_id: uuid.UUID = Form(...),
     file_type: str = Form(...),
     file: UploadFile = File(...),
+    detected_type: Optional[str] = Form(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles("super_admin", "partner", "manager", "auditor")),
 ):
@@ -79,7 +105,7 @@ async def upload_file(
     # Trigger async processing in background
     try:
         from app.workers.tasks import process_uploaded_file
-        process_uploaded_file.delay(str(file_id))
+        process_uploaded_file.delay(str(file_id), detected_type)
     except Exception:
         pass  # worker may not be running; file is stored, can process manually
 
