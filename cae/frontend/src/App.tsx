@@ -14,6 +14,7 @@ import GST from './pages/GST';
 import WorkingCapital from './pages/WorkingCapital';
 import DataIngestion from './pages/DataIngestion';
 import Reports from './pages/Reports';
+import Profile from './pages/Profile';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { accessToken } = useAuthStore();
@@ -47,6 +48,7 @@ export default function App() {
           <Route path="working-capital" element={<WorkingCapital />} />
           <Route path="ingestion" element={<DataIngestion />} />
           <Route path="reports" element={<Reports />} />
+          <Route path="profile" element={<Profile />} />
         </Route>
       </Routes>
     </BrowserRouter>
