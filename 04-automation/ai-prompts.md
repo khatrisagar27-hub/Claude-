@@ -1,168 +1,200 @@
-# AI Prompts Library
+# AI Prompts Library — CA Tax Planning Practice
 
-Use these with Claude or ChatGPT to cut content and delivery time by 80%.  
-Always read and edit AI output before using it — never paste raw.
+Use with Claude. All outputs must be reviewed, edited, and personalized before use.  
+Never use AI output for advice without your own professional review.
 
 ---
 
-## LinkedIn Post Generation
+## LinkedIn Content
 
-### Proof Post
+### Budget / CBDT Circular Explainer
 ```
-I'm a strategy consultant who helps [ICP type] achieve [specific outcome].
+I'm a Chartered Accountant in India specializing in direct tax planning 
+for business owners (manufacturing and trading, ₹25–200 crore turnover).
 
-My proof: [paste your 200-word proof story here]
+Here is a recent CBDT circular / Finance Act amendment / Supreme Court ruling:
+[paste the text or section here]
 
-Write a LinkedIn post in this structure:
-1. Opening line: [before state of the client/situation — make it specific and relatable]
-2. Root cause (1 sentence): what was actually causing it
-3. "Here's what we changed:" followed by a numbered list of 3 specific changes (make them concrete, not generic)
-4. Result: one line with a specific number and timeframe
-5. CTA: targeting [ICP type] who are dealing with [their problem], asking them to DM me "SPRINT"
+Write a LinkedIn post explaining this development in plain language for a 
+business owner audience (directors, promoters, proprietors). 
 
-Tone: Direct. No corporate jargon. No emojis. No "I'm thrilled to share." 
-Write like a practitioner talking to a peer, not a thought leader talking to an audience.
+Structure:
+1. What changed (1–2 sentences, plain language)
+2. Who it affects specifically
+3. 3 bullet points with specific implications
+4. Optional: "Review your [specific aspect] if [specific situation]"
+
+Tone: Informative and professional. Not promotional. No "hire a CA" or 
+"contact me" language. Sound like a practitioner sharing knowledge.
 Max 200 words.
 ```
 
-### Counterintuitive Post
+### Tax Planning Concept Post
 ```
-I'm a strategy consultant in [niche/domain].
+I'm a Chartered Accountant writing educational LinkedIn content for 
+Indian business owners.
 
-My contrarian belief about [topic]: [your actual contrarian belief in 1–2 sentences]
+Write a post explaining [concept — e.g., "HUF and its tax advantages", 
+"Section 80D health insurance deduction for business owners", "advance tax 
+and why Q1 matters"].
 
-Write a LinkedIn post that:
-- Opens with the common belief that's wrong
-- Immediately challenges it
-- Gives the actual truth (my belief above)
-- Explains why in 1–2 sentences
-- Ends with what people should do instead
+Structure:
+- Opening: common misconception or overlooked aspect
+- What the provision actually says (1–2 sentences, no jargon)
+- Who it applies to (specific situations)
+- Common mistake people make
+- What the correct approach is
 
-No formatting. No bullet points. No headers. Flowing paragraphs only.
-Sound like someone who's seen this pattern many times and is tired of watching people get it wrong.
+No promotional language. No "book a consultation." Informational only.
+Professional, direct tone. Max 200 words.
+```
+
+### Advance Tax Reminder Post (Seasonal)
+```
+I'm a CA writing a LinkedIn reminder post about advance tax.
+
+Deadline: [June 15 / September 15 / December 15 / March 15]
+Installment: [Q1 — 15% / Q2 — 45% / Q3 — 75% / Q4 — 100%]
+Any current-year note: [e.g., new tax regime impact, any Budget change]
+
+Write a practical reminder post for business owners and directors.
+Include: what the installment percentage is, who it applies to (tax liability > ₹10,000), 
+what happens if missed (interest under 234B/234C), and 1 tip for getting the estimate right.
+
+Tone: Helpful, matter-of-fact. Not alarming. Not promotional.
 Max 150 words.
 ```
 
 ---
 
-## DM Personalization
+## Client Communication
 
-### Opening Line Generator
+### Post-Consultation Summary Email
 ```
-Here's a LinkedIn profile bio/summary for someone I'm reaching out to cold:
+I'm a CA writing a professional follow-up email after an initial consultation 
+with a potential client.
 
-[paste their About section + most recent 1–2 posts]
+What I learned in the meeting:
+- Their structure: [business type, how they draw income]
+- Current tax outgo: approximately ₹[X] per year
+- What their current CA handles: [compliance only / nothing / basic filing]
+- Opportunities I identified: 
+  1. [Opportunity 1 — section and rough benefit]
+  2. [Opportunity 2]
+  3. [Opportunity 3]
 
-Write 3 different one-sentence personalized observation openers I can use 
-at the start of a cold DM.
+Write a professional email summarizing:
+- The 3 opportunities flagged (1 sentence each, professional language)
+- The recommended next step (Tax Planning Audit at ₹[X])
+- What the audit process looks like (brief)
 
-Context about me: I'm a strategy consultant who helps [ICP type] achieve [specific outcome].
-
-The observations should:
-- Be specific (not generic compliments)
-- Show I actually read their profile
-- Be neutral — not flattery, not weird
-
-Don't start any option with "I" or "Your." Keep each under 20 words.
-```
-
----
-
-## Strategy Sprint Deliverable Drafting
-
-### 90-Day Roadmap First Draft
-```
-I'm creating a strategy consulting deliverable for a client. 
-
-Client situation:
-- Company type: [their company type]
-- Problem/challenge: [what they told me on the call]
-- What they've tried: [their previous attempts]
-- Their goals: [their Q4 answer — what solving this is worth]
-- Constraints: [budget, team size, timeline, other limits they mentioned]
-
-Using the information above, draft a 90-day strategic roadmap that includes:
-
-1. Executive Summary (3–5 sentences): What we're solving and why it matters now
-2. Diagnosis (1 page): Root cause analysis — what's actually broken and why
-3. 90-Day Priority Roadmap:
-   - Days 1–30: Foundation (what to fix first and why)
-   - Days 31–60: Build (what to implement)
-   - Days 61–90: Scale (what to accelerate)
-4. Success Metrics: 3–5 specific, measurable outcomes by Day 90
-5. Known Risks: Top 3 things that could derail this
-
-Write it in plain business language. No buzzwords. Treat the client as intelligent.
-Format as structured sections with short paragraphs.
-
-I will review, edit, and add specifics before delivery.
+Tone: Professional CA correspondence. Formal but warm. Not salesy.
+Sign off with: [Your Name], Chartered Accountant, MNo. [X]
+Max 200 words.
 ```
 
-### Monthly Retainer Review Document
+### Tax Planning Audit Report — Section Draft
 ```
-Write a 1-page monthly strategic review for a consulting client.
+I'm a CA drafting a Tax Planning Audit Report for a client.
 
-Client background: [brief description — industry, stage, main goals]
-Their 90-day roadmap priorities: [paste relevant sections]
+Client profile:
+- Business type: [manufacturing / trading / services]
+- Business structure: [Pvt Ltd / LLP / proprietorship]
+- Director remuneration: ₹[X] per year
+- Current deductions claimed: [80C: ₹X, 80D: ₹X, etc.]
+- Current effective tax rate: approximately [X]%
+- ITR form used: [ITR-2 / ITR-3 / ITR-4]
 
-Month [X] update:
-- What they told me they completed: [their monthly update]
-- What they said was the biggest challenge: [from their update]
-- What decisions they needed input on: [from their update]
+Write the "Findings and Recommendations" section of a Tax Planning Audit Report.
 
-The review should include:
-1. Progress snapshot (2–3 bullets: what moved, what didn't, and why)
-2. Priority adjustment (what should they focus on next month — and what should they deprioritize)
-3. One strategic insight or observation based on what they shared
-4. Suggested agenda for our call
+For each finding, include:
+1. Current position (what they're doing)
+2. Applicable provision (section of Income Tax Act, 1961)
+3. Recommended action
+4. Approximate annual tax benefit (range, not guarantee)
 
-Keep it to one page. Direct and actionable. No filler.
+Findings to cover:
+1. [Opportunity 1 you identified]
+2. [Opportunity 2]
+3. [Opportunity 3]
+
+Tone: Professional CA report language. Objective, factual. Include appropriate 
+disclaimers that these are estimates subject to actual income and law changes.
 ```
 
----
-
-## Email Drafting
-
-### Personalized Email 1 (Post-Call Follow-Up)
+### Year-End Client Summary
 ```
-I just had a 20-minute discovery call with a potential consulting client.
+I'm a CA writing an annual tax planning summary for a client at year-end.
 
-Here's what I learned:
-- Their main problem: [what they said]
-- What they've tried: [their answer]
-- Cost of inaction they named: [their exact Q3 answer]
-- What solving it is worth to them: [their Q4 answer]
+What was done this year:
+1. [Action 1 — e.g., restructured salary to add HRA component]
+2. [Action 2 — e.g., planned 80C investments in April instead of March]
+3. [Action 3 — e.g., timely advance tax saved interest under 234C]
+4. [Action 4 if any]
 
-Write a follow-up email that:
-- Opens by recapping what I heard (using their words, not mine)
-- Connects their situation to my offer (the Strategy Sprint — $2,500)
-- Has a single CTA: click a payment link
-- Is under 200 words
-- Sounds human and confident, not salesy
+Approximate tax impact of each (if calculable):
+1. ₹[X] saved / optimized
+2. ₹[X]
+3. ₹[X]
 
-Don't use: "I hope this finds you well", "excited to", "looking forward to", 
-"touching base", or "circling back."
+Forward-looking items for next year:
+[1–2 things you're planning or watching]
+
+Write a concise, professional client summary letter:
+- Summarize what was done (brief, factual, specific)
+- State the approximate total tax impact
+- Mention what to watch for next year
+- Close by confirming continuation of the engagement
+
+Tone: Professional, confident, warm. Not boastful. Not promotional.
+This is a retention document — it should make the client feel they received 
+clear value and are in good hands.
+Max 300 words.
 ```
 
 ---
 
-## Scorecard Lead Magnet Questions
+## Internal Practice Management
 
-### Custom Scorecard Generator
+### Client Onboarding Briefing (For Your Own Reference)
 ```
-I'm creating a 10-question self-assessment scorecard for [ICP type] to diagnose 
-why their [specific outcome area — e.g. "team operations" / "revenue growth" / "market expansion"] is stuck.
+I'm a CA starting an engagement with a new client. Help me organize my 
+analysis approach.
 
-The scorecard should cover 3–4 categories. Each question is rated 1–5 (1 = not true, 5 = completely true).
+Client details:
+- Business: [type, turnover]
+- Income structure: [remuneration, dividend, rental, etc.]
+- Tax paid last year: ₹[X]
+- Documents received: [list]
+- Deductions currently claiming: [list]
+- Special situations: [HUF, family income, capital gains, etc.]
 
-My area of expertise: [describe your consulting niche and what problems you solve]
+What are the 5–7 key areas I should examine systematically for tax 
+optimization under the Income Tax Act, 1961 for this profile?
 
-Write 10 questions that:
-- Reveal the root causes of [the problem you solve]
-- Are specific enough to feel accurate, not generic
-- Make someone feel slightly uncomfortable if they're honest (good — it means the question is real)
-- Collectively paint a picture where "low scores" = they need exactly the help I provide
+For each area, tell me:
+- What to look for
+- Which sections are relevant
+- Common gaps at this income/business level
+```
 
-Group questions into 3–4 labeled categories. Include a 1-paragraph scoring interpretation 
-guide at the end for three score ranges: high (40–50), medium (25–39), and low (10–24).
+### Speaking Proposal Email (For Event Organizers)
+```
+I'm a CA writing a professional email to request a speaking slot at a 
+[industry association / chamber of commerce / trade body] event.
+
+My credentials: [Your CA firm name, specialization, city]
+Event/organization: [Name of the association]
+My existing connection (if any): [e.g., "I'm a member" / "introduced by [name]"]
+
+Proposed talk topic: [e.g., "Tax Planning for Manufacturing SMEs: 
+Budget 2026 Implications"]
+
+Write a professional, concise email requesting a 30–45 minute educational 
+session. Emphasize that this is educational content, not promotional, and 
+that attendees will leave with actionable insights.
+
+Tone: Professional. Collegial. Not sycophantic. Reference the audience's 
+specific concerns (manufacturing costs, MSME credit, tax burden, etc.).
+Max 150 words.
 ```

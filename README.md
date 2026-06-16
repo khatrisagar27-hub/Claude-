@@ -1,67 +1,96 @@
-# $10K/Month Strategy Consulting System
-
-**Profile:** Consulting/Strategy expert | 1–5 hrs/week | Zero starting assets  
-**Target:** $10,000/month in 30–90 days  
-**Vehicle:** Productized consulting (Strategy Sprint) + cold LinkedIn outreach + retainer backend
+# $10K/Month Tax Planning Practice
+## Profile: Chartered Accountant (India) | ICAI Ethics-Compliant | 1–5 hrs/week
 
 ---
 
-## System Overview
+## ICAI Compliance Constraints (Non-Negotiable)
 
-| Phase | What It Does | Time to Build |
-|---|---|---|
-| [01 — Offer](./01-offer/) | Your productized consulting package | 30 min |
-| [02 — Acquisition](./02-acquisition/) | Cold LinkedIn outreach + lead magnet | Week 1 |
-| [03 — Conversion](./03-conversion/) | Landing page, call script, email sequences | Week 1 |
-| [04 — Automation](./04-automation/) | Tool stack, retainer upgrade, referral system | Week 1 |
-| [05 — Tracking](./05-tracking/) | Pipeline tracker, revenue targets | Ongoing |
+Before any strategy: these are hard limits under ICAI Code of Ethics.
+
+| Prohibited | Permitted |
+|---|---|
+| Cold solicitation (DMs, cold calls, circulars) | Educational content (no direct promotion) |
+| Paid referral commissions | Informal professional introductions |
+| Advertising with specific outcome claims | Listing areas of practice on website/profile |
+| Client testimonials in advertising | Speaking at educational seminars |
+| Fee comparisons | Professional networking |
+| "Hire me" CTAs | ICAI-registered firm directory listing |
+
+**Everything in this system operates within these limits.**
+
+---
+
+## The Offer: Annual Tax Planning Engagement
+
+**Service:** Comprehensive income restructuring + deduction planning for business owners  
+**Proof:** Helped a ₹50 crore manufacturing director save ~30% in taxes through legitimate restructuring  
+**Fee:** ₹1,50,000–₹3,00,000/year per client (₹12,500–₹25,000/month equivalent)  
+**Your time:** 8–12 hours per client annually  
+**Target:** 5–7 clients = $10K/month equivalent (₹83,000–₹87,500/month)
 
 ---
 
 ## Revenue Math
 
-| Path | Clients | Price | Monthly Revenue |
-|---|---|---|---|
-| All Sprint | 4 clients | $2,500 | $10,000 |
-| All High-Ticket | 2 clients | $5,000 | $10,000 |
-| Sprint + Retainer (Month 3) | 2 Sprint + 3 Retainer | $2,500 / $1,500 | $9,500+ |
+| Clients | Annual Fee | Monthly Equivalent |
+|---|---|---|
+| 5 clients | ₹2,00,000/year each | ₹83,333/month |
+| 6 clients | ₹1,50,000/year each | ₹75,000/month |
+| 4 clients | ₹2,50,000/year each | ₹83,333/month |
+
+Target client: Business owner/director, ₹25–200 crore turnover, manufacturing or trading, paying significant advance tax.
 
 ---
 
-## Week-by-Week Execution
+## Acquisition Strategy (Zero Solicitation)
 
-### Week 1 — Setup (10 hours, one-time)
-- [ ] Fill out your ICP in `02-acquisition/icp-definition.md`
-- [ ] Customize your offer in `01-offer/strategy-sprint.md`
-- [ ] Build scorecard PDF from `02-acquisition/lead-magnet-scorecard.md`
-- [ ] Set up tools from `04-automation/tool-setup.md`
-- [ ] Build landing page from `03-conversion/landing-page-copy.md`
-- [ ] Customize DM templates in `02-acquisition/outreach-sequences.md`
-- [ ] Save 100 LinkedIn targets in `05-tracking/pipeline-tracker.md`
+Three ICAI-compliant channels:
 
-### Week 2–3 — Outreach (45 min/day)
-- [ ] Send 10 connection requests/day
-- [ ] Send Day-1 DMs to all new connections
-- [ ] Send Day-5 follow-ups to non-replies
-- [ ] Post 1 LinkedIn proof story (Monday)
-- [ ] Log all activity in pipeline tracker
-
-### Week 4 — First Client
-- [ ] Run discovery calls using `03-conversion/discovery-call-script.md`
-- [ ] Send follow-up emails from `03-conversion/email-sequences.md`
-- [ ] Close first paying client
-- [ ] Send onboarding doc + book all 3 sessions
-
-### Month 2–3 — $10K Run Rate
-- [ ] Pitch retainer at Session 2 using `04-automation/retainer-pitch.md`
-- [ ] Launch referral program with `04-automation/referral-program.md`
-- [ ] Collect testimonials mid-engagement
-- [ ] Raise price to $3,500 when you have a waitlist of 2+
+1. **[Warm Network Activation](./02-acquisition/warm-network.md)** — Your existing client's peer group. No pitching. Just presence and positioning.
+2. **[Professional Referral Network](./02-acquisition/professional-referrals.md)** — Bank RMs, lawyers, CS, insurance agents. They work with your exact clients daily.
+3. **[Educational Authority](./02-acquisition/educational-content.md)** — LinkedIn + local speaking. You inform, not pitch. Clients come to you.
 
 ---
 
-## The Single Most Important Rule
+## System Files
 
-**Build good enough in Week 1. Send DMs in Week 2. Fix everything else later.**
+| File | Purpose |
+|---|---|
+| [01-offer/tax-planning-engagement.md](./01-offer/tax-planning-engagement.md) | Service structure, fee framework, initial consultation flow |
+| [02-acquisition/warm-network.md](./02-acquisition/warm-network.md) | How to leverage existing clients for introductions |
+| [02-acquisition/professional-referrals.md](./02-acquisition/professional-referrals.md) | Building a referral network with bankers, lawyers, CS |
+| [02-acquisition/educational-content.md](./02-acquisition/educational-content.md) | LinkedIn content strategy + speaking circuit |
+| [03-conversion/initial-consultation.md](./03-conversion/initial-consultation.md) | Free consultation structure that naturally closes |
+| [03-conversion/engagement-letter.md](./03-conversion/engagement-letter.md) | Proposal and engagement letter templates |
+| [04-automation/practice-tools.md](./04-automation/practice-tools.md) | India-specific tools for practice management |
+| [04-automation/annual-retainer-system.md](./04-automation/annual-retainer-system.md) | Converting one-time clients to annual retainers |
+| [05-tracking/client-pipeline.md](./05-tracking/client-pipeline.md) | Pipeline tracker adapted for CA practice |
 
-Pipeline math is fixed. Every day spent perfecting your landing page instead of sending DMs is a day of pipeline delay.
+---
+
+## 90-Day Execution Plan
+
+**Month 1: Network Activation**
+- [ ] Map your existing client's peer network (their business associations, golf clubs, industry groups)
+- [ ] Identify 10 bankers (RMs at HDFC, ICICI, Axis, Kotak) who serve ₹25–200 crore businesses
+- [ ] Speak at one local industry event (MSME chamber, CII, FICCI affiliate, Rotary)
+- [ ] Publish 8 educational LinkedIn posts (tax budget analysis, advance tax deadlines, deduction planning)
+
+**Month 2: Conversions**
+- [ ] 3–5 initial consultations from warm introductions
+- [ ] Close 2 annual engagement clients
+- [ ] One CA branch event appearance (networking with other CAs in non-competing specializations)
+
+**Month 3: Run Rate**
+- [ ] 4–5 active annual clients
+- [ ] Retainer system operational
+- [ ] Speaking calendar confirmed for next quarter
+- [ ] Referral network producing consistent introductions
+
+---
+
+## The Fundamental Rule
+
+You cannot go to clients. You must make clients come to you.
+
+Every action in this system is designed to make you the most obvious person in your city that a ₹50 crore business owner thinks of when they realize they're overpaying taxes.
