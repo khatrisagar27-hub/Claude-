@@ -1935,7 +1935,7 @@ function buildStylesXml() {
   // Helper for font
   const font = (sz, bold, hex, name) => {
     name = name || 'Calibri';
-    return `<font><sz val="${sz}"/>${bold?'<b/>':''}<color rgb="FF${hex.replace('#','')}"/><name val="${name}"/><family val="2"/></font>`;
+    return `<font>${bold?'<b/>':''}<sz val="${sz}"/><color rgb="FF${hex.replace('#','')}"/><name val="${name}"/><family val="2"/></font>`;
   };
   // Helper for border side
   const side = (style, hex) => hex ? `style="${style}"><color rgb="FF${hex.replace('#','')}"/>` : 'style="none">';
