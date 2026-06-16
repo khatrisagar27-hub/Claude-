@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CAE Platform — Complete User Guide</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 14px;
+    color: #1a1a1a;
+    background: #f4f6fa;
+    line-height: 1.7;
+  }
+  .page {
+    max-width: 900px;
+    margin: 30px auto;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+    overflow: hidden;
+  }
+  .cover {
+    background: linear-gradient(135deg, #0a1628 0%, #1d3a6b 100%);
+    color: #fff;
+    padding: 60px 50px;
+    text-align: center;
+  }
+  .cover h1 { font-size: 32px; font-weight: 800; color: #f0c060; margin-bottom: 10px; }
+  .cover h2 { font-size: 18px; font-weight: 400; color: #7fb3d3; margin-bottom: 30px; }
+  .cover .subtitle {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    padding: 15px 25px;
+    font-size: 13px;
+    color: #c8d8f0;
+  }
+  .content { padding: 40px 50px; }
+
+  h3 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #0a1628;
+    border-left: 5px solid #c8a951;
+    padding-left: 15px;
+    margin: 35px 0 15px;
+  }
+  h4 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1d3a6b;
+    margin: 20px 0 8px;
+  }
+  p { margin-bottom: 12px; color: #333; }
+  .note {
+    background: #fffbea;
+    border-left: 4px solid #f0c060;
+    padding: 12px 16px;
+    border-radius: 0 6px 6px 0;
+    margin: 12px 0;
+    font-size: 13px;
+  }
+  .warn {
+    background: #fff0f0;
+    border-left: 4px solid #dc2626;
+    padding: 12px 16px;
+    border-radius: 0 6px 6px 0;
+    margin: 12px 0;
+    font-size: 13px;
+  }
+  .tip {
+    background: #f0fdf4;
+    border-left: 4px solid #16a34a;
+    padding: 12px 16px;
+    border-radius: 0 6px 6px 0;
+    margin: 12px 0;
+    font-size: 13px;
+  }
+  .step {
+    display: flex;
+    gap: 15px;
+    align-items: flex-start;
+    margin: 15px 0;
+    padding: 15px;
+    background: #f8faff;
+    border: 1px solid #dde8ff;
+    border-radius: 8px;
+  }
+  .step-num {
+    background: #1d3a6b;
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .step-body h4 { margin: 0 0 6px; }
+  .step-body p { margin: 0; font-size: 13px; }
+  code {
+    background: #1a1a2e;
+    color: #f0c060;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+  }
+  .cmd-block {
+    background: #0d1117;
+    color: #58a6ff;
+    padding: 15px 20px;
+    border-radius: 8px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    margin: 10px 0;
+    white-space: pre-wrap;
+    line-height: 1.8;
+  }
+  .cmd-block .comment { color: #6e7681; }
+  .cmd-block .highlight { color: #f0c060; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+    font-size: 13px;
+  }
+  th {
+    background: #0a1628;
+    color: #f0c060;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+  }
+  td {
+    padding: 9px 14px;
+    border-bottom: 1px solid #e8eef5;
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: #f8faff; }
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .badge.critical { background: #fee2e2; color: #dc2626; }
+  .badge.high { background: #fef3c7; color: #d97706; }
+  .badge.medium { background: #e0f2fe; color: #0284c7; }
+  .badge.low { background: #d1fae5; color: #059669; }
+  .badge.free { background: #ede9fe; color: #7c3aed; }
+  .section-divider {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin: 40px 0 20px;
+  }
+  .section-divider span {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: #c8a951;
+    white-space: nowrap;
+  }
+  .section-divider::before, .section-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #dde8ff;
+  }
+  .page-link {
+    display: block;
+    background: #f8faff;
+    border: 1px solid #dde8ff;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 8px 0;
+    text-decoration: none;
+    color: #1a1a1a;
+  }
+  .page-link strong { color: #1d3a6b; display: block; font-size: 14px; }
+  .page-link span { font-size: 12px; color: #666; }
+  .url { color: #1d3a6b; font-weight: 700; font-size: 15px; }
+  .toc { background: #f8faff; border: 1px solid #dde8ff; border-radius: 8px; padding: 20px 25px; margin: 20px 0; }
+  .toc h4 { margin: 0 0 12px; color: #0a1628; }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin: 5px 0; font-size: 13px; color: #1d3a6b; }
+  .req-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 12px 0;
+  }
+  .req-card {
+    background: #f8faff;
+    border: 1px solid #dde8ff;
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .req-card h4 { margin: 0 0 5px; font-size: 13px; }
+  .req-card p { margin: 0; font-size: 12px; color: #555; }
+  footer {
+    background: #0a1628;
+    color: #7fb3d3;
+    text-align: center;
+    padding: 20px;
+    font-size: 12px;
+  }
+  @media print {
+    body { background: #fff; }
+    .page { box-shadow: none; margin: 0; border-radius: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- COVER -->
+  <div class="cover">
+    <h1>Continuous Audit Engine (CAE)</h1>
+    <h2>Complete User Guide — Step by Step</h2>
+    <div class="subtitle">
+      <strong style="color:#f0c060">For: Finance Managers, CFOs, Internal Auditors, CA Firms</strong><br>
+      This guide explains in simple language how to install, open, and use every feature of the CAE platform.
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- TABLE OF CONTENTS -->
+    <div class="toc">
+      <h4>What's in This Guide</h4>
+      <ol>
+        <li>What is the CAE Platform? (Plain English)</li>
+        <li>What You Need Before Starting (Requirements)</li>
+        <li>How to Install &amp; Open It (Step by Step)</li>
+        <li>How to Log In</li>
+        <li>The Dashboard — Understanding What You See</li>
+        <li>Exceptions — What Went Wrong and Where</li>
+        <li>Management Queries — Asking Questions to Your Team</li>
+        <li>Remediation Tracker — Fixing the Problems</li>
+        <li>Audit Rules — The 100+ Automated Checks</li>
+        <li>Risk Heatmap — Visualizing Your Risk</li>
+        <li>GST Reconciliation</li>
+        <li>Fraud Analytics</li>
+        <li>Data Ingestion — Uploading Your Data</li>
+        <li>Reports — Exporting Working Papers</li>
+        <li>Common FAQs</li>
+      </ol>
+    </div>
+
+    <!-- SECTION 1 -->
+    <h3>1. What is the CAE Platform?</h3>
+    <p>
+      Think of the CAE (Continuous Audit Engine) as an <strong>always-on robot auditor</strong> that watches your company's financial transactions 24 hours a day, 7 days a week — and immediately alerts you when something looks wrong.
+    </p>
+    <p>
+      <strong>Before CAE:</strong> A CA firm audits your books once a year. By the time they find a problem, it is already 12 months old and the damage is done.
+    </p>
+    <p>
+      <strong>With CAE:</strong> The same 100+ audit checks run every single day. The moment a duplicate invoice appears, or a salary is paid to a terminated employee, or a bank account is changed just before a payment — you get an alert within 24 hours.
+    </p>
+
+    <table>
+      <tr><th>Without CAE</th><th>With CAE</th></tr>
+      <tr><td>Annual audit only</td><td>Daily automated checks</td></tr>
+      <tr><td>Problems found after 12 months</td><td>Problems found within 24 hours</td></tr>
+      <tr><td>Manual exception tracking in Excel</td><td>Automated workflow with AI explanations</td></tr>
+      <tr><td>No real-time risk score</td><td>Live risk score updated every day</td></tr>
+      <tr><td>GST reconciliation done manually</td><td>Auto-reconciled daily</td></tr>
+    </table>
+
+    <!-- SECTION 2 -->
+    <h3>2. What You Need Before Starting</h3>
+
+    <div class="req-grid">
+      <div class="req-card">
+        <h4>Computer Requirements</h4>
+        <p>Windows 10/11, Mac, or Linux<br>At least 8 GB RAM<br>10 GB free disk space<br>Internet connection</p>
+      </div>
+      <div class="req-card">
+        <h4>Software to Install First</h4>
+        <p>Docker Desktop (free)<br>Git (free)<br>A web browser (Chrome, Firefox, Edge)</p>
+      </div>
+    </div>
+
+    <h4>How to Install Docker Desktop (the most important step)</h4>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h4>Go to Docker's website</h4>
+        <p>Open your browser and go to: <span class="url">https://www.docker.com/products/docker-desktop</span></p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h4>Download and Install</h4>
+        <p>Click "Download for Windows" (or Mac). Run the installer. Restart your computer when asked.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h4>Verify Docker is Running</h4>
+        <p>After restart, you should see a Docker whale icon in your system tray (bottom right on Windows). That means Docker is running.</p>
+      </div>
+    </div>
+
+    <div class="note">
+      <strong>What is Docker?</strong> Docker is like a "virtual computer inside your computer." The CAE platform runs inside Docker so you do not need to install databases, Python, Node.js, or anything else separately. Docker handles everything automatically.
+    </div>
+
+    <!-- SECTION 3 -->
+    <h3>3. How to Install and Open the Platform</h3>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h4>Open Terminal / Command Prompt</h4>
+        <p><strong>Windows:</strong> Press <code>Windows + R</code>, type <code>cmd</code>, press Enter.<br>
+        <strong>Mac:</strong> Press <code>Cmd + Space</code>, type <code>Terminal</code>, press Enter.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h4>Download the CAE Code</h4>
+        <p>Type the following command and press Enter:</p>
+        <div class="cmd-block">git clone https://github.com/khatrisagar27-hub/Claude-.git
+cd Claude-</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h4>Go to the CAE Folder</h4>
+        <div class="cmd-block">cd cae</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <h4>Start the Platform</h4>
+        <p>This one command starts everything — the database, the web server, everything:</p>
+        <div class="cmd-block">docker-compose up -d</div>
+        <p style="margin-top:8px;font-size:12px;color:#555;">The first time, this takes 5–10 minutes because it downloads all required components. After that it starts in under 1 minute.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <h4>Load Sample Data (First Time Only)</h4>
+        <p>This creates a demo Indian manufacturing company with 2 years of real-looking data:</p>
+        <div class="cmd-block">python scripts/seed_data.py
+python scripts/run_first_audit.py</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <h4>Open the Platform in Your Browser</h4>
+        <p>Open Chrome/Firefox and go to:</p>
+        <p style="font-size:20px;font-weight:700;color:#1d3a6b;margin:8px 0;">http://localhost:3000</p>
+        <p style="font-size:13px;color:#555;">You should see the CAE login screen.</p>
+      </div>
+    </div>
+
+    <div class="tip">
+      <strong>To STOP the platform</strong> (when you are done for the day), type in the terminal:<br>
+      <code>docker-compose stop</code><br><br>
+      <strong>To START it again</strong> the next day:<br>
+      <code>docker-compose start</code>
+    </div>
+
+    <!-- SECTION 4 -->
+    <h3>4. How to Log In</h3>
+
+    <p>When you open <code>http://localhost:3000</code>, you will see a login screen. Use these credentials:</p>
+
+    <table>
+      <tr><th>Role</th><th>Email</th><th>Password</th><th>What They Can Do</th></tr>
+      <tr><td><strong>Super Admin</strong></td><td>admin@example.com</td><td>Admin@123</td><td>Everything — full access</td></tr>
+      <tr><td><strong>Partner (CA)</strong></td><td>partner@example.com</td><td>Partner@123</td><td>All audit functions, reports</td></tr>
+      <tr><td><strong>CFO</strong></td><td>cfo@example.com</td><td>CFO@123</td><td>Dashboard, risk, queries</td></tr>
+      <tr><td><strong>Auditor</strong></td><td>auditor@example.com</td><td>Audit@123</td><td>Exceptions, queries, checklists</td></tr>
+      <tr><td><strong>Process Owner</strong></td><td>process@example.com</td><td>Process@123</td><td>View &amp; respond to queries for their area</td></tr>
+    </table>
+
+    <div class="note">
+      <strong>First time?</strong> Log in as <strong>admin@example.com / Admin@123</strong>. This gives you access to everything.
+    </div>
+
+    <!-- SECTION 5 -->
+    <div class="section-divider"><span>Platform Features</span></div>
+    <h3>5. The Dashboard — Your Command Centre</h3>
+
+    <p><strong>URL:</strong> <code>http://localhost:3000/</code> (opens automatically after login)</p>
+
+    <p>The Dashboard is the first screen you see after logging in. It shows you the health of your company's controls at a glance — like a cockpit for your finance team.</p>
+
+    <h4>What you see on the Dashboard:</h4>
+
+    <table>
+      <tr><th>Section</th><th>What It Means</th></tr>
+      <tr>
+        <td><strong>Total Exceptions</strong></td>
+        <td>Total number of rule violations found. Example: 47 means 47 things need your attention.</td>
+      </tr>
+      <tr>
+        <td><strong>Critical / High / Medium / Low</strong></td>
+        <td>How serious are the issues? Critical = act today. High = act this week. Medium = this month. Low = awareness only.</td>
+      </tr>
+      <tr>
+        <td><strong>Composite Risk Score</strong></td>
+        <td>A single number (0–100) representing your overall risk. 0–20 = Low. 21–50 = Moderate. 51–80 = High. 81–100 = Critical.</td>
+      </tr>
+      <tr>
+        <td><strong>Open Queries</strong></td>
+        <td>Questions sent to your team that are still waiting for answers.</td>
+      </tr>
+      <tr>
+        <td><strong>Overdue Queries</strong></td>
+        <td>Questions past their due date with no response. Needs escalation.</td>
+      </tr>
+      <tr>
+        <td><strong>Fraud Indicators</strong></td>
+        <td>Number of transactions flagged by Benford's Law or duplicate detection algorithms.</td>
+      </tr>
+      <tr>
+        <td><strong>GST Risk Amount</strong></td>
+        <td>Total rupee amount at risk due to ITC mismatches or turnover differences.</td>
+      </tr>
+      <tr>
+        <td><strong>Risk Heatmap</strong></td>
+        <td>A colour grid showing which business process (Purchase / Sales / Inventory / Payroll) is most risky.</td>
+      </tr>
+      <tr>
+        <td><strong>Top 10 Exceptions</strong></td>
+        <td>The most financially impactful open issues — so you know where to focus first.</td>
+      </tr>
+      <tr>
+        <td><strong>Trend Chart</strong></td>
+        <td>Are exceptions going up or down over the past 6 months?</td>
+      </tr>
+    </table>
+
+    <!-- SECTION 6 -->
+    <h3>6. Exceptions — Seeing What Went Wrong</h3>
+
+    <p><strong>URL:</strong> <code>http://localhost:3000/exceptions</code></p>
+
+    <p>An <strong>exception</strong> is any transaction or event that broke a control rule. For example: a duplicate invoice, a payment made without a PO, or a salary paid to someone who was terminated.</p>
+
+    <h4>How to use the Exceptions page:</h4>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h4>Filter by Severity</h4>
+        <p>Use the filter buttons at the top to show only <span class="badge critical">CRITICAL</span> or <span class="badge high">HIGH</span> exceptions. Start with Critical.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h4>Filter by Business Area</h4>
+        <p>You can filter by Purchases, Sales, Inventory, Payroll, Journal Entries, Treasury. Useful if you manage one department.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h4>Click on an Exception</h4>
+        <p>Click any exception to open the detail view. You will see exactly which transactions are involved, the financial impact in rupees, and the evidence.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <h4>Get AI Explanation</h4>
+        <p>Click "Get AI Explanation." The platform uses Claude AI to explain the exception in plain English — what happened, why it's risky, and what questions to ask management.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <h4>Raise a Management Query</h4>
+        <p>Click "Raise Query" to send a formal question to the responsible person. Set a due date. They will receive it in their inbox.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <h4>Mark as False Positive</h4>
+        <p>If after review the exception is not actually a problem (e.g., system generated it in error), you can mark it as "False Positive" so it does not appear again.</p>
+      </div>
+    </div>
+
+    <h4>Exception Status Flow:</h4>
+    <div class="cmd-block"><span class="highlight">Open</span> → <span class="highlight">Query Sent</span> → <span class="highlight">Responded</span> → <span class="highlight">Resolved / Escalated / Closed</span></div>
+
+    <h4>Example Exceptions You Will See in Demo Data:</h4>
+    <table>
+      <tr><th>Exception</th><th>Rule</th><th>Severity</th><th>What it Means</th></tr>
+      <tr><td>Duplicate Invoice</td><td>SAL-001</td><td><span class="badge critical">CRITICAL</span></td><td>Same invoice number used twice — possible double billing</td></tr>
+      <tr><td>Vendor Bank Changed Before Payment</td><td>PUR-010</td><td><span class="badge critical">CRITICAL</span></td><td>High fraud risk — bank account swapped just before payment went out</td></tr>
+      <tr><td>Salary to Terminated Employee</td><td>PAY-004</td><td><span class="badge critical">CRITICAL</span></td><td>Ghost employee — money going to someone no longer on payroll</td></tr>
+      <tr><td>Invoice Without PO (above Rs.1 lakh)</td><td>PUR-004</td><td><span class="badge high">HIGH</span></td><td>Purchase made without approval — control bypass</td></tr>
+      <tr><td>Round Amount JE</td><td>JE-004</td><td><span class="badge medium">MEDIUM</span></td><td>Journal entry of exactly 1,00,000 or 5,00,000 — possible manipulation</td></tr>
+      <tr><td>Customer Concentration Risk</td><td>SAL-013</td><td><span class="badge medium">MEDIUM</span></td><td>More than 40% revenue from one customer — business dependency risk</td></tr>
+    </table>
+
+    <!-- SECTION 7 -->
+    <h3>7. Management Queries — Asking Your Team</h3>
+
+    <p><strong>URL:</strong> <code>http://localhost:3000/queries</code></p>
+
+    <p>A <strong>Management Query (MQ)</strong> is a formal question the auditor sends to the responsible person in management — like an accountant, purchase manager, or HR head. This creates a documented, traceable record of the question and answer.</p>
+
+    <h4>How to create a Query:</h4>
+    <ol style="padding-left:20px;margin:10px 0;">
+      <li style="margin:6px 0">Go to an Exception detail page</li>
+      <li style="margin:6px 0">Click <strong>"Raise Management Query"</strong></li>
+      <li style="margin:6px 0">The system auto-fills a question based on AI analysis</li>
+      <li style="margin:6px 0">Select the person responsible (e.g., Purchase Manager)</li>
+      <li style="margin:6px 0">Set a due date (e.g., 7 days from now)</li>
+      <li style="margin:6px 0">Click <strong>Send</strong></li>
+    </ol>
+
+    <h4>What happens next:</h4>
+    <ul style="padding-left:20px;margin:10px 0;">
+      <li style="margin:6px 0">The assigned person sees the query in their <strong>My Queries</strong> inbox</li>
+      <li style="margin:6px 0">They type their response and attach supporting documents</li>
+      <li style="margin:6px 0">You review the response and either close the query or escalate it</li>
+      <li style="margin:6px 0">The entire thread is saved permanently for audit trail</li>
+    </ul>
+
+    <h4>Query Status Meanings:</h4>
+    <table>
+      <tr><th>Status</th><th>Meaning</th></tr>
+      <tr><td><strong>Open</strong></td><td>Question sent, waiting for response</td></tr>
+      <tr><td><strong>Responded</strong></td><td>Management has replied, auditor needs to review</td></tr>
+      <tr><td><strong>Escalated</strong></td><td>Response not satisfactory, raised to senior management</td></tr>
+      <tr><td><strong>Resolved</strong></td><td>Explanation accepted, issue closed</td></tr>
+      <tr><td><strong>Closed</strong></td><td>Fully completed and archived</td></tr>
+    </table>
+
+    <div class="note">
+      <strong>Overdue Queries:</strong> If a query passes its due date without a response, the system flags it red on the Dashboard under "Overdue Queries." The auditor should follow up or escalate.
+    </div>
+
+    <!-- SECTION 8 -->
+    <h3>8. Remediation Tracker — Fixing the Problems</h3>
+
+    <p><strong>URL:</strong> <code>http://localhost:3000/remediation</code></p>
+
+    <p>Once an exception is understood, someone needs to fix the root cause. The Remediation Tracker records <strong>what action was taken, who is responsible, and by when</strong>.</p>
+
+    <h4>How to add a Remediation Action:</h4>
+    <ol style="padding-left:20px;margin:10px 0;">
+      <li style="margin:6px 0">From the Exception detail page, click <strong>"Add Remediation Action"</strong></li>
+      <li style="margin:6px 0">Describe the root cause (e.g., "Purchase team bypassed PO approval for urgent orders")</li>
+      <li style="margin:6px 0">Write the action plan (e.g., "Implement mandatory PO approval in ERP before invoice entry")</li>
+      <li style="margin:6px 0">Assign to a responsible person</li>
+      <li style="margin:6px 0">Set a target completion date</li>
+    </ol>
+
+    <h4>Retest Feature:</h4>
+    <p>After the action is implemented, the auditor can run a <strong>Retest</strong>. The system re-runs the same audit rule to check if the problem has been fixed. The retest result is recorded as: <em>Effective / Partially Effective / Ineffective.</em></p>
+
+    <!-- SECTION 9 -->
+    <h3>9. Audit Rules — The 100+ Automated Checks</h3>
+
+    <p><strong>URL:</strong> <code>http://localhost:3000/rules</code></p>
+
+    <p>The platform runs 100+ audit rules automatically. Think of each rule as a specific question the robot auditor asks every day about your data.</p>
+
+    <h4>Categories of Rules:</h4>
+    <table>
+      <tr><th>Category</th><th>No. of Rules</th><th>Examples</th></tr>
+      <tr><td><strong>Sales</strong></td><td>35 rules</td><td>Duplicate invoices, credit limit breach, missing e-way bill, cash invoice above Rs.2 lakh</td></tr>
+      <tr><td><strong>Purchases</strong></td><td>35 rules</td><td>Duplicate payment, vendor bank changed, invoice without PO, related party vendor</td></tr>
+      <tr><td><strong>Inventory</strong></td><td>20 rules</td><td>Negative stock, shrinkage &gt;2%, BOM variance, ghost inventory</td></tr>
+      <tr><td><strong>Journal Entries</strong></td><td>15 rules</td><td>JE without narration, round amount, SoD violation, suspense not cleared</td></tr>
+      <tr><td><strong>Payroll</strong></td><td>10 rules</td><td>Ghost employee, terminated employee paid, duplicate bank account</td></tr>
+      <tr><td><strong>Treasury / Bank</strong></td><td>10 rules</td><td>Cash payment &gt;Rs.10K, circular transfers, unapproved large transfers</td></tr>
+    </table>
+
+    <h4>What you can do on the Rules page:</h4>
+    <ul style="padding-left:20px;margin:10px 0;">
+      <li style="margin:6px 0"><strong>Browse all rules</strong> — search by name, category, or severity</li>
+      <li style="margin:6px 0"><strong>Enable / Disable a rule</strong> — if a rule is generating too many false positives, toggle it off</li>
+      <li style="margin:6px 0"><strong>Change the threshold</strong> — e.g., change "flag discounts &gt;15%" to "&gt;20%" for your business</li>
+      <li style="margin:6px 0"><strong>Test a rule</strong> — run just one rule on your data right now and see immediate results</li>
+      <li style="margin:6px 0"><strong>See run history</strong> — when was this rule last run, how many exceptions did it find</li>
+    </ul>
+
+    <!-- SECTION 10 -->
+    <h3>10. Risk Heatmap — Visualising Your Risk</h3>
+
+    <p><strong>URL:</strong> <code>http://localhost:3000/risk</code></p>
+
+    <p>The Risk Heatmap is a coloured grid that shows which part of your business is most risky. Rows are business processes (Purchase, Sales, Inventory, Payroll, Treasury). Colours range from green (low risk) to red (critical risk).</p>
+
+    <h4>How the Risk Score is Calculated:</h4>
+    <div class="cmd-block">Risk Score = Likelihood × Impact × Materiality × Frequency × (1 + Control Weakness)
+
+<span class="comment">Where:
+  Likelihood   = How often has this type of exception happened? (1–5)
+  Impact       = How much money is at risk? (1–5)
+  Materiality  = Is the amount significant vs. company turnover? (0.5–2.0)
+  Frequency    = How often does this control run? (1–3)
+  Control Weakness = Are controls strong or weak? (0 = strong, 1 = none)
+
+Score Bands:
+  0–20   = Low (Green)
+  21–50  = Moderate (Yellow)
+  51–80  = High (Orange)
+  81–100 = Critical (Red)</span></div>
+
+    <p>The score is recalculated <strong>every day at 3 AM</strong> automatically so the heatmap always shows your current risk position.</p>
+
+    <h4>Risk Trend:</h4>
+    <p>Below the heatmap is a <strong>30-day trend line</strong> showing whether your average risk score is going up or down. A downward trend means your remediation actions are working.</p>
+
+    <!-- SECTION 11 -->
+    <h3>11. GST Reconciliation</h3>
+
+    <p><strong>URL:</strong> <code>http://localhost:3000/gst</code></p>
+
+    <p>This module compares what your company filed with the GST portal against what is in your accounting books. Differences can mean tax liability, penalties, or lost ITC (Input Tax Credit).</p>
+
+    <h4>What it checks:</h4>
+    <table>
+      <tr><th>Comparison</th><th>What It Means</th></tr>
+      <tr><td>GSTR-1 Turnover vs. Books Turnover</td><td>Did you report more or less sales to GST than what is in your books?</td></tr>
+      <tr><td>GSTR-2B ITC vs. Books ITC</td><td>Are you claiming more input tax credit than your suppliers reported?</td></tr>
+      <tr><td>GSTR-3B ITC vs. GSTR-2B ITC</td><td>Did you actually claim what you were eligible for?</td></tr>
+    </table>
+
+    <h4>How to use:</h4>
+    <ol style="padding-left:20px;margin:10px 0;">
+      <li style="margin:6px 0">Upload your GSTR-2B JSON file (download from GST portal)</li>
+      <li style="margin:6px 0">The system matches it against your purchase register automatically</li>
+      <li style="margin:6px 0">You see a table showing every month's variance</li>
+      <li style="margin:6px 0">Months with high variance are flagged red with the Rs. risk amount</li>
+    </ol>
+
+    <!-- SECTION 12 -->
+    <h3>12. Fraud Analytics</h3>
+
+    <p><strong>URL:</strong> <code>http://localhost:3000/fraud</code></p>
+
+    <p>This is the most advanced section. It uses statistical and AI techniques to find patterns that suggest fraud — even when individual transactions look normal.</p>
+
+    <h4>What it detects:</h4>
+
+    <table>
+      <tr><th>Technique</th><th>What it Finds</th></tr>
+      <tr>
+        <td><strong>Benford's Law</strong></td>
+        <td>Checks the first digit of all invoice amounts. Genuine data follows a specific pattern. If your data doesn't follow it, someone may be fabricating amounts. You see a bar chart showing actual vs. expected distribution.</td>
+      </tr>
+      <tr>
+        <td><strong>Duplicate Detection</strong></td>
+        <td>Finds invoices that are slightly different but suspiciously similar — same vendor, similar amount (within 1%), similar date (within 3 days). Catches "near-duplicate" payments that exact matching misses.</td>
+      </tr>
+      <tr>
+        <td><strong>Round Amount Analysis</strong></td>
+        <td>Flags transactions that are exactly Rs.1,00,000 or Rs.5,00,000 or Rs.10,00,000. Real business transactions are rarely such round numbers — manual manipulation often creates them.</td>
+      </tr>
+      <tr>
+        <td><strong>Behavioural Anomaly (ML)</strong></td>
+        <td>An AI model learns the normal posting pattern of each user (time of day, amount range, accounts used). Transactions that deviate significantly from a user's normal pattern are flagged.</td>
+      </tr>
+      <tr>
+        <td><strong>Month-End Spike Detection</strong></td>
+        <td>Detects unusual surges in transactions in the last 3 days of a month — a classic sign of revenue manipulation to hit targets.</td>
+      </tr>
+    </table>
+
+    <!-- SECTION 13 -->
+    <h3>13. Data Ingestion — Uploading Your Company's Data</h3>
+
+    <p><strong>URL:</strong> <code>http://localhost:3000/ingestion</code></p>
+
+    <p>The platform needs your financial data to run audit rules. You can upload data in two ways:</p>
+
+    <h4>Option A: Upload Excel / CSV File</h4>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h4>Go to Data Ingestion page</h4>
+        <p>Click on "Data Ingestion" in the left sidebar</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h4>Select the Data Type</h4>
+        <p>Choose what you are uploading: Sales Invoices, Purchase Invoices, Journal Entries, Bank Transactions, Inventory, or Payroll</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h4>Upload the File</h4>
+        <p>Drag and drop your Excel or CSV file. The system automatically maps columns and imports the data. Errors are shown row by row.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <h4>Trigger Audit Run</h4>
+        <p>After upload, click "Run Audit Now" to immediately run all rules on the new data.</p>
+      </div>
+    </div>
+
+    <h4>Option B: Connect Your ERP (Tally, SAP, etc.)</h4>
+    <p>For Tally: Export the XML data file from Tally → upload to CAE. The system parses Tally's XML format automatically.</p>
+    <p>For other ERPs: Contact your CAE administrator to configure an API sync.</p>
+
+    <h4>Supported File Formats:</h4>
+    <table>
+      <tr><th>Data Type</th><th>Accepted Columns in Your Excel</th></tr>
+      <tr><td>Sales Invoices</td><td>invoice_number, invoice_date, customer_id, total_amount, cgst, sgst, igst, status</td></tr>
+      <tr><td>Purchase Invoices</td><td>invoice_number, vendor_id, invoice_date, total_amount, our_po_number, status</td></tr>
+      <tr><td>Journal Entries</td><td>voucher_number, entry_date, voucher_type, narration, total_debit, total_credit</td></tr>
+      <tr><td>Bank Transactions</td><td>transaction_date, amount, transaction_type, reference_number, counterparty_name</td></tr>
+      <tr><td>Payroll</td><td>employee_id, pay_period_month, pay_period_year, gross_earnings, net_pay</td></tr>
+    </table>
+
+    <!-- SECTION 14 -->
+    <h3>14. Reports — Exporting Working Papers</h3>
+
+    <p><strong>URL:</strong> <code>http://localhost:3000/reports</code></p>
+
+    <p>Generate formal audit documents that can be shared with management, board, or external auditors.</p>
+
+    <table>
+      <tr><th>Report Type</th><th>What It Contains</th><th>Format</th></tr>
+      <tr>
+        <td><strong>Audit Working Paper</strong></td>
+        <td>All exceptions with evidence, AI explanations, query threads, remediation status</td>
+        <td>Excel (.xlsx)</td>
+      </tr>
+      <tr>
+        <td><strong>Exception Summary</strong></td>
+        <td>High-level summary of all exceptions by category and severity — suitable for Board presentation</td>
+        <td>Excel / PDF</td>
+      </tr>
+      <tr>
+        <td><strong>Audit Deck</strong></td>
+        <td>PowerPoint-ready summary with risk heatmap, top findings, and management commentary</td>
+        <td>PDF</td>
+      </tr>
+      <tr>
+        <td><strong>GST Report</strong></td>
+        <td>Reconciliation statement showing all variances month-by-month</td>
+        <td>Excel</td>
+      </tr>
+      <tr>
+        <td><strong>Fraud Analytics Report</strong></td>
+        <td>Benford's chart, duplicate list, anomaly scores</td>
+        <td>Excel</td>
+      </tr>
+    </table>
+
+    <h4>How to generate a report:</h4>
+    <ol style="padding-left:20px;margin:10px 0;">
+      <li style="margin:6px 0">Go to Reports page</li>
+      <li style="margin:6px 0">Select the report type</li>
+      <li style="margin:6px 0">Select the date range and company</li>
+      <li style="margin:6px 0">Click Generate — the file downloads automatically in 10–30 seconds</li>
+    </ol>
+
+    <!-- SECTION 15 -->
+    <div class="section-divider"><span>Help & FAQs</span></div>
+    <h3>15. Common Questions (FAQs)</h3>
+
+    <h4>Q: The platform is not opening at http://localhost:3000</h4>
+    <p><strong>A:</strong> Make sure Docker is running (check the whale icon in system tray). Then type <code>docker-compose up -d</code> in the terminal again and wait 30 seconds.</p>
+
+    <h4>Q: I see "No exceptions found" even after running the audit</h4>
+    <p><strong>A:</strong> The seed data script must be run first: <code>python scripts/seed_data.py</code> followed by <code>python scripts/run_first_audit.py</code></p>
+
+    <h4>Q: Can I use my own company's data instead of demo data?</h4>
+    <p><strong>A:</strong> Yes. Go to Data Ingestion (http://localhost:3000/ingestion) and upload your Excel files. Prepare your data in the column format shown in Section 13.</p>
+
+    <h4>Q: How often does the audit run automatically?</h4>
+    <p><strong>A:</strong> By default, rules run at 2 AM every day. You can also trigger a manual run any time from the Data Ingestion page by clicking "Run Audit Now."</p>
+
+    <h4>Q: Who should use which role?</h4>
+    <table>
+      <tr><th>Person</th><th>Recommended Role</th></tr>
+      <tr><td>CA / External Auditor</td><td>Partner or Auditor</td></tr>
+      <tr><td>CFO / Finance Head</td><td>CFO</td></tr>
+      <tr><td>Purchase Manager</td><td>Process Owner (Purchase)</td></tr>
+      <tr><td>HR Manager</td><td>Process Owner (Payroll)</td></tr>
+      <tr><td>IT Administrator</td><td>Super Admin</td></tr>
+    </table>
+
+    <h4>Q: Is data safe? Can others on the internet see it?</h4>
+    <p><strong>A:</strong> No. The platform runs completely on your own computer (<code>localhost</code> means "this computer only"). No data is sent to the internet. Only people on your local network can access it.</p>
+
+    <h4>Q: How do I add a new company / client?</h4>
+    <p><strong>A:</strong> Log in as Super Admin → Go to Settings → Companies → Add New Company → Fill in company details including GSTIN, PAN, and sector.</p>
+
+    <h4>Q: The AI explanation is not working</h4>
+    <p><strong>A:</strong> The AI explanation requires an Anthropic API key. Go to Settings → Configuration → add your API key from <code>https://console.anthropic.com</code></p>
+
+    <!-- QUICK REFERENCE -->
+    <div class="section-divider"><span>Quick Reference Card</span></div>
+
+    <table>
+      <tr><th>What You Want to Do</th><th>Where to Go</th></tr>
+      <tr><td>See overall health of controls</td><td>http://localhost:3000/ (Dashboard)</td></tr>
+      <tr><td>See all exceptions / alerts</td><td>http://localhost:3000/exceptions</td></tr>
+      <tr><td>Ask management a question</td><td>Click any exception → Raise Query</td></tr>
+      <tr><td>See all pending queries</td><td>http://localhost:3000/queries</td></tr>
+      <tr><td>Track corrective actions</td><td>http://localhost:3000/remediation</td></tr>
+      <tr><td>Browse / enable audit rules</td><td>http://localhost:3000/rules</td></tr>
+      <tr><td>See risk by department</td><td>http://localhost:3000/risk</td></tr>
+      <tr><td>Check GST compliance</td><td>http://localhost:3000/gst</td></tr>
+      <tr><td>Find fraud patterns</td><td>http://localhost:3000/fraud</td></tr>
+      <tr><td>Upload new data</td><td>http://localhost:3000/ingestion</td></tr>
+      <tr><td>Download audit report</td><td>http://localhost:3000/reports</td></tr>
+    </table>
+
+  </div>
+
+  <footer>
+    Continuous Audit Engine (CAE) &nbsp;|&nbsp; Sagar Khatri &amp; Associates, Chartered Accountants &nbsp;|&nbsp;
+    This platform runs on your local computer at http://localhost:3000
+  </footer>
+
+</div>
+</body>
+</html>

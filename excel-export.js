@@ -282,9 +282,10 @@ const STYLES = `
   </Style>
 </Styles>`;
 
-function badgeStyle(p) { return p+'_badge'; }
-function rowStyle(p) { return p+'_row'; }
-function lawStyle(p) { return p+'_law'; }
+const _PMAP = {critical:'crit', medium:'med'};
+function badgeStyle(p) { return (_PMAP[p]||p)+'_badge'; }
+function rowStyle(p)  { return (_PMAP[p]||p)+'_row'; }
+function lawStyle(p)  { return (_PMAP[p]||p)+'_law'; }
 
 function getPriorityLabel(p) {
   return { critical:'CRITICAL', high:'HIGH', medium:'MEDIUM', low:'LOW' }[p] || p.toUpperCase();
