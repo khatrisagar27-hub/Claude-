@@ -9,7 +9,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { setTokens, setUser } = useAuthStore();
+  const { setTokens, setUser, setCompanyId } = useAuthStore();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -23,6 +23,7 @@ export default function Login() {
         headers: { Authorization: `Bearer ${res.data.access_token}` },
       });
       setUser(me.data);
+      if (me.data.company_id) setCompanyId(me.data.company_id);
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Invalid credentials. Please try again.');

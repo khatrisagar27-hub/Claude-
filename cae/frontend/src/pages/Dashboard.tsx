@@ -39,7 +39,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!companyId) return;
+    if (!companyId) { setLoading(false); return; }
     const cid = companyId;
     Promise.all([
       apiClient.get(`/dashboard/kpis?company_id=${cid}`),
