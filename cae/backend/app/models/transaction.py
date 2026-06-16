@@ -31,8 +31,8 @@ class SalesInvoice(Base):
     """Accounts Receivable invoice / sales document."""
     __tablename__ = "sales_invoices"
     __table_args__ = (
-        UniqueConstraint("company_id", "invoice_number", name="uq_salesinvoice_company_number"),
         Index("ix_salesinvoice_company_date", "company_id", "invoice_date"),
+        Index("ix_salesinvoice_company_number", "company_id", "invoice_number"),
         Index("ix_salesinvoice_customer", "customer_id"),
         Index("ix_salesinvoice_status", "status"),
     )
@@ -116,8 +116,8 @@ class PurchaseInvoice(Base):
     """Accounts Payable invoice / purchase document."""
     __tablename__ = "purchase_invoices"
     __table_args__ = (
-        UniqueConstraint("company_id", "invoice_number", name="uq_purchaseinvoice_company_number"),
         Index("ix_purchaseinvoice_company_date", "company_id", "invoice_date"),
+        Index("ix_purchaseinvoice_company_number", "company_id", "invoice_number"),
         Index("ix_purchaseinvoice_vendor", "vendor_id"),
         Index("ix_purchaseinvoice_status", "status"),
     )
