@@ -44,7 +44,7 @@ indicators = fraud.run_all()
 written = fraud.write_indicators(indicators)
 print(f"  Fraud indicators detected: {written}")
 for ind in indicators[:5]:
-    print(f"    [{ind['severity'].upper()}] {ind['indicator_type']}: {ind['description'][:80]}…")
+    print(f"    [score={ind.get('score', 0):.1f}] {ind['indicator_type']}: {ind['description'][:80]}…")
 
 print()
 print("Step 3/4: Risk scoring…")
