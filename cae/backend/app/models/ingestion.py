@@ -1,14 +1,17 @@
 """Data ingestion tracking models."""
 import uuid
 from datetime import datetime
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import sqlalchemy as sa
 from sqlalchemy import String, Integer, Text, BigInteger
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from app.database import Base
+
+if TYPE_CHECKING:
+    from app.models.tenant import Company
 
 
 class SyncJob(Base):
@@ -25,6 +28,8 @@ class SyncJob(Base):
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     triggered_by: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    company: Mapped["Company"] = relationship("Company", back_populates="sync_jobs", lazy="select")
 
     def __repr__(self) -> str:
         return f"<SyncJob {self.id} type={self.job_type} status={self.status}>"

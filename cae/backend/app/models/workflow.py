@@ -1,7 +1,7 @@
 """Management Query, Response, and Remediation Action models."""
 import uuid
 from datetime import datetime, date
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
 from decimal import Decimal
 
 import sqlalchemy as sa
@@ -10,6 +10,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from app.database import Base
+
+if TYPE_CHECKING:
+    from app.models.tenant import Company
+    from app.models.audit import AuditException
 
 
 class ManagementQuery(Base):
@@ -35,6 +39,8 @@ class ManagementQuery(Base):
     resolved_at: Mapped[Optional[datetime]] = mapped_column(sa.DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False, server_default=func.now())
 
+    company: Mapped["Company"] = relationship("Company", back_populates="management_queries", lazy="select")
+    exception: Mapped["AuditException"] = relationship("AuditException", back_populates="management_queries", lazy="select")
     responses: Mapped[List["QueryResponse"]] = relationship("QueryResponse", back_populates="query", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
@@ -77,6 +83,8 @@ class RemediationAction(Base):
     status: Mapped[str] = mapped_column(String(20), nullable=False, server_default="open")
     created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at: Mapped[Optional[datetime]] = mapped_column(sa.DateTime(timezone=True), nullable=True, onupdate=func.now())
+
+    exception: Mapped[Optional["AuditException"]] = relationship("AuditException", back_populates="remediation_actions", lazy="select")
 
     def __repr__(self) -> str:
         return f"<RemediationAction {self.id} status={self.status}>"
