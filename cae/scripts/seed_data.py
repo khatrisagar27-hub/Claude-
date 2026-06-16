@@ -169,7 +169,7 @@ for i in range(1, 801):
         gross_amount=dec(taxable), taxable_amount=dec(taxable),
         cgst_amount=dec(gst/2), sgst_amount=dec(gst/2), igst_amount=dec(0),
         total_amount=dec(total), outstanding_amount=dec(total if status == "pending" else 0),
-        e_way_bill_number=f"EWB{i:010d}" if total > 50000 and i % 12 != 0 else None,
+        e_way_bill_number=f"{231000000000 + i}" if total > 50000 and i % 12 != 0 else None,
         status=status, erp_source="erp",
         raw_data={"payment_mode": "cash"} if i in (200, 201, 202) else None,
     ))
