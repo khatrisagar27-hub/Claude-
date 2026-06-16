@@ -5,7 +5,8 @@ Run: python scripts/seed_data.py
 """
 import sys
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
+_backend = os.path.join(os.path.dirname(__file__), '..', 'backend')
+sys.path.insert(0, _backend if os.path.exists(_backend) else os.path.join(os.path.dirname(__file__), '..'))
 
 import uuid
 import random

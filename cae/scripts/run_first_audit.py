@@ -5,7 +5,8 @@ Run: python scripts/run_first_audit.py
 """
 import sys
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
+_backend = os.path.join(os.path.dirname(__file__), '..', 'backend')
+sys.path.insert(0, _backend if os.path.exists(_backend) else os.path.join(os.path.dirname(__file__), '..'))
 
 os.environ.setdefault("DATABASE_URL", "postgresql://cae_user:cae_password@localhost:5432/cae_db")
 os.environ.setdefault("SECRET_KEY", "seed-script-secret-key-32chars-xx")
