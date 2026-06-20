@@ -1,204 +1,201 @@
 # LinkedIn Content Calendar — Month 1
-## Vadodara CA Practice | Technical Legal Knowledge Posts
+## Posts: Provisions most CAs don't proactively discuss with clients
 
-Post at 8:00am IST. Monday + Thursday every week.
-These are educational posts sharing actual legal provisions — not observations designed to attract clients.
+Rule: Each post covers something with real financial consequence that a ₹25–200 crore
+business owner is unlikely to have been told by their existing accountant.
 
 ---
 
 ## POST 1 — Monday, Week 1
-**Topic: Section 43B(h) — MSME Payment Disallowance**
+**Topic: Section 2(22)(e) — The Deemed Dividend Trap**
 
 ---
 
-Section 43B(h) was inserted by the Finance Act 2023, applicable from AY 2024-25.
+A promoter director takes a loan of ₹50 lakh from his own private limited company.
 
-Any payment due to a Micro or Small Enterprise (registered under MSMED Act 2006) must be made within the time limit prescribed under that Act — 15 days where there is no written agreement, or 45 days where there is one.
+In his mind, he will repay it. It is a loan, not income.
 
-If payment is not made within this period, the deduction is disallowed in the year of accrual and allowed only in the year of actual payment.
+Under Section 2(22)(e) of the Income Tax Act, if a private company extends a loan or advance to:
+- A shareholder holding 10% or more of voting power, OR
+- A concern (firm, AOP, company) in which such shareholder holds 20% or more beneficial interest
 
-This affects every business that purchases goods or services from MSME vendors on credit.
+— then the amount of the loan is treated as deemed dividend in the hands of the shareholder, to the extent of accumulated profits of the company.
 
-Practical implications:
-- Outstanding MSME payables beyond 45 days as of 31st March will be added back to income
-- The vendor's MSME registration status must be verified — udyam.gov.in portal
-- If your books show aged MSME creditors, your tax computation for AY 2024-25 onwards requires adjustment
+This deemed dividend is:
+- Taxable in the hands of the shareholder (not the company)
+- Not eligible for the lower dividend tax rate available to listed companies
+- Not reduced even if the loan is repaid later — the tax liability crystallises at the time of disbursement
+- Additions under this section are among the most common in scrutiny of closely held companies
 
-The provision applies regardless of whether the buyer is aware of the vendor's MSME status. Due diligence on vendor registration is now a tax compliance matter, not just a procurement one.
+Many promoters of private limited companies take drawings, temporary loans, or payments routed through the company for personal purposes — without awareness that the Income Tax Act has already classified it as dividend.
+
+This is not a planning suggestion. It is a provision that exists and is actively used in assessments.
 
 ---
 
 ## POST 2 — Thursday, Week 1
-**Topic: Section 194Q — TDS on Purchase of Goods**
+**Topic: Section 80JJAA — A Deduction Most Manufacturing Businesses Never Claim**
 
 ---
 
-Section 194Q was inserted by the Finance Act 2021, effective 1 July 2021.
+Section 80JJAA provides an additional deduction of 30% of additional employee cost for three consecutive assessment years.
 
-A buyer whose total sales or gross receipts exceed ₹10 crore in the preceding financial year is required to deduct TDS at 0.1% on payment or credit to a seller, if the aggregate purchase from that seller exceeds ₹50 lakh in the financial year.
+Conditions:
+- The business must be subject to tax audit under Section 44AB
+- The additional employee must be employed for at least 240 days in the year (150 days for apparel, footwear, and leather industries)
+- The employee's monthly emoluments must not exceed ₹25,000
+- The payment must be made through banking channels
 
-Key points:
+"Additional employee" means a new employee hired during the year — compared to the employee count at the beginning of the year.
 
-This applies to purchase of goods only — not services (which are covered under other provisions).
+In practical terms: a manufacturing business that hired 50 new workers at ₹15,000/month during FY 2024-25 is entitled to an additional deduction of:
+50 × ₹15,000 × 12 × 30% = ₹27 lakh on top of the actual salary expense already claimed.
 
-If the seller is liable to collect TCS under Section 206C(1H), then 194Q does not apply — only one of the two operates on the same transaction.
+This deduction is available for three years from the year of hiring.
 
-Non-deduction results in disallowance of 30% of the expenditure under Section 40(a)(ia), apart from interest and penalty under Section 201.
+Manufacturing businesses with expanding workforces — especially those in labour-intensive production — qualify year after year as they add headcount. The deduction accumulates.
 
-For manufacturing businesses above ₹10 crore turnover with concentrated supplier relationships — a single vendor supplying ₹50 lakh+ annually triggers this provision. Vendor-wise purchase monitoring during the year is necessary to apply 194Q correctly and avoid year-end surprises.
+In practice, this section is missed in a large proportion of eligible assessments.
 
 ---
 
 ## POST 3 — Monday, Week 2
-**Topic: ITC under GST — Section 16(2)(aa) and GSTR-2B**
+**Topic: Section 50C — Stamp Duty Value as Deemed Sale Consideration**
 
 ---
 
-Section 16(2)(aa) was inserted by the Finance Act 2021 with retrospective effect from 1 January 2022.
+Section 50C of the Income Tax Act provides that where the actual sale consideration for transfer of a capital asset being land or building (or both) is less than the value adopted by the stamp authority for the purpose of stamp duty — the stamp duty value is deemed to be the full value of consideration for computing capital gains.
 
-Input Tax Credit (ITC) is now available only if the invoice or debit note is reflected in the buyer's GSTR-2B — which is auto-populated based on the supplier's GSTR-1 filing.
+Implications that are frequently missed:
 
-This means ITC is no longer self-assessed on the basis of purchase invoices alone. It is contingent on the supplier's compliance.
+A business owner sells a plot for ₹80 lakh. The stamp duty value (circle rate) is ₹1.20 crore. Capital gains tax is computed on ₹1.20 crore — not on ₹80 lakh received.
 
-Rule 37A further provides that if a supplier files GSTR-1 but does not file GSTR-3B (and pay tax) within the prescribed period, the buyer must reverse the ITC availed.
+The difference (₹40 lakh) is also examined in the hands of the buyer under Section 56(2)(x) — if the buyer is an individual or HUF, the ₹40 lakh shortfall may be treated as income of the buyer.
 
-Practical consequences for businesses:
-- Monthly reconciliation of purchase register with GSTR-2B is now mandatory, not optional
-- Suppliers who file GSTR-1 late or irregularly directly affect your ITC eligibility
-- Vendor management now has a GST compliance dimension — habitual late filers should be flagged
+Section 50C(1A) provides a tolerance band — if the stamp duty value does not exceed 110% of the actual consideration, the actual consideration is accepted. This was revised from 105% to 110% by Finance Act 2020.
 
-ITC reversals identified late (at year-end or during audit) result in tax, interest at 18%, and potential penalties. Monthly reconciliation is the only way to manage this accurately.
+Structuring a property transaction without first checking the circle rate against the proposed sale price — and understanding the 50C implications for both parties — is a common and avoidable error.
+
+This applies equally to transfer of property within group companies, family settlements involving immovable assets, and business restructurings.
 
 ---
 
 ## POST 4 — Thursday, Week 2
-**Topic: Section 40A(3) — Cash Payment Disallowance**
+**Topic: GST — Personal Use of Business Assets Creates Tax Liability**
 
 ---
 
-Under Section 40A(3) of the Income Tax Act, any expenditure for which payment exceeds ₹10,000 in cash (or ₹35,000 for payments to transporters) to a single person in a single day is disallowed as a business expense.
+Schedule I of the CGST Act, 2017 treats certain transactions as supply even when made without consideration.
 
-This is not a new provision, but it continues to be a source of disallowances in assessments for manufacturing and trading businesses.
+Entry 1 of Schedule I: Permanent transfer or disposal of business assets where ITC has been availed.
 
-Common situations where this gets triggered:
-- Labour payments consolidated and paid in cash above the threshold
-- Petty cash payments to a single contractor in a day
-- Site expenses in multiple vouchers on the same day to the same vendor — the provision aggregates all payments to one person in a day, regardless of number of vouchers
+Entry 4 of Schedule I (pre-deletion in certain cases): Import of services by a taxable person for personal use.
 
-The disallowance is permanent — it cannot be claimed in a later year.
+The practical situations that arise and are frequently missed:
 
-There is no intent requirement. The disallowance applies even if the business had no option but to pay in cash, except in cases specifically listed under Rule 6DD (remote areas with no banking facility, medical emergencies, etc.).
+A company purchases a car (on which ITC was not available under Section 17(5)). The car is later used exclusively by the promoter for personal travel. No GST arises on ITC-blocked assets.
 
-Maintaining a daily cash payment register segregated by payee is the standard control to monitor and prevent this.
+But: A company avails ITC on business equipment and later transfers it to a related party at below market value, or gifts it to an employee — this is a supply under Schedule I and GST is payable on fair market value.
+
+More commonly: A business building whose construction ITC was availed is subsequently converted to personal use or rented for residential purposes. The ITC already availed must be reversed under Rule 44 — and if not reversed, the same becomes a demand with interest at 18%.
+
+GST on personal use of business assets is not a theoretical provision. It comes up in departmental audits and GST scrutiny with increasing frequency.
 
 ---
 
 ## POST 5 — Monday, Week 3
-**Topic: New Tax Regime — Section 115BAC and the Default Change from AY 2024-25**
+**Topic: Section 79 — Change in Shareholding Kills Carried Forward Losses**
 
 ---
 
-From AY 2024-25 (FY 2023-24), the new tax regime under Section 115BAC is the default regime for individuals and HUFs.
+Section 79 of the Income Tax Act provides that in the case of a company (other than a company in which public are substantially interested), no loss incurred in any year prior to the previous year shall be carried forward and set off if on the last day of the previous year, the shares of the company carrying not less than 51% of the voting power were not beneficially held by the persons who held them on the last day of the year in which the loss was incurred.
 
-Taxpayers who wish to continue with the old regime must opt out explicitly — by filing Form 10-IEA before the due date of return for those with business income, or by selecting the old regime at the time of filing for those without business income.
+In plain terms: if the ownership of a closely held company changes by more than 49%, carried forward business losses are extinguished.
 
-The key trade-off:
+This provision directly affects:
+- Promoters bringing in new investors (PE, strategic, family members) who take more than 49%
+- Business restructurings involving amalgamation, demerger, or slump sale where loss-carrying entities are involved
+- Family businesses where shares are transferred to the next generation in a way that dilutes the original holding below 51%
 
-The new regime offers lower slab rates but disallows most exemptions and deductions — HRA, LTA, standard deduction (from salary), Section 80C, 80D, interest on housing loan under Section 24(b), and most other Chapter VI-A deductions.
+The losses are not merely suspended — they are permanently disallowed.
 
-The old regime allows all these deductions but at higher slab rates.
-
-For a director or business owner with significant 80C investments, housing loan interest, HRA, and health insurance — the old regime often results in lower tax. For someone with minimal deductions, the new regime is typically better.
-
-This evaluation must be done individually, based on actual income composition and deduction profile. A blanket assumption that one regime is better is incorrect.
-
-Those with business income who opt for old regime must file before the return due date — late filing results in automatic application of the new regime for that year.
+Due diligence on carried forward losses and the resulting Section 79 impact is a mandatory step in any transaction involving change in ownership of a loss-making or previously loss-making company. It is frequently missed until the post-transaction assessment.
 
 ---
 
 ## POST 6 — Thursday, Week 3
-**Topic: Interest under Sections 234B and 234C — Advance Tax**
+**Topic: Section 194N — TDS on Cash Withdrawals**
 
 ---
 
-Two interest provisions apply to shortfall in advance tax payment:
+Section 194N, inserted by the Finance Act 2019 and amended subsequently, requires banks, cooperative banks, and post offices to deduct TDS on cash withdrawals.
 
-**Section 234B** — Applies when advance tax paid is less than 90% of assessed tax. Interest at 1% per month (or part of month) from April 1 of the assessment year to the date of assessment or actual payment.
+Current rates:
+- If the person has filed ITR for any one of the three preceding years: TDS at 2% on withdrawals exceeding ₹1 crore in aggregate in a financial year
+- If the person has NOT filed ITR for any of the three preceding years: TDS at 2% on withdrawals exceeding ₹20 lakh and up to ₹1 crore, and at 5% on withdrawals exceeding ₹1 crore
 
-**Section 234C** — Applies to deferral of installments during the year. Interest at 1% per month on the shortfall in each quarterly installment:
-- Q1 (by June 15): At least 15% of tax payable
-- Q2 (by September 15): At least 45% of tax payable (cumulative)
-- Q3 (by December 15): At least 75% of tax payable (cumulative)
-- Q4 (by March 15): 100% of tax payable
+This is deducted by the bank — not self-assessed. The TDS is reflected in Form 26AS and can be claimed as credit while filing the return.
 
-Section 234C does not apply if the total advance tax paid by March 15 equals 100% of tax on returned income — but only if the shortfall in earlier installments was not due to underestimation by more than a specified threshold.
+However, the practical issue: businesses operating with high cash withdrawals from current accounts — particularly in trading, construction, or manufacturing with cash labour payments — may find TDS deducted unexpectedly, affecting liquidity.
 
-For business income assessees where income is not ascertainable at the start of the year, some relaxation is available — but only within prescribed limits.
+More importantly: if the withdrawal is from an account where the PAN of the entity is linked and the entity has not filed ITR for three years, the 5% rate applies on amounts exceeding ₹1 crore — which for an active business can result in significant TDS.
 
-The calculation is on each installment separately. An underpayment in Q1 cannot be offset against an overpayment in Q2 for the purpose of 234C.
+Regular ITR filing, and awareness of cumulative cash withdrawal levels across all accounts of the entity, is necessary to manage this provision correctly.
 
 ---
 
 ## POST 7 — Monday, Week 4
-**Topic: Section 56(2)(x) — Gifts and Inadequate Consideration**
+**Topic: HUF — What Most People Get Wrong About Partition**
 
 ---
 
-Section 56(2)(x) of the Income Tax Act brings into tax any sum of money or property received without consideration or for inadequate consideration, where the aggregate value exceeds ₹50,000 in a year.
+A Hindu Undivided Family (HUF) is a separate taxable entity under the Income Tax Act. It has its own PAN, its own basic exemption limit, and its own deduction capacity under Chapter VI-A.
 
-This applies to individuals and HUFs. The amount is taxable as income from other sources.
+The common understanding stops there.
 
-Exceptions include:
-- Gifts from specified relatives (parents, spouse, siblings, lineal ascendants and descendants)
-- Gifts received on marriage
-- Gifts received under a will or inheritance
-- Gifts from local authorities or registered trusts under specified conditions
+What is less discussed:
 
-In business and family contexts, this provision is frequently triggered in:
-- Property transfers between family members at below-market value
-- Waiver of loans between group companies or family entities
-- Issue of shares at less than fair market value (which is addressed separately under 56(2)(viib) for closely held companies)
-- Buy-out of a partner's share in a family business without adequate compensation
+1. **Gifts to HUF from non-members**: Gifts received by an HUF from a person who is not a member of the HUF are taxable under Section 56(2)(x) if the aggregate exceeds ₹50,000 in a year. Only gifts from members are exempt. Many HUF accounts receive funds from third parties — employers, clients, investors — which triggers this provision.
 
-The fair market value computation for property is governed by Rule 11UA. For shares of unlisted companies, Rule 11UA provides specific methodology.
+2. **Coparcener's share on partial partition**: Under Section 171, if an HUF claims to have effected a partial partition after 31 December 1978, the Income Tax Act does not recognise it. The income from the partitioned property continues to be assessed in the hands of the HUF. Only a total partition is recognised for tax purposes.
 
-Restructuring within a family business or group requires examination of Section 56(2)(x) implications before execution — the tax consequences of an inadequately valued transfer are often discovered during assessment, not at the time of the transaction.
+3. **Remuneration to Karta**: An HUF can pay remuneration to the Karta for services rendered to the HUF business — this is deductible from HUF income and becomes individual income of the Karta. The amount must be reasonable and backed by a resolution of the HUF. Unreasonable remuneration can be disallowed.
+
+4. **Conversion of individual property to HUF**: A property that is an individual's self-acquired property does not become HUF property merely because it is used for HUF purposes or income is credited to the HUF account. The character of the asset determines its ownership.
+
+HUF planning done without understanding these boundaries creates income tax and estate planning complications that surface years later.
 
 ---
 
 ## POST 8 — Thursday, Week 4
-**Topic: CSR Obligation under Section 135 of the Companies Act 2013**
+**Topic: GST on Director's Remuneration — RCM Liability on the Company**
 
 ---
 
-Section 135 of the Companies Act 2013 requires the following companies to spend on Corporate Social Responsibility:
+Circular No. 140/10/2020-GST (issued 10 June 2020) clarified the GST treatment of remuneration paid to directors:
 
-A company with:
-- Net worth of ₹500 crore or more, OR
-- Turnover of ₹1,000 crore or more, OR
-- Net profit of ₹5 crore or more
+**Whole-time directors / executive directors**: Their remuneration is subject to TDS under Section 192 of the Income Tax Act — treated as salary. No GST applies. The employer-employee relationship is established.
 
-in the immediately preceding financial year must constitute a CSR Committee, formulate a CSR policy, and spend at least 2% of the average net profit of the preceding three financial years on CSR activities listed in Schedule VII.
+**Independent / non-executive directors**: Their remuneration is not in the nature of salary. It is payment for services rendered in the capacity of a director. This is subject to GST under Reverse Charge Mechanism (RCM) — the company is liable to pay GST at 18% on the amount paid to such directors.
 
-Key compliance points often missed:
+The company must:
+- Issue a self-invoice for such payments
+- Pay GST under RCM in cash (cannot be adjusted against ITC balance)
+- Claim ITC of the same GST paid (subject to normal ITC conditions)
 
-The 2% is on net profit as computed under Section 198 of the Companies Act — not taxable income. The two figures differ.
+In cases where a company has both executive and non-executive directors, the classification of each director's remuneration must be done correctly. Incorrect classification — treating non-executive director fees as salary — results in GST demand, interest, and penalty on the company.
 
-Unspent CSR amount must be transferred to a specified fund (PM National Relief Fund or similar) within 6 months of the financial year end if not tied to an ongoing project. For ongoing projects, it goes to an Unspent CSR Account and must be spent within 3 years.
-
-Non-spending is now subject to penalty under the Companies (Amendment) Act 2020 — the company faces a fine up to twice the amount required to be spent, and the officer in default faces imprisonment up to 3 years or fine up to ₹1 crore, or both.
-
-For manufacturing companies in the ₹50–500 crore turnover range crossing the ₹5 crore net profit threshold for the first time, this obligation activates in the following year — often without prior preparation.
+This is a provision that a large number of companies with independent or non-executive directors are either unaware of or non-compliant with.
 
 ---
 
-## Month 2 Topic Bank (Technical)
+## Month 2 Topic Bank (Same Standard — Lesser Known, High Consequence)
 
-- Section 68 — Unexplained cash credits and the burden of proof
-- Rule 37A — ITC reversal when supplier fails to pay GST
-- Section 2(22)(e) — Deemed dividend and loans to shareholders
-- SA 315 (Revised) — Risk assessment in statutory audit
-- Transfer pricing — Section 92 and arm's length standard for group transactions
-- Section 80JJAA — Deduction for new employment
-- GST e-invoicing — Who it applies to and consequences of non-compliance
-- Section 285B — Requirement to report cash transactions above threshold
+- Section 35(2AB) — Weighted deduction for in-house R&D in manufacturing (still applicable in certain cases)
+- GST Section 74 — Extended limitation period (5 years) for fraud cases vs Section 73 (3 years) and how the department invokes it
+- Section 43(5) — F&O losses are speculative and cannot be set off against normal business income
+- GST — Place of Supply for services between related parties across states
+- Section 68 with Section 115BBE — Unexplained cash credits taxed at ~83% effective rate
+- PMLA — Reporting obligations on CAs for certain transactions (often unknown to clients)
+- Section 35D — Amortisation of preliminary expenses and what qualifies
+- IND AS vs IGAAP differences and their direct tax impact for companies crossing the threshold
