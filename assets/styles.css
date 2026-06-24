@@ -161,6 +161,12 @@ a:hover { text-decoration: underline; }
 }
 .enquiry input:focus, .enquiry textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
 .form-note { color: var(--muted); font-size: 0.83rem; font-weight: 400; margin: 14px 0 0; }
+/* Honeypot anti-spam field — visually hidden, off-screen for bots to fill */
+.hp-field { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.enquiry button[disabled] { opacity: 0.65; cursor: progress; }
+.form-status { font-size: 0.92rem; font-weight: 500; margin: 14px 0 0; }
+.form-status.success { color: #186052; }
+.form-status.error { color: #b3261e; }
 
 /* ---------- Footer ---------- */
 .site-footer { background: var(--navy); color: #c4d0db; padding: 40px 0; font-size: 0.9rem; }

@@ -237,8 +237,10 @@
                  <p><a href="#">LinkedIn</a> · <a href="#">Google Business Profile</a></p> -->
           </div>
         </div>
-        <!-- Simple, non-soliciting enquiry form. Uses a form service (see README). -->
-        <form class="enquiry" action="#" method="POST">
+        <!-- Enquiry form via Formspree (free). SETUP: create a form at
+             https://formspree.io, then replace YOUR_FORM_ID below with your
+             form's ID (see README §3). Until then, submissions show a notice. -->
+        <form class="enquiry" id="enquiry-form" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
           <div class="form-row">
             <label>Name
               <input type="text" name="name" required autocomplete="name" />
@@ -250,7 +252,12 @@
           <label>Message
             <textarea name="message" rows="4" required></textarea>
           </label>
+          <!-- Custom subject line for the email you receive -->
+          <input type="hidden" name="_subject" value="New enquiry from website" />
+          <!-- Honeypot: hidden from people, catches spam bots. Leave empty. -->
+          <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" aria-hidden="true" class="hp-field" />
           <button type="submit" class="btn btn-primary">Send Enquiry</button>
+          <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
           <p class="form-note">Your message is sent directly to our office email. No data is stored on this site.</p>
         </form>
       </div>

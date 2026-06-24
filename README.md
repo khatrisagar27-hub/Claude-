@@ -97,19 +97,30 @@ Keep these rules in mind as you edit:
 
 ---
 
-## 3. The enquiry form (optional)
+## 3. The enquiry form — connect Formspree (one step)
 
-The contact form is static, so it needs a free form-handling service to deliver
-messages to your email. Easiest option — **Formspree** (free tier):
+The form is already wired up for **Formspree** (free): it submits via AJAX so the
+visitor stays on the page and sees an inline "thank you", with a hidden honeypot
+field for spam protection. You only need to plug in your form ID:
 
-1. Sign up at https://formspree.io and create a form; you'll get an endpoint URL.
-2. In `index.html`, change the form tag:
+1. **Create a free account** at https://formspree.io and add a **New form**.
+   Set the notification email to the address where you want enquiries to land.
+2. Formspree gives you an endpoint like `https://formspree.io/f/abcdwxyz`.
+   The part after `/f/` (e.g. `abcdwxyz`) is your **form ID**.
+3. In `index.html`, find this line and replace `YOUR_FORM_ID` with your ID:
    ```html
-   <form class="enquiry" action="https://formspree.io/f/YOUR_ID" method="POST">
+   <form class="enquiry" id="enquiry-form" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
    ```
+4. Commit & push. On the **first** real submission, Formspree emails you a link
+   to confirm the address — click it once and the form is live.
 
-If you'd rather not have a form, delete the `<form …>…</form>` block and just
-keep the email/phone — equally compliant and simpler.
+Until you do step 3, the form politely tells visitors to email you directly
+instead (so it never silently fails). The free tier allows 50 submissions/month.
+
+> Tip: just send me your form ID and I'll drop it in and push for you.
+
+If you'd rather not have a form at all, delete the `<form …>…</form>` block and
+keep just the email/phone — equally compliant and simpler.
 
 ---
 
