@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- PLACEHOLDER — replace with a passport-style photograph of the proprietor.
+     Save it as assets/profile.jpg and update the <img src> in index.html. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Profile photo placeholder">
+  <rect width="240" height="240" rx="14" fill="#eef2f7"/>
+  <circle cx="120" cy="96" r="44" fill="#c7d3e0"/>
+  <path d="M44 210 Q44 150 120 150 Q196 150 196 210 Z" fill="#c7d3e0"/>
+  <text x="120" y="230" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#7e93a6">Add photo</text>
+</svg>

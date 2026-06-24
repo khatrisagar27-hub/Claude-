@@ -7,32 +7,62 @@ ICAI guidelines** on what a CA's website may contain.
 
 ```
 .
-├── index.html        # The page (edit the [TODO] placeholders here)
+├── index.html                      # The page (edit the [TODO] placeholders here)
 ├── assets/
-│   ├── styles.css    # Styling — colours, layout, responsiveness
-│   └── script.js     # Mobile menu, copyright year, "last updated" date
-└── README.md         # This file
+│   ├── styles.css                  # Styling — colours, layout, responsiveness
+│   ├── script.js                   # Mobile menu, copyright year, "last updated" date
+│   ├── ca-logo.svg                 # PLACEHOLDER — replace with the official ICAI CA Logo
+│   └── profile-placeholder.svg     # PLACEHOLDER — replace with the proprietor's photo
+└── README.md                       # This file
 ```
+
+The site is built for **Sagar Khatri & Associates, Chartered Accountants**
+(Proprietor: **CA Sagar Khatri**, established **2022**). Sections: Profile (with
+photo), Services, Knowledge/Articles, FAQ, Firm particulars, Contact.
+
+> By choice, the **ICAI membership number and Firm Registration Number are not
+> shown** on this site. (Both are *permitted* by ICAI but not mandatory — you can
+> add them later in the "Firm particulars" section if you ever change your mind.)
 
 ---
 
-## 1. Fill in your details (10 minutes)
+## 1. Fill in the remaining details (10 minutes)
 
-Open `index.html` and replace every `[…]` placeholder. They are marked with
-`<!-- TODO -->` comments. The main ones:
+Firm name, proprietor, and year are already filled in. Open `index.html` and
+replace the remaining `[…]` placeholders, all marked with `<!-- TODO -->`:
 
 | Placeholder | Where | What to put |
 |---|---|---|
-| `[Your Name]` | title, header, hero, footer | Your full name |
-| `[Firm Name]` | hero, credentials | Your firm's name |
-| `ICAI Membership No. [XXXXXX]` | hero, credentials | Your membership number |
-| `Firm Registration No. [XXXXXXC]` | credentials | Your FRN |
-| `[City]`, `[Office Address]` | about, contact | Your location & address |
+| `[Office Address …]`, `[Area]`, `[City]`, `[PIN]` | contact, profile | Office address & city |
 | `you@example.com`, `+91 …` | contact, footer | Your email & phone |
-| Profile / services text | about, services | Edit to match your practice |
+| Profile / services text | about, services | Tweak wording to match your practice |
+| Knowledge article cards | knowledge | Replace with your own factual notes (or remove) |
+| FAQ questions/answers | faq | Edit to suit |
+| LinkedIn / Google Business links | contact | Optional, permitted — uncomment & add |
 
 Then open `assets/script.js` and update the **"Last updated" date** whenever you
 change the content (ICAI requires this to be shown).
+
+---
+
+## 1a. The CA Logo (important)
+
+The header and footer show a **placeholder** in the CA-logo slot
+(`assets/ca-logo.svg`). It is **not** the official mark. To use the real one:
+
+1. Download the official **"CA Logo"** artwork from ICAI — it is provided to
+   members (ICAI website → logo / branding guidelines, or your members' login).
+2. Save it as `assets/ca-logo.svg` (or `.png`) — overwrite the placeholder. If
+   you use a `.png`/`.jpg`, update the two `src="assets/ca-logo.svg"` references
+   in `index.html` to the new filename.
+3. **Use it exactly as provided** — ICAI's logo guidelines require that you do
+   **not** alter its design, colour, font or proportions, do not add effects,
+   and do not display it more prominently than the firm name. When in doubt,
+   read ICAI's current logo guidelines.
+
+Similarly, replace `assets/profile-placeholder.svg` with a passport-style photo
+(save as `assets/profile.jpg` and update the `<img src>` in the Profile section).
+Photographs are permitted by ICAI.
 
 ---
 

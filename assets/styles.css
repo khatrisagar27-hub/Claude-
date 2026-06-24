@@ -54,6 +54,7 @@ a:hover { text-decoration: underline; }
   background: var(--navy); color: #fff; font-family: "Lora", serif; font-size: 15px;
 }
 .brand-text { font-family: "Lora", serif; font-size: 1.1rem; }
+.ca-logo { display: block; border-radius: 6px; object-fit: contain; }
 
 .site-nav { display: flex; gap: 28px; }
 .site-nav a { color: var(--ink); font-weight: 500; font-size: 0.95rem; }
@@ -100,6 +101,46 @@ a:hover { text-decoration: underline; }
 .card h3 { margin: 0 0 8px; font-size: 1.15rem; }
 .card p { margin: 0; color: var(--muted); font-size: 0.96rem; }
 
+/* ---------- Profile (about) ---------- */
+.profile-wrap { display: grid; grid-template-columns: 260px 1fr; gap: 44px; align-items: start; }
+.profile-photo { text-align: center; }
+.profile-photo img {
+  width: 240px; height: 240px; border-radius: 14px; object-fit: cover;
+  border: 1px solid var(--line); box-shadow: var(--shadow); background: var(--bg-alt);
+}
+.photo-caption { margin: 12px 0 0; font-weight: 600; color: var(--navy); font-size: 0.95rem; }
+.profile-text .section-title { margin-top: 0; }
+
+/* ---------- Knowledge / articles ---------- */
+.article-card {
+  background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 24px; box-shadow: var(--shadow); transition: 0.18s;
+  display: flex; flex-direction: column;
+}
+.article-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(15,41,66,0.1); }
+.article-date { text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.72rem; font-weight: 600; color: var(--accent); margin: 0 0 8px; }
+.article-card h3 { margin: 0 0 8px; font-size: 1.12rem; }
+.article-card > p { margin: 0 0 16px; color: var(--muted); font-size: 0.95rem; }
+.article-link { margin-top: auto; font-weight: 600; color: var(--accent); font-size: 0.92rem; }
+.knowledge-note { margin: 28px 0 0; color: var(--muted); font-size: 0.85rem; font-style: italic; }
+
+/* ---------- FAQ ---------- */
+.faq-item {
+  background: #fff; border: 1px solid var(--line); border-radius: 10px;
+  padding: 4px 20px; margin-bottom: 12px; box-shadow: var(--shadow);
+}
+.faq-item summary {
+  cursor: pointer; list-style: none; padding: 14px 0; font-weight: 600;
+  color: var(--navy); font-size: 1rem; position: relative; padding-right: 28px;
+}
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary::after {
+  content: "+"; position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+  font-size: 1.4rem; font-weight: 400; color: var(--accent); transition: 0.2s;
+}
+.faq-item[open] summary::after { content: "\2212"; }
+.faq-item p { margin: 0 0 16px; color: #36404d; font-size: 0.96rem; }
+
 /* ---------- Credentials ---------- */
 .creds { list-style: none; padding: 0; margin: 0; }
 .creds li { display: flex; gap: 18px; padding: 16px 0; border-bottom: 1px solid var(--line); }
@@ -123,6 +164,8 @@ a:hover { text-decoration: underline; }
 
 /* ---------- Footer ---------- */
 .site-footer { background: var(--navy); color: #c4d0db; padding: 40px 0; font-size: 0.9rem; }
+.footer-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; font-family: "Lora", serif; color: #fff; font-size: 1rem; }
+.ca-logo-footer { background: #fff; padding: 2px; }
 .footer-inner p { margin: 0 0 8px; }
 .updated { color: #8fa3b5; }
 .disclaimer { color: #7e93a6; font-size: 0.82rem; max-width: 640px; margin-top: 14px; line-height: 1.55; }
@@ -130,6 +173,10 @@ a:hover { text-decoration: underline; }
 /* ---------- Responsive ---------- */
 @media (max-width: 860px) {
   .grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 760px) {
+  .profile-wrap { grid-template-columns: 1fr; gap: 24px; justify-items: center; text-align: center; }
+  .profile-text { text-align: left; }
 }
 @media (max-width: 720px) {
   .nav-toggle { display: flex; }
