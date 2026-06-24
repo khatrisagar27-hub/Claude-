@@ -151,6 +151,7 @@ a:hover { text-decoration: underline; }
 .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-bottom: 38px; }
 .contact-block h3 { font-size: 1.05rem; margin: 0 0 6px; }
 .contact-block p { margin: 0; color: #36404d; }
+.map-embed { margin: 0 0 38px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); box-shadow: var(--shadow); line-height: 0; }
 
 .enquiry { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow); }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
