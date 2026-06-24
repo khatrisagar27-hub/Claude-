@@ -1,0 +1,967 @@
+// Indian Law Compliance Database — 60+ Laws
+const INDIAN_LAWS = [
+
+// ══════════════════════════════════════════
+// A. SOCIAL SECURITY LAWS
+// ══════════════════════════════════════════
+{
+  id:'epf', name:"Employees' Provident Fund & Miscellaneous Provisions Act, 1952",
+  shortName:'EPF & MP Act, 1952', category:'Social Security', priority:'critical',
+  description:"Mandatory provident fund (retirement savings), employees' pension, and deposit-linked insurance for organised sector workers.",
+  reason: c => c.totalEmployees >= 20 ? `Mandatory: company has ${c.totalEmployees} employees (threshold: 20)` : null,
+  actions:[
+    {title:'Register establishment with EPFO', freq:'One-time', deadline:'Within 30 days of reaching 20 employees', authority:'EPFO Regional Office', penalty:'Damages @ 5–25% of arrears + imprisonment up to 3 years', desc:'Obtain a 7-digit PF Code by registering on the EPFO Unified Shram Suvidha Portal.'},
+    {title:'Deduct 12% of Basic+DA from employee salary (EPF)', freq:'Monthly', deadline:'15th of following month', authority:'EPFO', penalty:'Interest @ 12% p.a. + damages', desc:"Employee contributes 12% of basic+DA. Employer contributes 12% split as: 8.33% → EPS (Employees' Pension Scheme) and 3.67% → EPF."},
+    {title:'File Electronic Challan cum Return (ECR)', freq:'Monthly', deadline:'15th of following month', authority:'EPFO portal', penalty:'₹5,000 per day of delay', desc:'Upload monthly ECR on the EPFO Unified Portal showing member-wise contribution details.'},
+    {title:'Maintain statutory registers: Form 12A, 5, 10, 3A, 6A', freq:'Annual', deadline:'30th April each year', authority:'EPFO', penalty:'Fine', desc:'Maintain up-to-date wage and contribution registers as prescribed.'},
+    {title:'Issue UAN (Universal Account Number) to every employee', freq:'One-time per employee', deadline:'At time of joining', authority:'EPFO', penalty:'Non-compliance', desc:'Seed Aadhaar, PAN, and bank account with UAN for every employee.'},
+    {title:"File Annual PF Return (Form 3A and 6A)", freq:'Annual', deadline:'30th April', authority:'EPFO', penalty:'Fine', desc:"Annual member-wise and consolidated contribution statement."}
+  ]
+},
+{
+  id:'esi', name:"Employees' State Insurance Act, 1948",
+  shortName:'ESI Act, 1948', category:'Social Security', priority:'critical',
+  description:'Provides medical, sickness, maternity, disablement, and death benefits to insured employees and their families.',
+  reason: c => (c.hasFactory && c.factoryWorkers >= 10) || (!c.hasFactory && c.totalEmployees >= 20)
+    ? `Applicable: ${c.hasFactory ? 'factory with ' + c.factoryWorkers + ' workers' : c.totalEmployees + ' employees'}` : null,
+  actions:[
+    {title:'Register establishment with ESIC', freq:'One-time', deadline:'Within 15 days of applicability', authority:'ESIC Regional Office / Shram Suvidha Portal', penalty:'Imprisonment up to 2 years + fine up to ₹5,000', desc:'Register on ESIC portal and obtain Employer Code Number. Also register all covered employees (wages ≤ ₹21,000/month).'},
+    {title:"Deduct employee's ESI contribution: 0.75% of wages", freq:'Monthly', deadline:'15th of following month', authority:'ESIC', penalty:'Damages + 12% p.a. interest', desc:"Applicable to employees earning up to ₹21,000/month gross (₹25,000 for persons with disability)."},
+    {title:"Contribute employer's ESI: 3.25% of wages", freq:'Monthly', deadline:'15th of following month', authority:'ESIC', penalty:'Damages + interest', desc:'Employer pays 3.25% of gross wages of covered employees.'},
+    {title:'File half-yearly returns (Form 5)', freq:'Half-yearly', deadline:'November 11 and May 11', authority:'ESIC', penalty:'Fine', desc:'Submit details of employees and wages for each half-year.'},
+    {title:'Maintain accident book and submit accident reports', freq:'As required', deadline:'Within 24 hours of accident', authority:'ESIC', penalty:'Fine', desc:'Report any accidents causing injury or death to ESIC and local office.'},
+    {title:'Display ESIC notice on premises', freq:'Permanent', deadline:'Immediately on registration', authority:'ESIC', penalty:'Fine', desc:'Mandatory notice stating registration details must be displayed at the workplace.'}
+  ]
+},
+{
+  id:'gratuity', name:'Payment of Gratuity Act, 1972',
+  shortName:'Gratuity Act, 1972', category:'Social Security', priority:'critical',
+  description:'Provides for payment of gratuity to employees upon retirement, resignation, or death after 5 years of continuous service.',
+  reason: c => c.totalEmployees >= 10 ? `Applicable: company has ${c.totalEmployees} employees (threshold: 10). Once applicable, always applicable.` : null,
+  actions:[
+    {title:'Pay gratuity to eligible employees', freq:'As applicable', deadline:'Within 30 days of becoming due', authority:'Labour Commissioner', penalty:'10% p.a. simple interest + fine up to ₹1 lakh', desc:'Formula: (Last drawn basic+DA × 15 × No. of completed years) ÷ 26. Payable on resignation/retirement/death after 5 continuous years.'},
+    {title:'Obtain gratuity insurance or create gratuity trust', freq:'Annual', deadline:'Within 1 year of applicability', authority:'Labour Commissioner / LIC', penalty:'Fine', desc:'Either obtain group gratuity insurance from LIC/insurance company or set up an approved gratuity fund.'},
+    {title:'File Form F (nomination) from every employee', freq:'One-time per employee', deadline:'Within 30 days of joining', authority:'Employer records', penalty:'Fine', desc:'Each employee must nominate a beneficiary using Form F.'},
+    {title:'Submit gratuity notice (Form A or B) to controlling authority', freq:'One-time', deadline:'On applicability', authority:'Labour Department', penalty:'Fine', desc:'Notify the Controlling Authority (Labour Commissioner) when the Act becomes applicable.'}
+  ]
+},
+{
+  id:'bonus', name:'Payment of Bonus Act, 1965',
+  shortName:'Bonus Act, 1965', category:'Labour', priority:'high',
+  description:'Mandates annual bonus payment to employees in establishments with 20 or more employees.',
+  reason: c => c.totalEmployees >= 20 ? `Applicable: ${c.totalEmployees} employees (threshold: 20)` : null,
+  actions:[
+    {title:'Pay minimum bonus: 8.33% of annual wages (or ₹100, whichever is higher)', freq:'Annual', deadline:'Within 8 months of close of accounting year', authority:'Labour Department', penalty:'Imprisonment up to 6 months + fine up to ₹1,000', desc:'Minimum 8.33%, maximum 20% of salary/wages. Eligible employees: earning up to ₹21,000/month gross; calculated on ₹7,000 or minimum wage (whichever higher).'},
+    {title:'Maintain bonus registers: Form A, B, C', freq:'Annual', deadline:'On computation / payment', authority:'Labour Department', penalty:'Fine', desc:'Form A: Computation of allocable surplus; Form B: Set-on/Set-off; Form C: Bonus paid.'},
+    {title:'File annual bonus return (Form D)', freq:'Annual', deadline:'Within 30 days of payment', authority:'Labour Commissioner', penalty:'Fine', desc:'File Form D showing details of bonus paid to all employees.'}
+  ]
+},
+{
+  id:'maternity', name:'Maternity Benefit Act, 1961',
+  shortName:'Maternity Benefit Act', category:'Labour', priority:'high',
+  description:"Protects employment of women during maternity and entitles them to maternity benefit, nursing breaks, and other facilities.",
+  reason: c => c.womenEmployees > 0 ? `Applicable: company employs ${c.womenEmployees} women` : null,
+  actions:[
+    {title:'Grant 26 weeks paid maternity leave (first 2 children)', freq:'As required', deadline:'On employee request', authority:'Labour Department', penalty:'Imprisonment up to 1 year + fine up to ₹5,000', desc:'26 weeks for first/second child; 12 weeks for third child onwards; 12 weeks for adoption/surrogacy. Pre-natal: 8 weeks.'},
+    {title:'Set up crèche facility (if 50+ employees)', freq:'Permanent', deadline:'Ongoing', authority:'Labour Department', penalty:'Fine', desc:'Companies with 50+ employees must provide crèche within 500m. Women employees allowed 4 visits per day.'},
+    {title:'Display notice about maternity benefit at conspicuous place', freq:'Permanent', deadline:'Immediately', authority:'Labour Department', penalty:'Fine', desc:'Mandatory notice must be displayed at workplace listing employee rights.'},
+    {title:'Permit nursing breaks (2 per day until child is 15 months)', freq:'Daily', deadline:'Ongoing', authority:'Labour Department', penalty:'Fine', desc:'Two breaks per day for nursing mothers, in addition to regular intervals.'},
+    {title:'Provide work-from-home option (where feasible)', freq:'As required', deadline:'On request', authority:'—', penalty:'Fine', desc:'For employers with 50+ employees, provide WFH option after 26 weeks if nature of work permits.'}
+  ]
+},
+{
+  id:'compworkers', name:"Employees' Compensation Act, 1923",
+  shortName:"Employees' Compensation Act", category:'Social Security', priority:'high',
+  description:'Requires employers to pay compensation for work-related injury, occupational disease, or death of employees.',
+  reason: c => c.totalEmployees > 0 ? 'Applicable to all employers with workers in specified occupations' : null,
+  actions:[
+    {title:'Pay compensation for work injury / death', freq:'As required', deadline:'Within 30 days of death; on settlement for injuries', authority:'Commissioner for Employees\' Compensation', penalty:'Additional 50% of compensation as penalty + interest', desc:'Death: 50% of monthly wages × Relevant Factor OR ₹1.2 lakh minimum. Permanent total disablement: 60% × factor OR ₹1.4 lakh minimum.'},
+    {title:'Obtain employer\'s liability insurance policy', freq:'Annual renewal', deadline:'Before policy expiry', authority:'Insurance Company', penalty:'Fine', desc:'Strongly recommended to obtain insurance for employees\' compensation liability.'},
+    {title:'Maintain register of workers in Schedule-II occupations', freq:'Ongoing', deadline:'At all times', authority:'Factory Inspector / Labour Inspector', penalty:'Fine', desc:'Keep records of workers employed in hazardous/scheduled occupations.'},
+    {title:'Report fatal accidents to Commissioner', freq:'As required', deadline:'Within 7 days of accident', authority:'Commissioner for Employees\' Compensation', penalty:'Fine', desc:'Notify the Commissioner for Employees\' Compensation immediately after a workplace fatality.'}
+  ]
+},
+
+// ══════════════════════════════════════════
+// B. LABOUR & EMPLOYMENT LAWS
+// ══════════════════════════════════════════
+{
+  id:'factories', name:'Factories Act, 1948',
+  shortName:'Factories Act, 1948', category:'Labour', priority:'critical',
+  description:'Regulates health, safety, welfare, and working conditions in factories.',
+  reason: c => c.hasFactory
+    ? ((c.factoryHasPower && c.factoryWorkers >= 10) ? `Applicable: power-driven factory with ${c.factoryWorkers} workers (threshold 10)`
+       : (!c.factoryHasPower && c.factoryWorkers >= 20) ? `Applicable: non-power factory with ${c.factoryWorkers} workers (threshold 20)` : null)
+    : null,
+  actions:[
+    {title:'Obtain Factory Registration and License', freq:'One-time + Annual renewal', deadline:'Before commencing operations', authority:'Chief Inspector of Factories (State)', penalty:'Imprisonment up to 2 years + fine up to ₹2 lakh', desc:'Apply to the State Factory Inspector with prescribed Form 1 + plan/layout. Renew license annually before December 31.'},
+    {title:'Appoint Occupier and notify to Inspector', freq:'One-time', deadline:'Before registration', authority:'Chief Inspector of Factories', penalty:'Fine', desc:'The "Occupier" (person responsible for factory management) must be registered and is personally liable for compliance.'},
+    {title:'Maintain health, safety, and welfare provisions', freq:'Ongoing', deadline:'Continuous', authority:'Factory Inspector', penalty:'Fine up to ₹2 lakh per violation', desc:'Ensure cleanliness, drainage, ventilation, lighting, drinking water, latrines/urinals, first aid, canteen (if 250+ workers), shelter (if 150+ workers).'},
+    {title:'Comply with working hours: max 9 hrs/day, 48 hrs/week', freq:'Daily', deadline:'Always', authority:'Factory Inspector', penalty:'Fine', desc:'No worker to work more than 9 hours/day or 48 hours/week. Overtime at 2× regular wages. Max 60 hours/week with permission.'},
+    {title:'Grant earned leave: 1 day for every 20 days worked', freq:'Annual', deadline:'On request', authority:'Factory Inspector', penalty:'Fine', desc:'Workers who have worked 240+ days entitled to earned leave. Maximum accumulation: 30 days.'},
+    {title:'Maintain factory registers and forms (Form 15, 16, 21, 22, 23)', freq:'Annual', deadline:'As prescribed', authority:'Factory Inspector', penalty:'Fine', desc:'Register of adult workers, overtime, accidents, dangerous occurrences, notices, annual returns.'},
+    {title:'Submit annual return (Form 21)', freq:'Annual', deadline:'31st January of following year', authority:'Chief Inspector of Factories', penalty:'Fine', desc:'File annual return showing details of workers, working hours, accidents, etc.'}
+  ]
+},
+{
+  id:'shops', name:'Shops and Establishments Act (State-specific)',
+  shortName:'Shops & Establishments Act', category:'Labour', priority:'critical',
+  description:'State legislation governing working conditions in shops, commercial establishments, and offices (every state has its own Act).',
+  reason: c => c.hasShop || c.totalEmployees > 0 ? 'Applicable to all shops and commercial establishments in states of operation' : null,
+  actions:[
+    {title:'Register establishment with local authority (within 30 days)', freq:'One-time + Annual renewal', deadline:'Within 30 days of opening', authority:'Labour Department / Municipal Corporation (State)', penalty:'Fine up to ₹5,000 depending on state', desc:'Register each office/shop/establishment in every state of operation. e.g., Maharashtra: MLWF portal; Karnataka: Dept of Labour; Delhi: Labour Dept.'},
+    {title:'Display registration certificate at premises', freq:'Permanent', deadline:'Immediately on registration', authority:'Labour Department', penalty:'Fine', desc:'Original certificate must be displayed prominently at the establishment.'},
+    {title:'Comply with working hours (max 9 hrs/day, 48 hrs/week)', freq:'Daily', deadline:'Always', authority:'Labour Inspector', penalty:'Fine', desc:'State-specific rules on opening/closing times, weekly holiday, and overtime.'},
+    {title:'Maintain attendance, wage, and leave registers', freq:'Ongoing', deadline:'At all times', authority:'Labour Inspector', penalty:'Fine', desc:'Statutory registers must be maintained; now digital maintenance allowed in most states.'},
+    {title:'Submit annual return as per state rules', freq:'Annual', deadline:'January 31 (most states)', authority:'Labour Department', penalty:'Fine', desc:'Annual return covering employee details, wages, and leaves for the previous year.'}
+  ]
+},
+{
+  id:'minwages', name:'Minimum Wages Act, 1948',
+  shortName:'Minimum Wages Act, 1948', category:'Labour', priority:'critical',
+  description:'Requires employers to pay workers not less than the minimum wage fixed by the State/Central Government for scheduled employments.',
+  reason: c => c.totalEmployees > 0 ? 'Applicable to all employers with employees in scheduled employments' : null,
+  actions:[
+    {title:'Pay minimum wages as notified by State / Central Government', freq:'Monthly', deadline:'Before 7th of following month', authority:'Labour Commissioner', penalty:'Imprisonment up to 6 months + fine up to ₹500 per violation', desc:'Check the current minimum wage rates for the relevant state and category of work (unskilled/semi-skilled/skilled/highly-skilled). Rates revised periodically.'},
+    {title:'Display minimum wage rates at the workplace', freq:'Permanent', deadline:'At all times', authority:'Labour Inspector', penalty:'Fine', desc:'A notice showing the current applicable minimum wage rates must be displayed at a conspicuous place.'},
+    {title:'Maintain wage register showing wages paid', freq:'Monthly', deadline:'At all times', authority:'Labour Inspector', penalty:'Fine', desc:'Maintain muster roll-cum-wages register (Form XVII). Wage slips must be issued to workers.'},
+    {title:'File annual return (Form III)', freq:'Annual', deadline:'1st February each year', authority:'Labour Commissioner', penalty:'Fine', desc:'Annual return showing number of workers, wages paid, and compliance with minimum wage requirements.'}
+  ]
+},
+{
+  id:'paywages', name:'Payment of Wages Act, 1936',
+  shortName:'Payment of Wages Act, 1936', category:'Labour', priority:'high',
+  description:'Ensures timely payment of wages and restricts unauthorised deductions for employees earning up to ₹24,000/month.',
+  reason: c => c.totalEmployees > 0 ? 'Applicable to all establishments with employees' : null,
+  actions:[
+    {title:'Pay wages on time: by 7th (if <1000 employees) or 10th (if 1000+ employees)', freq:'Monthly', deadline:'7th or 10th of following month', authority:'Labour Commissioner', penalty:'Fine up to ₹7,500 per affected employee', desc:'Wages must be paid in legal tender (or bank transfer). No unauthorised deductions allowed.'},
+    {title:'Issue wage slips to all employees', freq:'Monthly', deadline:'On payment day', authority:'Labour Inspector', penalty:'Fine', desc:'Wage slip must show gross wages, all deductions (with reasons), and net wages paid.'},
+    {title:'Maintain wage register', freq:'Monthly', deadline:'At all times', authority:'Labour Inspector', penalty:'Fine', desc:'Register showing wages paid to each employee, deductions, and signature/acknowledgement of receipt.'}
+  ]
+},
+{
+  id:'posh', name:'Sexual Harassment of Women at Workplace (Prevention, Prohibition and Redressal) Act, 2013',
+  shortName:'POSH Act, 2013', category:'Labour', priority:'critical',
+  description:'Protects women from sexual harassment at the workplace and requires setting up redressal committees.',
+  reason: c => c.womenEmployees > 0 || c.totalEmployees >= 10 ? 'Applicable to all workplaces (mandatory ICC for 10+ employees)' : null,
+  actions:[
+    {title:'Constitute Internal Complaints Committee (ICC)', freq:'One-time + Re-constitute every 3 years', deadline:'Immediately', authority:'Labour Department', penalty:'Fine up to ₹50,000 for first offence; ₹1 lakh for repeat + business closure', desc:'ICC must have: a woman presiding officer, at least 2 employees (preferably women), and 1 external member from NGO. Minimum 50% members must be women.'},
+    {title:'Display POSH policy and ICC details at workplace', freq:'Permanent', deadline:'Immediately', authority:'Labour Department', penalty:'Fine', desc:'POSH policy, ICC constitution, and contact details must be displayed prominently.'},
+    {title:'Conduct POSH awareness training for all employees', freq:'Annual', deadline:'Ongoing', authority:'Employer', penalty:'Fine', desc:'Sensitisation workshops, training programmes, and orientation for new joiners.'},
+    {title:'Submit annual POSH report to District Officer', freq:'Annual', deadline:'31st January each year', authority:'District Officer / Labour Department', penalty:'Fine', desc:'Annual report must include number of complaints received, disposed, and pending during the year.'},
+    {title:'Prepare and distribute an anti-sexual harassment policy', freq:'One-time', deadline:'Immediately', authority:'Employer', penalty:'Fine', desc:'A written policy covering definition, complaint procedure, inquiry process, and protection against retaliation.'}
+  ]
+},
+{
+  id:'contractlabour', name:'Contract Labour (Regulation and Abolition) Act, 1970',
+  shortName:'Contract Labour Act, 1970', category:'Labour', priority:'high',
+  description:'Regulates employment of contract workers and defines obligations of principal employers and contractors.',
+  reason: c => c.contractWorkers >= 20 ? `Applicable: company uses ${c.contractWorkers} contract workers (threshold: 20)` : null,
+  actions:[
+    {title:'Register as Principal Employer with Labour Commissioner', freq:'One-time', deadline:'Before engaging contract labour', authority:'Labour Commissioner', penalty:'Fine', desc:'Apply in Form I under the CLRA Rules to the Registering Officer for registration as Principal Employer.'},
+    {title:'Ensure every contractor obtains a License', freq:'Per contract', deadline:'Before contract work begins', authority:'Labour Commissioner', penalty:'Imprisonment + fine', desc:'Each contractor must obtain a licence from the Licensing Officer. Principal employer must verify contractor licences.'},
+    {title:'Ensure amenities for contract workers (rest rooms, drinking water, toilets)', freq:'Ongoing', deadline:'At all times', authority:'Labour Inspector', penalty:'Fine', desc:"If contractor fails to provide amenities, principal employer is liable to provide them and recover costs from contractor's security deposit."},
+    {title:'Maintain register of contractors (Form XII)', freq:'Ongoing', deadline:'At all times', authority:'Labour Inspector', penalty:'Fine', desc:'Maintain details of all contractors engaged, their licences, number of workers deployed.'},
+    {title:'File half-yearly return (Form VI-B)', freq:'Half-yearly', deadline:'15th February and 15th August', authority:'Labour Commissioner', penalty:'Fine', desc:'Return showing details of contractors and workers engaged.'}
+  ]
+},
+{
+  id:'industrialdisputes', name:'Industrial Disputes Act, 1947',
+  shortName:'Industrial Disputes Act, 1947', category:'Labour', priority:'high',
+  description:'Governs investigation and settlement of industrial disputes; regulates layoff, retrenchment, and closure.',
+  reason: c => c.totalEmployees >= 1 && !['proprietorship','llp'].includes(c.entityType)
+    ? 'Applicable to all industrial establishments' : c.totalEmployees >= 1 ? 'Applicable to all establishments with workers' : null,
+  actions:[
+    {title:'Comply with retrenchment notice requirements (100+ workers: govt permission needed)', freq:'As required', deadline:'3 months prior notice (100+ workers)', authority:'State Government / Labour Commissioner', penalty:'Retrenchment is void; workers reinstated with full back wages', desc:'Retrenchment of workers requires: 1 month notice or wages in lieu; priority to rehire if business resumes. 100+ workers: prior permission from State Government.'},
+    {title:'Follow due process for layoffs (100+ workers: government permission)', freq:'As required', deadline:'Written notice before layoff', authority:'State Government', penalty:'Compensation payment obligation', desc:'Layoff compensation = 50% of basic + DA for each day of layoff. 100+ workers: Govt permission required.'},
+    {title:'Display notice of standing orders or work rules', freq:'Permanent', deadline:'At all times', authority:'Labour Department', penalty:'Fine', desc:'Notices must be displayed in English and a language understood by the majority of workers.'},
+    {title:'Constitute Works Committee (if 100+ workers)', freq:'One-time', deadline:'Within 30 days of reaching threshold', authority:'Labour Department', penalty:'Fine', desc:'Promote industrial peace; equal numbers of employer and worker representatives.'}
+  ]
+},
+{
+  id:'standingorders', name:'Industrial Employment (Standing Orders) Act, 1946',
+  shortName:'Standing Orders Act, 1946', category:'Labour', priority:'medium',
+  description:'Requires industrial establishments with 100+ workers to define and certify standing orders (rules of employment).',
+  reason: c => c.totalEmployees >= 100 ? `Applicable: ${c.totalEmployees} employees (threshold: 100)` : null,
+  actions:[
+    {title:'Draft and get standing orders certified', freq:'One-time', deadline:'Within 6 months of reaching 100 workers', authority:'Certifying Officer (Labour Commissioner)', penalty:'Fine up to ₹500 per day', desc:'Draft standing orders covering classification of workers, terms of employment, leave rules, disciplinary procedures, grievance redressal.'},
+    {title:'Display certified standing orders at workplace', freq:'Permanent', deadline:'Immediately after certification', authority:'Labour Department', penalty:'Fine', desc:'English + vernacular language copies must be displayed at main entrance and at other conspicuous places.'},
+    {title:'File draft standing orders for certification (Form B)', freq:'One-time', deadline:'Within 6 months', authority:'Certifying Officer', penalty:'Fine', desc:'Submit draft along with prescribed form and fee to the Certifying Officer.'}
+  ]
+},
+{
+  id:'equalrem', name:'Equal Remuneration Act, 1976',
+  shortName:'Equal Remuneration Act, 1976', category:'Labour', priority:'medium',
+  description:'Prohibits discrimination in wages between men and women for same or similar work.',
+  reason: c => c.womenEmployees > 0 && c.totalEmployees > c.womenEmployees ? 'Applicable: company employs both men and women' : null,
+  actions:[
+    {title:'Ensure equal pay for equal work regardless of gender', freq:'Ongoing', deadline:'At all times', authority:'Labour Inspector', penalty:'Fine up to ₹10,000 + imprisonment up to 1 month', desc:'No discrimination in wages for men and women performing same or similar work.'},
+    {title:'Maintain register of workers (Form D)', freq:'Ongoing', deadline:'At all times', authority:'Labour Inspector', penalty:'Fine', desc:'Register showing names, nature of work, and wages paid to male and female workers.'},
+    {title:'File annual return (Form D)', freq:'Annual', deadline:'January 31', authority:'Labour Commissioner', penalty:'Fine', desc:'Annual return showing male/female workforce and wages paid.'}
+  ]
+},
+{
+  id:'interstateMigrant', name:'Inter-State Migrant Workmen (Regulation of Employment and Conditions of Service) Act, 1979',
+  shortName:'Inter-State Migrant Workmen Act', category:'Labour', priority:'medium',
+  description:'Protects workers recruited from one state and employed in another, requiring registration and prescribed facilities.',
+  reason: c => c.migrantWorkers >= 5 ? `Applicable: ${c.migrantWorkers} inter-state migrant workers (threshold: 5)` : null,
+  actions:[
+    {title:'Register as Principal Employer with Labour Commissioner', freq:'One-time', deadline:'Before engaging migrant workers', authority:'Labour Commissioner', penalty:'Imprisonment + fine', desc:'Apply in Form II to the Registering Officer. Contractor must also obtain a licence in the source and destination states.'},
+    {title:'Provide journey allowance and displacement allowance', freq:'Per engagement', deadline:'Before journey', authority:'Labour Inspector', penalty:'Fine', desc:'Displacement allowance = 50% of monthly wages or ₹75 minimum; journey allowance (to and fro).'},
+    {title:'Provide suitable accommodation, medical facilities, and protective clothing', freq:'Ongoing', deadline:'At all times', authority:'Labour Inspector', penalty:'Fine', desc:'Principal employer must ensure these facilities are provided at the worksite.'},
+    {title:'Maintain register of migrant workers (Form IX)', freq:'Ongoing', deadline:'At all times', authority:'Labour Inspector', penalty:'Fine', desc:'Record with details of migrant workers including source state, date of engagement, wages.'}
+  ]
+},
+{
+  id:'childlabour', name:'Child Labour (Prohibition and Regulation) Act, 1986',
+  shortName:'Child Labour Act, 1986', category:'Labour', priority:'critical',
+  description:'Prohibits employment of children below 14 years in any occupation and adolescents (14–18) in hazardous occupations.',
+  reason: c => true,
+  actions:[
+    {title:'ABSOLUTE BAN: Do not employ any person below 14 years', freq:'Permanent', deadline:'Always', authority:'Labour Department / Police', penalty:'Imprisonment 6 months–2 years + fine ₹20,000–₹50,000 (first offence). Repeat: 1–3 years', desc:'Employing a child is a cognisable and non-bailable offence. Includes unpaid/family work in commercial establishments.'},
+    {title:'Do not employ adolescents (14–18 years) in hazardous processes', freq:'Permanent', deadline:'Always', authority:'Labour Department', penalty:'Fine + imprisonment', desc:'List of hazardous occupations includes mines, explosives, construction, chemical factories, and others listed in Schedule.'},
+    {title:'Maintain register of adolescent workers (if employed in non-hazardous work)', freq:'Ongoing', deadline:'At all times', authority:'Labour Inspector', penalty:'Fine', desc:'Adolescents (14–18) may work in non-hazardous environments. Working hours max 6 hours/day, no night shift, no overtime.'}
+  ]
+},
+{
+  id:'apprentices', name:'Apprentices Act, 1961',
+  shortName:'Apprentices Act, 1961', category:'Labour', priority:'medium',
+  description:'Mandates engagement of apprentices in designated trades for establishments in specified industries.',
+  reason: c => c.hasApprentices || c.isManufacturing || c.primarySector === 'manufacturing'
+    ? 'Applicable to establishments in specified industries (manufacturing, IT, etc.)' : null,
+  actions:[
+    {title:'Engage apprentices as per prescribed quota (2.5–10% of total strength)', freq:'Annual', deadline:'As per DGT notification', authority:'Directorate General of Training (DGT)', penalty:'Fine up to ₹1,000 per quarter', desc:'Register on the BOAT (Board of Apprenticeship Training) portal and engage apprentices in each trade. Quota differs by industry.'},
+    {title:'Pay apprentice stipend as per prescribed rates', freq:'Monthly', deadline:'On due date', authority:'DGT', penalty:'Fine', desc:'Stipend fixed by the Central Government based on trade and year of apprenticeship.'},
+    {title:'Provide training as per Apprenticeship Training Scheme', freq:'Ongoing', deadline:'For duration of apprenticeship', authority:'DGT / Regional Directorate of Apprenticeship Training', penalty:'Fine', desc:'Theoretical and practical training must be provided as per the curriculum for each designated trade.'},
+    {title:'Register apprenticeship contracts with BOAT', freq:'Per apprentice', deadline:'Within 3 months of engagement', authority:'BOAT', penalty:'Fine', desc:'Each apprenticeship agreement must be registered on the National Apprenticeship Training Scheme (NATS) / BOAT portal.'}
+  ]
+},
+{
+  id:'boca', name:'Building and Other Construction Workers (Regulation of Employment & Conditions of Service) Act, 1996',
+  shortName:'BOCW Act, 1996', category:'Labour', priority:'high',
+  description:'Regulates employment and working conditions of building and construction workers.',
+  reason: c => c.hasConstruction && c.totalEmployees >= 10 ? `Applicable: construction activities with ${c.totalEmployees} workers` : null,
+  actions:[
+    {title:'Register as Establishment under BOCW Act', freq:'One-time', deadline:'60 days from commencement', authority:'State BOCW Welfare Board', penalty:'Fine', desc:'Every establishment employing 10+ construction workers must register.'},
+    {title:'Pay 1% cess on cost of construction', freq:'Per project', deadline:'On commencement of project', authority:'State BOCW Welfare Board / Municipal Authority', penalty:'Penalty + interest', desc:'BOCW Cess is 1% of the total cost of construction. Collected by the assessing officer or municipal body.'},
+    {title:'Register all construction workers with State Welfare Board', freq:'Per worker', deadline:'Within 90 days of engagement', authority:'State BOCW Welfare Board', penalty:'Fine', desc:'Workers register themselves; employer must facilitate registration and welfare fund contributions.'},
+    {title:'Provide safety measures: helmets, harnesses, nets, first aid', freq:'Ongoing', deadline:'Always', authority:'BOCW Inspector', penalty:'Fine', desc:'Mandatory safety equipment for workers at height, in excavations, near machinery, etc.'}
+  ]
+},
+{
+  id:'rpwd', name:'Rights of Persons with Disabilities Act, 2016',
+  shortName:'RPwD Act, 2016', category:'Labour', priority:'medium',
+  description:'Protects rights of persons with disabilities; requires equal opportunity policy in establishments with 20+ employees.',
+  reason: c => c.pwdEmployees > 0 || c.totalEmployees >= 20 ? 'Applicable: requires Equal Opportunity Policy for companies with 20+ employees' : null,
+  actions:[
+    {title:'Formulate and publish Equal Opportunity Policy', freq:'One-time', deadline:'Within 1 year', authority:'Chief Commissioner for Persons with Disabilities', penalty:'Fine up to ₹10,000', desc:"Policy must cover: list of posts reserved for PwD, facilities provided, manner of selection for PwD, list of liaison officer's name."},
+    {title:'Register Equal Opportunity Policy with authorities', freq:'One-time', deadline:'Within 1 year', authority:'Chief Commissioner for Persons with Disabilities / DOPT', penalty:'Fine', desc:'File the policy with the appropriate authority.'},
+    {title:'Maintain register of PwD employees', freq:'Ongoing', deadline:'At all times', authority:'Chief Commissioner', penalty:'Fine', desc:'Record of PwD employees, their disability certificates, and positions held.'},
+    {title:'Ensure accessible infrastructure (ramps, accessible washrooms, etc.)', freq:'Ongoing', deadline:'Within reasonable time', authority:'District Magistrate', penalty:'Fine', desc:'Workplaces must progressively move towards accessibility standards.'}
+  ]
+},
+
+// ══════════════════════════════════════════
+// C. TAX LAWS
+// ══════════════════════════════════════════
+{
+  id:'incometax', name:'Income Tax Act, 1961',
+  shortName:'Income Tax Act, 1961', category:'Tax', priority:'critical',
+  description:'Governs taxation of income of companies, LLPs, and individuals. Includes TDS, advance tax, and filing obligations.',
+  reason: c => true,
+  actions:[
+    {title:'Obtain and quote PAN for all financial transactions', freq:'One-time', deadline:'Before commencing business', authority:'Income Tax Department', penalty:'₹10,000 fine; 20% TDS without PAN', desc:'Every company/LLP/firm must obtain a Permanent Account Number (PAN).'},
+    {title:'Deduct TDS on salary, contractor payments, rent, interest, etc.', freq:'Monthly', deadline:'7th of following month (March: 30th April)', authority:'Income Tax Department (TRACES)', penalty:'1.5% per month interest + penalty equal to TDS amount', desc:'Deduct TDS at prescribed rates under Sections 192 (salary), 194C (contractor), 194I (rent), 194J (professional), etc. Deposit to Government by due date.'},
+    {title:'File TDS Returns quarterly (Forms 24Q, 26Q, 27Q)', freq:'Quarterly', deadline:'31st July, 31st Oct, 31st Jan, 31st May', authority:'Income Tax Department / TRACES', penalty:'₹200/day late fee + penalty up to TDS amount', desc:'24Q: TDS on salary; 26Q: TDS on non-salary payments to residents; 27Q: TDS on non-resident payments.'},
+    {title:'Pay Advance Tax (if liability > ₹10,000)', freq:'Quarterly', deadline:'15th June (15%), 15th Sept (45%), 15th Dec (75%), 15th Mar (100%)', authority:'Income Tax Department', penalty:'Interest u/s 234B and 234C (1% per month)', desc:'Applicable if tax liability after TDS exceeds ₹10,000. Companies must pay 100% advance tax by 15th March.'},
+    {title:'File Annual Income Tax Return (ITR-6 for companies)', freq:'Annual', deadline:'31st October (if tax audit applicable), 31st July otherwise', authority:'Income Tax Department', penalty:'₹5,000 late fee + interest on tax due', desc:'Companies file ITR-6. LLPs file ITR-5. Proprietorships use ITR-3/4.'},
+    {title:'Tax Audit (u/s 44AB): Turnover > ₹1 Cr (business) or ₹50L (profession)', freq:'Annual', deadline:'30th September', authority:'Chartered Accountant + Income Tax Department', penalty:'0.5% of turnover or ₹1.5 lakh (whichever lower) + interest', desc:'Tax audit by CA is mandatory if annual turnover exceeds ₹1 crore for business (₹10 crore for digital transactions) or ₹50 lakhs for professionals.'},
+    {title:'Issue TDS Certificates (Form 16 / 16A)', freq:'Annual / Quarterly', deadline:'Form 16: 15th June; Form 16A: 15 days from due date of return', authority:'Income Tax Department', penalty:'₹100 per day per certificate', desc:'Issue Form 16 (salary) and Form 16A (non-salary TDS) to payees.'}
+  ]
+},
+{
+  id:'gst', name:'Goods and Services Tax (CGST / SGST / IGST) Acts, 2017',
+  shortName:'GST Acts, 2017', category:'Tax', priority:'critical',
+  description:'Unified indirect tax on supply of goods and services across India. Subsumes earlier taxes like VAT, Service Tax, and Excise Duty.',
+  reason: c => {
+    const t = parseInt(c.annualTurnover)||0;
+    const isSpecialState = ['manipur','mizoram','nagaland','tripura','sikkim','meghalaya','arunachal','uttarakhand','himachal','jammu'].some(s => (c.statesOfOperation||[]).includes(s));
+    const goodsThresh = isSpecialState ? 20 : 40;
+    const servThresh = isSpecialState ? 10 : 20;
+    if(t >= goodsThresh || t >= servThresh) return `Applicable: turnover ₹${t} Lakhs exceeds GST threshold`;
+    if(c.doesImportExport) return 'Applicable: import/export business (mandatory GST registration)';
+    if(c.isECommerce) return 'Applicable: e-commerce operators must register regardless of turnover';
+    return null;
+  },
+  actions:[
+    {title:'Obtain GST Registration', freq:'One-time', deadline:'Within 30 days of exceeding threshold', authority:'GST Portal (gstin.gov.in)', penalty:'10% of tax due (min ₹10,000) or 100% of tax if fraudulent', desc:'Register on gst.gov.in. GSTIN is mandatory. Separate registration required in each state of business.'},
+    {title:'File GSTR-1 (Outward supplies)', freq:'Monthly or Quarterly', deadline:'11th of following month (monthly) / 13th of following month (quarterly - QRMP)', authority:'GST Portal', penalty:'₹50/day (₹25 CGST + ₹25 SGST), max ₹5,000', desc:'Upload all sales invoices, credit/debit notes, and amendments.'},
+    {title:'File GSTR-3B (Monthly summary + tax payment)', freq:'Monthly', deadline:'20th of following month (large taxpayers)', authority:'GST Portal', penalty:'₹50/day + interest @ 18% p.a. on unpaid tax', desc:'Self-assessed summary of outward and inward supplies and payment of net GST liability.'},
+    {title:'File GSTR-9 (Annual Return)', freq:'Annual', deadline:'31st December of following year', authority:'GST Portal', penalty:'₹200/day (max 0.25% of turnover)', desc:'Consolidated annual statement of all supplies made/received and tax paid during the year.'},
+    {title:'Reconcile ITC (Input Tax Credit) with GSTR-2B', freq:'Monthly', deadline:'Before filing GSTR-3B', authority:'GST Portal', penalty:'Interest + reversal of excess ITC', desc:'Verify that ITC claimed matches auto-populated GSTR-2B from suppliers\' GSTR-1.'},
+    {title:'Issue GST-compliant invoices for all supplies', freq:'Per transaction', deadline:'Before or at time of supply', authority:'GST Portal', penalty:'₹10,000 or 100% of tax per invoice', desc:'Invoices must contain: GSTIN, HSN/SAC code, tax rate, CGST/SGST/IGST amounts, place of supply.'},
+    {title:'File e-way bill for goods movement (value > ₹50,000)', freq:'Per consignment', deadline:'Before goods movement', authority:'E-way Bill Portal (ewaybillgst.gov.in)', penalty:'₹10,000 or tax evaded (whichever higher) + detention of goods', desc:'Generate e-way bill for inter-state and intra-state movement of goods where value exceeds ₹50,000.'}
+  ]
+},
+{
+  id:'profTax', name:'Professional Tax (State-specific)',
+  shortName:'Professional Tax', category:'Tax', priority:'medium',
+  description:'State-level tax levied on salaried employees and professionals in certain states. Maximum ceiling ₹2,500/year.',
+  reason: c => {
+    const ptStates = ['maharashtra','karnataka','gujarat','westbengal','andhrapradesh','telangana','tamilnadu','madhyapradesh','assam','kerala','odisha','jharkhand','bihar','tripura','meghalaya','sikkim','manipur','mizoram','nagaland'];
+    const ops = (c.statesOfOperation||[]).map(s=>s.toLowerCase());
+    const applicable = ptStates.filter(s => ops.some(o => o.includes(s)));
+    return applicable.length > 0 ? `Applicable in states: ${applicable.join(', ')}` : null;
+  },
+  actions:[
+    {title:'Register for Professional Tax with State authority', freq:'One-time per state', deadline:'Within 30 days of applicability', authority:'State Commercial Tax / Labour Department', penalty:'Penalty varying by state (typically ₹5/day)', desc:'Register in each applicable state: e.g., Maharashtra PT Portal, Karnataka CTO, West Bengal PT authority.'},
+    {title:'Deduct Professional Tax from employee salary', freq:'Monthly', deadline:'Last day of month', authority:'State authority', penalty:'Penalty + interest', desc:'PT deducted from employee salary as per state slab (usually ₹200/month for income above threshold; ₹300 for February in Maharashtra).'},
+    {title:'File Professional Tax Returns and pay employer PT', freq:'Monthly / Annual (varies by state)', deadline:'Varies by state (e.g., Maharashtra: 31st March)', authority:'State authority', penalty:'Penalty + interest', desc:'Employer also pays PT on its own profession. File returns showing employees and PT deducted.'}
+  ]
+},
+
+// ══════════════════════════════════════════
+// D. COMPANY / CORPORATE LAW
+// ══════════════════════════════════════════
+{
+  id:'companiesact', name:'Companies Act, 2013',
+  shortName:'Companies Act, 2013', category:'Corporate', priority:'critical',
+  description:'Comprehensive legislation governing incorporation, management, and winding up of companies in India.',
+  reason: c => ['private_ltd','public_ltd','opc','section8','govt'].includes(c.entityType)
+    ? `Applicable to all ${c.entityType.replace('_',' ')} companies` : null,
+  actions:[
+    {title:'Hold Annual General Meeting (AGM)', freq:'Annual', deadline:'Within 6 months of financial year end (by 30 Sep for Apr–Mar FY)', authority:'MCA / ROC', penalty:'Fine up to ₹1 lakh + ₹5,000/day for continuing default', desc:'Every company except OPC must hold AGM. Lay financial statements, appoint auditors, declare dividends, appoint directors.'},
+    {title:'Hold minimum 4 Board Meetings per year', freq:'Quarterly', deadline:'Max gap 120 days between any two meetings', authority:'MCA / ROC', penalty:'Fine on company (₹25,000) and officers in default (₹5,000 each)', desc:'At least 4 board meetings per financial year with a maximum gap of 120 days between two meetings.'},
+    {title:'File Annual Return (MGT-7 / MGT-7A for small companies)', freq:'Annual', deadline:'Within 60 days of AGM', authority:'MCA (ROC)', penalty:'₹100/day per day of delay', desc:'Contains details of shareholders, directors, meetings, and other corporate information.'},
+    {title:'File Financial Statements (AOC-4)', freq:'Annual', deadline:'Within 30 days of AGM', authority:'MCA (ROC)', penalty:'₹100/day per day of delay', desc:'Balance Sheet, Profit & Loss, Cash Flow, Directors\' Report, Auditor\'s Report.'},
+    {title:'Appoint Statutory Auditor and file ADT-1', freq:'Annual or as required', deadline:'Within 15 days of AGM', authority:'MCA (ROC)', penalty:'Fine', desc:'Appoint CA firm as statutory auditor. An individual auditor can be appointed for max 5 consecutive years, firm for 10 years.'},
+    {title:'Complete Director KYC (DIR-3 KYC)', freq:'Annual', deadline:'30th September each year', authority:'MCA', penalty:'₹5,000 per director (DIN deactivated)', desc:'Every director with an active DIN must file DIR-3 KYC or DIR-3 KYC Web annually.'},
+    {title:'CSR Compliance (if net worth ≥ ₹500 Cr OR turnover ≥ ₹1000 Cr OR net profit ≥ ₹5 Cr)', freq:'Annual', deadline:'Within 31st March of following year', authority:'MCA', penalty:'Fine ₹50,000–₹25 lakh + imprisonment up to 3 years for officers', desc:'Spend 2% of average net profit of last 3 years on CSR activities. Form CSR-1 for registration of CSR implementing agencies. File Form CSR-2.'},
+    {title:'Maintain statutory registers (MGT-1, MGT-3, MBP-1, CHG-1, etc.)', freq:'Ongoing', deadline:'At all times', authority:'ROC', penalty:'Fine', desc:'Register of members, directors, charges, contracts, related parties, key managerial personnel.'},
+    {title:'File XBRL Financial Statements (if applicable)', freq:'Annual', deadline:'With AOC-4', authority:'MCA', penalty:'Fine', desc:'Mandatory for listed companies and public companies with paid-up capital ≥ ₹5 crore or turnover ≥ ₹100 crore.'},
+    {title:'Secretarial Audit (if listed or public company with large cap)', freq:'Annual', deadline:'With Board Report', authority:'Company Secretary in Practice', penalty:'Fine ₹1 lakh–₹5 lakh', desc:'Mandatory for: listed companies; unlisted public companies with paid-up capital ≥ ₹50Cr or turnover ≥ ₹250Cr; private companies with turnover ≥ ₹250Cr.'},
+    {title:'Internal Audit (if applicable thresholds met)', freq:'Quarterly', deadline:'As per Board decision', authority:'Internal Auditor (CA / CMA)', penalty:'—', desc:'Mandatory for: listed companies; unlisted public companies with paid-up capital ≥ ₹50Cr, turnover ≥ ₹200Cr, loans ≥ ₹100Cr, deposits ≥ ₹25Cr.'}
+  ]
+},
+{
+  id:'llp', name:'Limited Liability Partnership Act, 2008',
+  shortName:'LLP Act, 2008', category:'Corporate', priority:'critical',
+  description:'Governs formation, management, and compliance obligations of Limited Liability Partnerships in India.',
+  reason: c => c.entityType === 'llp' ? 'Applicable: entity is an LLP' : null,
+  actions:[
+    {title:'File Annual Return (Form 11)', freq:'Annual', deadline:'30th May each year', authority:'MCA (ROC)', penalty:'₹100/day per day of delay', desc:'Details of partners, changes during the year, and statements about business activities.'},
+    {title:'File Statement of Accounts and Solvency (Form 8)', freq:'Annual', deadline:'30th October each year', authority:'MCA (ROC)', penalty:'₹100/day per day of delay', desc:'Balance Sheet and Statement of Income & Expenditure. Must be certified by a Designated Partner.'},
+    {title:'Statutory Audit (if turnover > ₹40 lakh or contribution > ₹25 lakh)', freq:'Annual', deadline:'Before filing Form 8', authority:'Chartered Accountant', penalty:'Penal provisions under LLP Act', desc:'LLPs exceeding ₹40 lakh turnover or ₹25 lakh contribution must get accounts audited by a CA.'},
+    {title:'Maintain proper books of accounts', freq:'Ongoing', deadline:'At all times', authority:'Partners', penalty:'Fine', desc:'Books must be kept at registered office; double-entry system recommended.'},
+    {title:'Update KYC of Designated Partners (DPIN/DIN)', freq:'Annual', deadline:'30th September', authority:'MCA', penalty:'DPIN deactivated + ₹5,000 penalty', desc:'Each Designated Partner must complete annual KYC.'}
+  ]
+},
+{
+  id:'sebi_lodr', name:'SEBI (Listing Obligations and Disclosure Requirements) Regulations, 2015',
+  shortName:'SEBI LODR Regulations', category:'Corporate', priority:'critical',
+  description:'Governs compliance obligations of companies listed on Indian stock exchanges (NSE/BSE).',
+  reason: c => c.isListed ? 'Applicable: company is listed on a stock exchange' : null,
+  actions:[
+    {title:'Publish quarterly financial results within 45 days of quarter end', freq:'Quarterly', deadline:'45 days from quarter end; 60 days for last quarter', authority:'SEBI / Stock Exchange', penalty:'Fine + suspension of trading', desc:'Quarterly unaudited (or audited for Q4) standalone and consolidated financial results must be published.'},
+    {title:'File corporate governance compliance report (Reg 27)', freq:'Quarterly', deadline:'21 days from quarter end', authority:'Stock Exchange', penalty:'Fine ₹20,000–₹5 lakh per non-compliance', desc:'Details of board composition, committees, meetings, and other governance requirements.'},
+    {title:'Ensure minimum public shareholding of 25%', freq:'Ongoing', deadline:'Always', authority:'SEBI', penalty:'Suspension of trading + other penalties', desc:'Listed companies must maintain at least 25% public float at all times.'},
+    {title:'Disclose material events to stock exchange immediately', freq:'As required', deadline:'Within 24 hours of occurrence', authority:'Stock Exchange / SEBI', penalty:'Fine + suspension', desc:'Includes: board decisions, acquisition/disposal of significant assets, fraud, defaults, court orders, etc.'},
+    {title:'Hold board meetings to approve quarterly results', freq:'Quarterly', deadline:'Within 45/60 days of quarter', authority:'Board of Directors', penalty:'SEBI action', desc:'Board must formally approve quarterly and annual financial results.'},
+    {title:'Conduct Annual General Meeting within 6 months of FY end', freq:'Annual', deadline:'September 30 each year', authority:'ROC / SEBI', penalty:'Fine', desc:'Comply with both Companies Act 2013 AGM requirements and SEBI LODR.'},
+    {title:'Maintain minimum board composition with independent directors', freq:'Ongoing', deadline:'Always', authority:'SEBI', penalty:'Fine up to ₹25 lakh per non-compliance', desc:'At least 1/3rd of board must be independent directors; 50% if executive chairman; at least one woman director.'}
+  ]
+},
+
+// ══════════════════════════════════════════
+// E. ENVIRONMENTAL LAWS
+// ══════════════════════════════════════════
+{
+  id:'envprotection', name:'Environment Protection Act, 1986',
+  shortName:'Environment Protection Act, 1986', category:'Environment', priority:'high',
+  description:'Umbrella legislation for environmental protection; basis for Environmental Clearance, EIA, and environmental standards.',
+  reason: c => c.hasFactory || c.hasMines || c.hasConstruction || c.generatesHazardousWaste || c.dealsPetroleum || c.primarySector === 'energy'
+    ? 'Applicable: industrial/construction/mining activities' : null,
+  actions:[
+    {title:'Obtain Environmental Clearance (EC) for specified projects', freq:'One-time per project', deadline:'Before commencement', authority:'MoEFCC / State EIA Authority', penalty:'Imprisonment up to 5 years + fine up to ₹1 lakh + ₹5,000/day', desc:'Mandatory for: industries/mines above threshold size; highways; airports; ports; dams; SEZs. Prior EC is mandatory.'},
+    {title:'Comply with Environmental Quality Standards', freq:'Ongoing', deadline:'Always', authority:'MoEFCC / SPCB', penalty:'Imprisonment + fine + closure', desc:'Comply with effluent, emission, noise, and other environmental standards prescribed under EPA.'},
+    {title:'Submit annual environmental compliance reports', freq:'Annual', deadline:'As per EC conditions', authority:'MoEFCC / SPCB', penalty:'Penalty under EPA', desc:'Report compliance status with EC conditions and environmental standards.'},
+    {title:'Maintain environment-related records for inspection', freq:'Ongoing', deadline:'At all times', authority:'SPCB Inspector', penalty:'Fine', desc:'Records of waste generation, treatment, disposal, and environmental parameters.'}
+  ]
+},
+{
+  id:'wateract', name:'Water (Prevention and Control of Pollution) Act, 1974',
+  shortName:'Water Act, 1974', category:'Environment', priority:'high',
+  description:'Prevents and controls water pollution; requires industries discharging effluents to obtain consent from State Pollution Control Boards.',
+  reason: c => c.hasFactory || c.dischargesWastewater || c.generatesHazardousWaste
+    ? 'Applicable: industrial effluent discharge or hazardous waste' : null,
+  actions:[
+    {title:'Obtain Consent to Establish (CTE) from State Pollution Control Board', freq:'One-time', deadline:'Before establishing plant/unit', authority:'State Pollution Control Board (SPCB)', penalty:'Imprisonment up to 6 years + fine', desc:"Apply to SPCB before setting up any industry that discharges effluents into water bodies."},
+    {title:'Obtain Consent to Operate (CTO) / Annual Renewal', freq:'Annual', deadline:'Before expiry of existing CTO', authority:'SPCB', penalty:'Closure order + fine', desc:'CTO must be renewed annually (or as per SPCB timeline). Non-renewal = illegal operation.'},
+    {title:'Install and operate Effluent Treatment Plant (ETP)', freq:'Ongoing', deadline:'Before receiving CTO', authority:'SPCB', penalty:'Closure order + fine', desc:'ETP must meet prescribed effluent standards before discharge into any water body or municipal drain.'},
+    {title:'Maintain records of water consumption and effluent discharge', freq:'Monthly', deadline:'As per SPCB norms', authority:'SPCB', penalty:'Fine', desc:'Log book of daily effluent quality, quantity, and treatment records.'},
+    {title:'Submit monthly/quarterly environmental reports to SPCB', freq:'Quarterly', deadline:'As per SPCB schedule', authority:'SPCB', penalty:'Fine', desc:'Reports on effluent quality and quantity treated/discharged.'}
+  ]
+},
+{
+  id:'airact', name:'Air (Prevention and Control of Pollution) Act, 1981',
+  shortName:'Air Act, 1981', category:'Environment', priority:'high',
+  description:'Controls air pollution from industrial and other sources; requires consent from State Pollution Control Boards.',
+  reason: c => c.hasFactory || c.emitsAirPollutants || c.hasMines || c.hasConstruction
+    ? 'Applicable: industrial air emission / dust generation' : null,
+  actions:[
+    {title:'Obtain Consent to Establish and Operate from SPCB', freq:'Annual renewal', deadline:'Before establishing / before renewal date', authority:'SPCB', penalty:'Imprisonment up to 6 years + fine', desc:'Required for all industrial plants that emit air pollutants. Applies across all industrial categories.'},
+    {title:'Install Air Pollution Control Equipment (APCE)', freq:'Ongoing', deadline:'Before CTO', authority:'SPCB', penalty:'Closure + fine', desc:'Adequate dust collectors, scrubbers, electrostatic precipitators, or other approved equipment as required.'},
+    {title:'Conduct stack emission monitoring', freq:'Quarterly', deadline:'Submit reports quarterly', authority:'SPCB', penalty:'Fine', desc:'Monitor and report stack emissions from chimneys and stacks as per prescribed frequency and standards.'},
+    {title:'Comply with ambient air quality standards', freq:'Ongoing', deadline:'Always', authority:'SPCB / CPCB', penalty:'Fine + closure', desc:'Ensure that emissions from the plant do not cause ambient air quality to exceed prescribed standards.'}
+  ]
+},
+{
+  id:'hazwaste', name:'Hazardous and Other Wastes (Management and Transboundary Movement) Rules, 2016',
+  shortName:'Hazardous Waste Rules, 2016', category:'Environment', priority:'high',
+  description:'Regulates management, storage, transport, and disposal of hazardous waste by industrial units.',
+  reason: c => c.generatesHazardousWaste || c.dealsChemicals ? 'Applicable: generates or deals in hazardous waste/chemicals' : null,
+  actions:[
+    {title:'Obtain Authorization from SPCB for hazardous waste handling', freq:'Annual renewal', deadline:'Before generating/storing/disposing hazardous waste', authority:'SPCB', penalty:'Imprisonment up to 5 years + fine', desc:'Apply in Form 1 to SPCB for authorisation. Renew annually.'},
+    {title:'Maintain manifest for every hazardous waste consignment', freq:'Per consignment', deadline:'Before dispatch', authority:'SPCB', penalty:'Fine', desc:'Use the online HWMS system for manifests. Copy must accompany every consignment of hazardous waste.'},
+    {title:'Dispose hazardous waste only through SPCB-authorised agencies', freq:'As required', deadline:'No accumulation beyond limits', authority:'SPCB / CPCB', penalty:'Fine + imprisonment', desc:'Cannot dump in general waste or drain. Must use authorised common Treatment, Storage and Disposal Facilities (TSDF).'},
+    {title:'Maintain records of waste generation, storage, and disposal', freq:'Annual', deadline:'Submit annual return to SPCB by 30 June', authority:'SPCB', penalty:'Fine', desc:'Annual return in Form 4 showing quantities generated, stored, treated, and disposed.'}
+  ]
+},
+{
+  id:'ewaste', name:'E-Waste (Management) Rules, 2022',
+  shortName:'E-Waste Rules, 2022', category:'Environment', priority:'medium',
+  description:'Regulates management of electronic waste and mandates Extended Producer Responsibility (EPR) for producers of electronic equipment.',
+  reason: c => c.generatesEWaste || c.primarySector === 'it' || c.isITService
+    ? 'Applicable: IT company / electronic equipment producer / user' : null,
+  actions:[
+    {title:'Register on CPCB E-Waste portal as Producer/Manufacturer', freq:'One-time', deadline:'Before selling/distributing electrical/electronic equipment', authority:'CPCB', penalty:'Fine + imprisonment', desc:'Producers of electrical/electronic equipment (phones, computers, appliances, etc.) must register and set up EPR plan.'},
+    {title:'Meet EPR (Extended Producer Responsibility) targets for collection/recycling', freq:'Annual', deadline:'As per CPCB schedule', authority:'CPCB', penalty:'Environmental Compensation', desc:'Collect and ensure recycling of specified percentage of e-waste generated from products sold.'},
+    {title:'Dispose e-waste through authorised e-waste recyclers only', freq:'As required', deadline:'No stockpiling beyond limits', authority:'SPCB / CPCB', penalty:'Fine', desc:'Cannot throw electronics in general waste. Must use authorised recyclers with SPCB authorisation.'},
+    {title:'Maintain records and file annual returns', freq:'Annual', deadline:'30th June', authority:'CPCB / SPCB', penalty:'Fine', desc:'Annual return showing e-waste generated, collected, and recycled/disposed.'}
+  ]
+},
+{
+  id:'plastic', name:'Plastic Waste Management Rules, 2016 (as amended)',
+  shortName:'Plastic Waste Rules, 2016', category:'Environment', priority:'medium',
+  description:'Governs management of plastic waste including ban on single-use plastics and EPR obligations for plastic packaging producers.',
+  reason: c => c.usesPlastic || c.isManufacturing || c.primarySector === 'food' || c.primarySector === 'trading'
+    ? 'Applicable: company uses plastic packaging or manufactures plastic products' : null,
+  actions:[
+    {title:'Stop using banned single-use plastic items (effective July 2022)', freq:'Immediate', deadline:'Immediate', authority:'CPCB / SPCB / Local Authority', penalty:'Fine up to ₹1 lakh + imprisonment', desc:'Banned items include: cutlery, straws, stirrers, plates, cups below 100 microns, polystyrene decoration items.'},
+    {title:'Register under EPR for plastic packaging (if producer/importer/brand owner)', freq:'Annual', deadline:'Before selling packaged products', authority:'CPCB', penalty:'Environmental Compensation', desc:'Producers of plastic packaging must register on CPCB EPR portal and meet collection/recycling targets.'},
+    {title:'Ensure plastic packaging thickness compliance (≥ 120 microns)', freq:'Ongoing', deadline:'Always', authority:'CPCB / Local Body', penalty:'Fine', desc:'Plastic bags must be at least 120 microns thick.'}
+  ]
+},
+
+// ══════════════════════════════════════════
+// F. FOOD & HEALTH LAWS
+// ══════════════════════════════════════════
+{
+  id:'fssai', name:'Food Safety and Standards Act, 2006',
+  shortName:'FSSAI Act, 2006', category:'Food & Health', priority:'critical',
+  description:"Regulates manufacturing, storage, distribution, sale and import of food to ensure safe and wholesome food for human consumption.",
+  reason: c => c.dealsFoodBeverages || c.primarySector === 'food' || c.primarySector === 'hospitality'
+    ? 'Applicable: company is in food/beverage/hospitality business' : null,
+  actions:[
+    {title:'Obtain FSSAI Registration or License', freq:'One-time + Annual renewal', deadline:'Before commencing food business', authority:'Food Safety and Standards Authority of India (FSSAI)', penalty:'Imprisonment up to 6 months + fine up to ₹5 lakh', desc:'Registration (turnover < ₹12 lakh): with local food safety officer. State License (₹12L–₹20Cr turnover or specific activities). Central License (turnover > ₹20Cr or import/export/food park).'},
+    {title:'Display FSSAI License number on all products and premises', freq:'Permanent', deadline:'Immediately', authority:'FSSAI', penalty:'Fine', desc:'14-digit FSSAI licence number must be displayed on premises and printed on all food labels.'},
+    {title:'Maintain hygiene and food safety standards (Schedule 4)', freq:'Ongoing', deadline:'Always', authority:'FSSAI / State Food Safety Officer', penalty:'Fine + cancellation of licence', desc:'Comply with Good Manufacturing Practices (GMP), Good Hygienic Practices (GHP), HACCP principles as applicable.'},
+    {title:'Ensure proper food labelling as per FSSAI Labelling Regulations', freq:'Per product', deadline:'Before sale', authority:'FSSAI', penalty:'Fine up to ₹3 lakh', desc:'Labels must show: name, ingredients, nutritional info, FSSAI number, MFD/best before, net quantity, manufacturer address.'},
+    {title:'File Annual Return (Form D-1) — for manufacturers only', freq:'Annual', deadline:'31st May each year', authority:'FSSAI / State Licensing Authority', penalty:'Fine', desc:'Annual return covering details of production, import, and sale.'},
+    {title:'Conduct food safety trainings for food handlers', freq:'Annual', deadline:'Periodically', authority:'FSSAI / State', penalty:'—', desc:'Food handlers must be trained in hygiene, personal cleanliness, and safe food handling practices.'}
+  ]
+},
+{
+  id:'drugs', name:'Drugs and Cosmetics Act, 1940',
+  shortName:'Drugs & Cosmetics Act, 1940', category:'Food & Health', priority:'critical',
+  description:"Regulates import, manufacture, distribution, and sale of drugs and cosmetics in India.",
+  reason: c => c.dealsPharma || c.primarySector === 'pharma' || c.primarySector === 'healthcare'
+    ? 'Applicable: company deals in drugs, cosmetics, or healthcare products' : null,
+  actions:[
+    {title:'Obtain Drug Manufacturing Licence from State Licensing Authority', freq:'One-time + Renewal', deadline:'Before manufacturing', authority:'State Drugs Controller / CDSCO (Central)', penalty:'Imprisonment up to 3 years + fine', desc:'Form 25 / 28 for different drug categories. GMP certificate required. Separate licence for each category (allopathic, ayurvedic, cosmetics).'},
+    {title:'Obtain Drug Sales / Wholesale Licence (if not manufacturer)', freq:'One-time + Annual', deadline:'Before selling drugs', authority:'State Licensing Authority / Drugs Inspector', penalty:'Imprisonment up to 2 years + fine', desc:'Form 20/21 for retail pharmacy; Form 20B/21B for wholesale drugs. Premises and personnel (qualified pharmacist) requirements apply.'},
+    {title:'Maintain records of purchase and sale of drugs', freq:'Monthly', deadline:'At all times', authority:'Drugs Inspector', penalty:'Fine', desc:'Schedule H and Schedule H1 drugs require additional prescription register and special records.'},
+    {title:'Ensure proper labelling, storage, and transport of drugs', freq:'Ongoing', deadline:'Always', authority:'Drugs Inspector', penalty:'Fine + imprisonment', desc:'Temperature-sensitive drugs must be stored as prescribed. Labels must include: drug name, dosage, manufacturer, batch number, expiry date.'},
+    {title:'Submit periodic reports to CDSCO/State Licensing Authority', freq:'As required', deadline:'As per licence conditions', authority:'CDSCO / State', penalty:'Fine', desc:'Adverse Drug Reaction (ADR) reporting; post-market surveillance for specified drugs.'}
+  ]
+},
+
+// ══════════════════════════════════════════
+// G. IT & DATA LAWS
+// ══════════════════════════════════════════
+{
+  id:'itact', name:'Information Technology Act, 2000 & IT (Amendment) Act, 2008',
+  shortName:'IT Act, 2000', category:'Technology & Data', priority:'high',
+  description:'Governs legal recognition of electronic transactions, cybercrime, and obligations for intermediaries and body corporates handling sensitive personal data.',
+  reason: c => c.hasWeb || c.collectsData || c.isITService || c.isECommerce || c.hasPayment
+    ? 'Applicable: company has digital/online presence or deals in electronic data' : null,
+  actions:[
+    {title:'Publish Privacy Policy on website/app (Section 43A + IT Rules 2011)', freq:'One-time + as updated', deadline:'Immediately', authority:'MeitY (Ministry of Electronics & IT)', penalty:'Compensation payable to affected persons (no fixed cap)', desc:'Privacy policy must disclose: what data is collected, purpose, how it is used/shared, how to withdraw consent.'},
+    {title:'Implement reasonable security practices for SPDI (Sensitive Personal Data)', freq:'Ongoing', deadline:'Always', authority:'MeitY', penalty:'Compensation up to full loss caused', desc:'SPDI includes: passwords, financial data, health data, biometric data, sexual orientation, medical records. Must have ISO 27001 or similar standard.'},
+    {title:'Comply with Intermediary Guidelines and Digital Media Ethics Code (IT Rules, 2021)', freq:'Ongoing', deadline:'As applicable', authority:'MeitY', penalty:'Loss of intermediary safe harbour + fine', desc:'Social media intermediaries with >50L users must: appoint Grievance Officer, Nodal Contact Person, Chief Compliance Officer; publish transparency reports.'},
+    {title:'Report cybersecurity incidents to CERT-In within 6 hours', freq:'As required', deadline:'Within 6 hours of detection', authority:'CERT-In (Indian Computer Emergency Response Team)', penalty:'Imprisonment + fine', desc:'Mandatory reporting for: data breaches, cyberattacks, ransomware, fraud, identity theft. Retain logs for 180 days.'},
+    {title:'Appoint Grievance Officer with contact details published', freq:'One-time', deadline:'Immediately', authority:'MeitY', penalty:'Loss of safe harbour', desc:'Intermediaries must appoint a Grievance Officer to handle user complaints. Acknowledge within 24 hours, resolve within 15 days.'}
+  ]
+},
+{
+  id:'dpdp', name:'Digital Personal Data Protection Act, 2023',
+  shortName:'DPDP Act, 2023', category:'Technology & Data', priority:'critical',
+  description:"India's comprehensive data protection law. Governs processing of digital personal data with consent-based framework.",
+  reason: c => c.collectsData || c.hasWeb || c.isITService
+    ? 'Applicable: company collects or processes personal data of individuals' : null,
+  actions:[
+    {title:'Obtain free, specific, informed, and unambiguous consent before processing personal data', freq:'Per data principal', deadline:'Before processing', authority:'Data Protection Board of India', penalty:'Up to ₹250 crore per violation', desc:'Consent must be sought through a clear and plain notice. Separate consent for each purpose. No consent by default/bundled.'},
+    {title:'Publish clear and accessible Privacy Notice', freq:'One-time + as updated', deadline:'Before or at the time of data collection', authority:'Data Protection Board', penalty:'Up to ₹200 crore', desc:'Notice must specify: what data is collected, purpose of processing, how data principals can exercise rights.'},
+    {title:'Fulfil Data Principal Rights: access, correction, erasure, grievance redressal', freq:'On request', deadline:'Within prescribed timelines (rules awaited)', authority:'Data Protection Board', penalty:'Up to ₹150 crore', desc:'Individuals have the right to: access their data, correct inaccuracies, erase data, know about processing, and nominate a person.'},
+    {title:'Appoint Data Protection Officer (for Significant Data Fiduciaries)', freq:'One-time', deadline:'On notification by Central Government', authority:'Data Protection Board', penalty:'Up to ₹150 crore', desc:'Significant Data Fiduciaries (to be notified by Govt) must appoint a DPO based in India.'},
+    {title:'Implement Data Security Safeguards', freq:'Ongoing', deadline:'Always', authority:'Data Protection Board', penalty:'Up to ₹250 crore', desc:'Implement appropriate technical and organizational measures to prevent data breaches.'},
+    {title:'Notify Data Protection Board of data breaches', freq:'As required', deadline:'Without undue delay (timeline in Rules)', authority:'Data Protection Board', penalty:'Up to ₹200 crore', desc:'Any breach affecting personal data must be reported to the Board and affected individuals.'}
+  ]
+},
+
+// ══════════════════════════════════════════
+// H. FOREIGN EXCHANGE & FINANCIAL
+// ══════════════════════════════════════════
+{
+  id:'fema', name:'Foreign Exchange Management Act, 1999',
+  shortName:'FEMA, 1999', category:'Financial', priority:'high',
+  description:'Regulates all foreign exchange transactions in India, including FDI, ODI, imports, exports, and foreign currency accounts.',
+  reason: c => c.hasFDI || c.doesImportExport || c.hasForex
+    ? 'Applicable: company has FDI, imports/exports, or foreign exchange transactions' : null,
+  actions:[
+    {title:'Report inward FDI to RBI (Form FC-GPR)', freq:'Per transaction', deadline:'Within 30 days of allotment of shares', authority:'RBI (via authorised dealer bank)', penalty:'Up to 3× the amount of contravention or ₹2 lakh + ₹5,000/day', desc:'Every time shares are issued to foreign investors, file Form FC-GPR (Foreign Currency – Gross Provisional Return) through AD bank.'},
+    {title:'File Annual Return on Foreign Liabilities and Assets (FLA)', freq:'Annual', deadline:'15th July each year', authority:'RBI (FEMA Division)', penalty:'Fine + compounding', desc:'Companies with FDI or ODI must file the FLA return with RBI every year on the RBI XBRL site.'},
+    {title:'Obtain IEC (Importer Exporter Code) for import/export', freq:'One-time', deadline:'Before first import/export transaction', authority:'DGFT (Directorate General of Foreign Trade)', penalty:'Cannot import/export without IEC', desc:'Apply online on DGFT portal for an 10-digit IEC. Free of cost. Update annually.'},
+    {title:'Comply with FEMA (Current Account Transactions) Rules for import payments', freq:'Per transaction', deadline:'As per payment terms', authority:'RBI / AD Bank', penalty:'Compounding + fine', desc:'Pay for imports within prescribed time (6 months for goods; 1 year for services via LUT). Submit import documents to AD bank.'},
+    {title:'Realise export proceeds within prescribed time (9 months for goods)', freq:'Per export', deadline:'Within 9 months of shipment', authority:'RBI / AD Bank', penalty:'Fine proportional to unrealised amount', desc:'All export proceeds must be repatriated to India. File softex/EFMS for software exports.'},
+    {title:'File ODI returns if company has overseas investment', freq:'Per transaction + Annual', deadline:'Within 30 days of transaction', authority:'RBI', penalty:'Fine + compounding', desc:'Outward direct investment in foreign entities requires RBI reporting via Form ODI.'}
+  ]
+},
+{
+  id:'pmla', name:'Prevention of Money Laundering Act, 2002',
+  shortName:'PMLA, 2002', category:'Financial', priority:'critical',
+  description:'Requires reporting entities (banks, NBFCs, insurance, payment systems, etc.) to comply with KYC/AML norms and report suspicious transactions.',
+  reason: c => c.isPMLA || c.isNBFC || c.isBanking || c.isInsurance || c.isRealEstate || c.primarySector === 'financial'
+    ? 'Applicable: company is a reporting entity under PMLA' : null,
+  actions:[
+    {title:'Implement KYC (Know Your Customer) Policy', freq:'Ongoing', deadline:'Before onboarding any customer', authority:'FIU-IND / RBI / SEBI / IRDAI', penalty:'Imprisonment up to 7 years + fine equal to property involved', desc:'KYC must include: Customer identification, UBO (Ultimate Beneficial Owner) identification, risk categorisation, ongoing monitoring.'},
+    {title:'File Suspicious Transaction Reports (STR) with FIU-IND', freq:'As required', deadline:'Within 7 days of suspicion', authority:'FIU-IND (Financial Intelligence Unit)', penalty:'Fine + imprisonment', desc:'Report any transaction suspected to be related to money laundering or terrorist financing to FIU-IND via FINnet 2.0 portal.'},
+    {title:'File Cash Transaction Reports (CTR) for cash transactions > ₹10 lakh', freq:'Monthly', deadline:'15th of following month', authority:'FIU-IND', penalty:'Fine + imprisonment', desc:'All cash transactions (individually or in aggregate) exceeding ₹10 lakh in a month must be reported.'},
+    {title:'Maintain records for 5 years after transaction', freq:'Ongoing', deadline:'At all times', authority:'FIU-IND', penalty:'Fine', desc:'KYC records, transaction records, and STR/CTR copies must be preserved for minimum 5 years.'},
+    {title:'Appoint a Principal Officer and file with FIU-IND', freq:'One-time', deadline:'Before commencing regulated activities', authority:'FIU-IND', penalty:'Fine', desc:'Designated Principal Officer must be registered with FIU-IND and is responsible for AML compliance and reporting.'}
+  ]
+},
+
+// ══════════════════════════════════════════
+// I. CONSUMER & TRADE
+// ══════════════════════════════════════════
+{
+  id:'consumerprotection', name:'Consumer Protection Act, 2019',
+  shortName:'Consumer Protection Act, 2019', category:'Consumer', priority:'high',
+  description:"Protects consumers from unfair trade practices, misleading advertisements, and product defects. Applies to all businesses.",
+  reason: c => true,
+  actions:[
+    {title:'Avoid misleading advertisements and unfair trade practices', freq:'Ongoing', deadline:'Always', authority:'Central Consumer Protection Authority (CCPA) / NCDRC', penalty:'Fine up to ₹10 lakh (first offence), ₹50 lakh (repeat) + imprisonment', desc:'Do not make false claims about products/services. No bait advertising, pyramid schemes, or psychological pricing tactics.'},
+    {title:'Establish consumer grievance redressal mechanism', freq:'Ongoing', deadline:'Immediately', authority:'CCPA', penalty:'Fine', desc:'Display contact details for consumer complaints prominently. E-commerce platforms must resolve complaints within 15 days.'},
+    {title:'E-commerce: Comply with Consumer Protection (E-Commerce) Rules, 2020', freq:'Ongoing', deadline:'Always', authority:'CCPA / Consumer Courts', penalty:'Fine + imprisonment', desc:'Display: seller details, country of origin, expiry date, return/refund policy, customer care number. No manipulation of price or search results.'},
+    {title:'Register on National Consumer Helpline portal (e-commerce businesses)', freq:'One-time', deadline:'Within 90 days of notification', authority:'CCPA / Ministry of Consumer Affairs', penalty:'Fine', desc:'E-commerce entities must register on NCH portal and respond to complaints filed there.'},
+    {title:'Comply with product liability provisions', freq:'Ongoing', deadline:'Always', authority:'Consumer Courts / CCPA', penalty:'Compensation to consumers + fine', desc:'Manufacturers/sellers/service providers are liable for defective products and deficient services. Maintain product safety documentation.'}
+  ]
+},
+{
+  id:'legalmetrology', name:'Legal Metrology Act, 2009',
+  shortName:'Legal Metrology Act, 2009', category:'Consumer', priority:'medium',
+  description:'Regulates weights, measures, and labelling of pre-packaged commodities including declaration of MRP, net quantity, and manufacturer details.',
+  reason: c => c.isManufacturing || c.isTrading || c.primarySector === 'trading' || c.primarySector === 'food' || c.primarySector === 'retail'
+    ? 'Applicable: company manufactures or sells pre-packaged goods' : null,
+  actions:[
+    {title:'Declare MRP, net quantity, and manufacturer details on all pre-packaged goods', freq:'Per product', deadline:'Before sale', authority:'Legal Metrology Inspector / State Weights & Measures Department', penalty:'Fine up to ₹25,000 + imprisonment', desc:'Mandatory declarations on label: name/address of manufacturer, net quantity, manufacturing date, MRP (inclusive of all taxes), country of origin.'},
+    {title:'Ensure accuracy of weights and measures used in trade', freq:'Annual verification', deadline:'Annual stamping/verification', authority:'Legal Metrology Inspector', penalty:'Fine + confiscation of instrument', desc:'All weighing/measuring instruments used in trade must be verified and stamped by Legal Metrology Inspector annually.'},
+    {title:'Obtain Dealer Licence for weighing instruments (if applicable)', freq:'Annual', deadline:'Before selling instruments', authority:'Controller of Legal Metrology (State)', penalty:'Fine', desc:'Dealers and repairers of weighing/measuring instruments must obtain a licence.'},
+    {title:'Comply with e-commerce labelling requirements', freq:'Ongoing', deadline:'Always', authority:'Legal Metrology Inspector', penalty:'Fine', desc:'E-commerce product listings must display all mandatory declarations as required on physical labels.'}
+  ]
+},
+{
+  id:'competition', name:'Competition Act, 2002',
+  shortName:'Competition Act, 2002', category:'Consumer', priority:'medium',
+  description:'Prohibits anti-competitive agreements, abuse of dominant position, and regulates mergers/acquisitions above prescribed thresholds.',
+  reason: c => {
+    const t = parseInt(c.annualTurnover)||0;
+    return t >= 25000 || c.isListed ? 'Applicable: company meets CCI threshold OR anti-competitive conduct obligations apply to all businesses' : 'Applicable: prohibitions on anti-competitive conduct apply to all enterprises';
+  },
+  actions:[
+    {title:'Avoid anti-competitive agreements (price fixing, market sharing, bid rigging)', freq:'Ongoing', deadline:'Always', authority:'Competition Commission of India (CCI)', penalty:'Fine up to 10% of average 3-year turnover + imprisonment', desc:'Prohibited: agreements between competitors to fix prices, divide markets, rig bids. Also: exclusive dealing, tie-in arrangements, resale price maintenance.'},
+    {title:'Do not abuse dominant position in relevant market', freq:'Ongoing', deadline:'Always', authority:'CCI', penalty:'Fine up to 10% of turnover + structural remedies', desc:'If the company is dominant in any market: do not engage in predatory pricing, denial of market access, or exclusive dealing.'},
+    {title:'File notification with CCI for mergers/acquisitions above prescribed thresholds', freq:'As required', deadline:'Within 30 days of approval of combination', authority:'CCI', penalty:'Fine up to ₹1 crore + up to 1% of total assets/turnover of combination per day', desc:'Notification required if: combined assets in India > ₹2,000 crore OR combined turnover > ₹6,000 crore; or global thresholds. Wait for CCI clearance before closing.'}
+  ]
+},
+
+// ══════════════════════════════════════════
+// J. SECTOR-SPECIFIC LAWS
+// ══════════════════════════════════════════
+{
+  id:'mines', name:'Mines Act, 1952',
+  shortName:'Mines Act, 1952', category:'Sector-Specific', priority:'critical',
+  description:'Governs health, safety, and welfare of workers in mines.',
+  reason: c => c.hasMines ? 'Applicable: company operates mines or quarries' : null,
+  actions:[
+    {title:'Appoint Manager with a valid Mine Manager Certificate of Competency', freq:'One-time', deadline:'Before commencing operations', authority:'Director General of Mines Safety (DGMS)', penalty:'Imprisonment + fine', desc:'Every mine must have a qualified Mine Manager with a certificate from DGMS. Manager is responsible for all safety.'},
+    {title:'Obtain Mine Opening Permission and comply with DGMS regulations', freq:'One-time + periodic', deadline:'Before opening mine', authority:'DGMS (Regional Inspector of Mines)', penalty:'Closure order + fine', desc:'Submit Mine Opening Notice. Obtain various permits. File quarterly and annual statistical returns.'},
+    {title:'Maintain safety systems: supports, ventilation, drainage, fire prevention', freq:'Ongoing', deadline:'Always', authority:'DGMS Inspector', penalty:'Closure + imprisonment', desc:'Compulsory safety measures for underground/opencast mines including roof support, VHF communication, rescue equipment.'},
+    {title:'Work hours: max 8 hours/day, rest of 8 hours below ground', freq:'Daily', deadline:'Always', authority:'DGMS', penalty:'Fine', desc:'Overtime only with DGMS permission. Weekly rest mandatory.'},
+    {title:'Submit accident reports to DGMS', freq:'As required', deadline:'Immediately for serious accidents', authority:'DGMS', penalty:'Fine', desc:'Fatal/serious accidents must be reported by telephone immediately and in writing within 2 hours.'}
+  ]
+},
+{
+  id:'petroleum', name:'Petroleum Act, 1934 & Petroleum Rules, 2002',
+  shortName:'Petroleum Act, 1934', category:'Sector-Specific', priority:'critical',
+  description:'Regulates storage, import, and use of petroleum products; requires licenses for storage above specified quantities.',
+  reason: c => c.dealsPetroleum ? 'Applicable: company stores or deals in petroleum products' : null,
+  actions:[
+    {title:'Obtain Petroleum Storage Licence from PESO', freq:'Annual renewal', deadline:'Before storing petroleum above threshold quantities', authority:'PESO (Petroleum and Explosives Safety Organisation)', penalty:'Imprisonment up to 3 years + fine', desc:'Class A petroleum (flash point < 23°C): licence for any storage; Class B (23°C–65°C): > 2500 L; Class C (>65°C): > 45,000 L.'},
+    {title:'Comply with petroleum storage safety requirements', freq:'Ongoing', deadline:'Always', authority:'PESO Inspector', penalty:'Fine + closure', desc:'Fire prevention systems, grounding/bonding of tanks, safety distances from buildings, no smoking zones, emergency procedures.'},
+    {title:'Ensure trained personnel for petroleum handling', freq:'Ongoing', deadline:'Always', authority:'PESO', penalty:'Fine', desc:'Personnel must be trained in safe handling of petroleum products and emergency response.'}
+  ]
+},
+{
+  id:'boilers', name:'Indian Boilers Act, 1923',
+  shortName:'Indian Boilers Act, 1923', category:'Sector-Specific', priority:'high',
+  description:'Regulates safety of steam boilers used in industrial and commercial establishments.',
+  reason: c => c.hasBoilers ? 'Applicable: company uses industrial steam boilers' : null,
+  actions:[
+    {title:'Register every boiler with the State Boiler Inspectorate', freq:'One-time + Annual', deadline:'Before using boiler', authority:'State Boiler Inspector (Chief Inspector of Boilers)', penalty:'Imprisonment + fine; cannot operate unregistered boiler', desc:'New boilers must be inspected and registered before use. Certificate of registration is issued for 1–2 years.'},
+    {title:'Obtain annual fitness certificate for every boiler', freq:'Annual', deadline:'Before expiry of existing certificate', authority:'Boiler Inspector', penalty:'Cannot operate; fine + imprisonment', desc:'Annual inspection by Boiler Inspector. Certificate of fitness renewed annually or as per Inspector\'s decision.'},
+    {title:'Employ only certified boiler attendants', freq:'Ongoing', deadline:'Always', authority:'State Boiler Inspector', penalty:'Fine', desc:'Persons operating boilers must hold a Boiler Attendant Certificate of Competency.'}
+  ]
+},
+{
+  id:'explosives', name:'Explosives Act, 1884 and Explosives Rules, 2008',
+  shortName:'Explosives Act, 1884', category:'Sector-Specific', priority:'critical',
+  description:'Governs manufacture, possession, use, sale, transport, and import of explosives.',
+  reason: c => c.dealsExplosives ? 'Applicable: company uses, manufactures, or stores explosives' : null,
+  actions:[
+    {title:'Obtain Explosives Licence from PESO', freq:'Annual', deadline:'Before storing/using explosives', authority:'PESO / Chief Controller of Explosives', penalty:'Imprisonment up to 10 years + fine', desc:'Different licences for manufacture, storage, sale, transport, import. Apply in prescribed form to PESO.'},
+    {title:'Comply with storage and handling safety requirements', freq:'Ongoing', deadline:'Always', authority:'PESO Inspector', penalty:'Fine + imprisonment + cancellation of licence', desc:'Explosives must be stored in licensed magazines; safety distances maintained; no unauthorised access.'},
+    {title:'Maintain records of explosives received, issued, and remaining', freq:'Daily', deadline:'At all times', authority:'PESO Inspector', penalty:'Fine', desc:'Detailed registers for all explosives movements. Periodic returns to licensing authority.'}
+  ]
+},
+{
+  id:'rera', name:'Real Estate (Regulation and Development) Act, 2016',
+  shortName:'RERA, 2016', category:'Sector-Specific', priority:'critical',
+  description:'Regulates real estate sector; requires registration of projects and agents; protects home buyers.',
+  reason: c => c.isRealEstate || c.primarySector === 'realestate' ? 'Applicable: company is a real estate developer or agent' : null,
+  actions:[
+    {title:'Register every real estate project with State RERA Authority', freq:'Per project', deadline:'Before advertising or booking', authority:'State Real Estate Regulatory Authority', penalty:'Fine up to 10% of project cost; imprisonment up to 3 years', desc:'Mandatory for all projects: plot area > 500 sq m OR > 8 apartments. Register on State RERA portal with all project details.'},
+    {title:'Open dedicated Escrow Account: deposit 70% of collections', freq:'Per project', deadline:'Before receiving bookings', authority:'State RERA Authority', penalty:'Fine up to 10% of project cost', desc:'70% of all amounts collected from buyers must be kept in a separate bank account (per project) to be used only for construction costs.'},
+    {title:'File Quarterly Progress Reports with RERA', freq:'Quarterly', deadline:'Within 15 days of quarter end', authority:'State RERA', penalty:'Fine', desc:'Reports on construction progress, funds collected and utilized, units sold, and completion status.'},
+    {title:'Deliver project as per registered timelines', freq:'Per project', deadline:'As per registered completion date', authority:'State RERA / Consumer Courts', penalty:'Refund + interest @ SBI MCLR+2% to buyers', desc:'Any delay requires buyer consent or payment of interest. Cannot alter project plans without buyer consent.'},
+    {title:'Register as Real Estate Agent (if acting as agent)', freq:'One-time + renewal', deadline:'Before facilitating any transaction', authority:'State RERA', penalty:'Fine up to ₹10,000/day', desc:'Real estate agents must register with State RERA before facilitating sale/purchase of RERA-registered projects.'}
+  ]
+},
+{
+  id:'customs', name:'Customs Act, 1962 and Foreign Trade Policy',
+  shortName:'Customs Act & Foreign Trade Policy', category:'Sector-Specific', priority:'high',
+  description:'Governs import and export of goods; requires IEC, customs duty payment, and adherence to import/export procedures.',
+  reason: c => c.doesImportExport ? 'Applicable: company imports or exports goods/services' : null,
+  actions:[
+    {title:'Obtain IEC (Importer Exporter Code) from DGFT', freq:'One-time + Annual update', deadline:'Before first import/export', authority:'DGFT (Directorate General of Foreign Trade)', penalty:'Cannot import/export without IEC', desc:'Free of cost, 10-digit code. Apply online at DGFT portal. Update annually to keep it active.'},
+    {title:'File Bill of Entry for every import consignment', freq:'Per consignment', deadline:'Before clearance', authority:'Customs Department (ICEGATE)', penalty:'Demurrage + penalty + detention', desc:'File Bill of Entry on ICEGATE portal. Pay customs duty and IGST. Obtain Customs clearance before taking delivery.'},
+    {title:'File Shipping Bill for every export consignment', freq:'Per consignment', deadline:'Before shipment', authority:'Customs Department (ICEGATE)', penalty:'Penalty', desc:'File Shipping Bill on ICEGATE and obtain Let Export Order (LEO) from Customs.'},
+    {title:'Comply with import licensing requirements for restricted goods', freq:'Per consignment', deadline:'Before import', authority:'DGFT', penalty:'Confiscation + fine', desc:'Certain items require prior import licence (e.g., hazardous chemicals, second-hand goods, specific food items).'},
+    {title:'Claim export benefits (RoDTEP, MEIS, SEIS as applicable)', freq:'Per shipment', deadline:'Within 1 year of export', authority:'DGFT', penalty:'Forfeiture of benefit if not claimed in time', desc:'File application for export incentive schemes as applicable to the product/service exported.'}
+  ]
+},
+
+// ══════════════════════════════════════════
+// K. INTELLECTUAL PROPERTY
+// ══════════════════════════════════════════
+{
+  id:'trademark', name:'Trade Marks Act, 1999',
+  shortName:'Trade Marks Act, 1999', category:'Intellectual Property', priority:'medium',
+  description:'Provides for registration and protection of trade marks (brand names, logos) and service marks.',
+  reason: c => c.hasIP || c.totalEmployees > 0 ? 'Applicable: company should register its brand name, logo, and tagline' : null,
+  actions:[
+    {title:'Conduct trademark search before adopting brand name', freq:'One-time', deadline:'Before use', authority:'IP India (CGPDTM)', penalty:'N/A – preventive step', desc:'Search on IP India trademark database to ensure no prior conflicting mark exists.'},
+    {title:'File trademark application with Trade Marks Registry', freq:'Per mark', deadline:'As early as possible (first use or intent to use)', authority:'Trade Marks Registry, CGPDTM', penalty:'No penalty for not registering; but risk of infringement by others', desc:'File TM-A form on IP India portal. Application is examined within 12–18 months. ™ can be used after filing; ® only after registration.'},
+    {title:'Renew registered trademark every 10 years', freq:'Every 10 years', deadline:'Before expiry (renewal possible 6 months after expiry)', authority:'Trade Marks Registry', penalty:'Removal from register after 1 year from expiry', desc:'Pay renewal fees and file TM-R form to renew the trademark.'},
+    {title:'Monitor and take action against infringers', freq:'Ongoing', deadline:'Promptly on discovery', authority:'District Court / IP India / Police (for counterfeiting)', penalty:'N/A – civil/criminal action against infringer', desc:'Registered trademark owner can sue for infringement + damages + injunction.'}
+  ]
+},
+{
+  id:'copyright', name:'Copyright Act, 1957',
+  shortName:'Copyright Act, 1957', category:'Intellectual Property', priority:'low',
+  description:'Protects original literary, artistic, musical, dramatic works, films, and software from unauthorised copying.',
+  reason: c => c.isITService || c.primarySector === 'media' || c.primarySector === 'education' || c.primarySector === 'it' || c.hasIP
+    ? 'Applicable: company creates software, content, designs, or other copyrightable works' : null,
+  actions:[
+    {title:'Register copyright for original works (optional but recommended)', freq:'Per work', deadline:'Any time after creation', authority:'Copyright Office, DPIIT', penalty:'N/A – registration is voluntary (copyright exists from creation)', desc:'File application with Copyright Office. Certificate strengthens legal position. Especially important for software, websites, databases, marketing material.'},
+    {title:'Ensure employees assign copyright to the company via employment contracts', freq:'At hiring', deadline:'Before commencement of work', authority:'N/A', penalty:'Employer may not own employee-created works without assignment', desc:'Employment agreements should explicitly assign IP created during employment to the company.'},
+    {title:'Obtain licences for copyrighted material used by company (software, images, fonts)', freq:'Before use', deadline:'Before deploying in product/marketing', authority:'N/A', penalty:'Civil and criminal action by copyright owner', desc:'Ensure all third-party software, stock photos, fonts, and music used in business have valid licences.'}
+  ]
+},
+
+// ══════════════════════════════════════════
+// L. MISCELLANEOUS
+// ══════════════════════════════════════════
+{
+  id:'electricityact', name:'Electricity Act, 2003',
+  shortName:'Electricity Act, 2003', category:'Infrastructure', priority:'medium',
+  description:'Governs generation, transmission, distribution, and use of electricity; mandates energy audits for large consumers.',
+  reason: c => c.hasLargeElectrical || c.hasFactory || c.hasMines
+    ? 'Applicable: company is a large electricity consumer or industrial unit' : null,
+  actions:[
+    {title:'Obtain electrical contractor licence for in-house electrical work', freq:'Per contractor', deadline:'Before commencing electrical work', authority:'State Electrical Inspectorate', penalty:'Fine + imprisonment', desc:'All electrical work must be carried out by licensed electrical contractors.'},
+    {title:'Conduct mandatory Energy Audit if Designated Consumer', freq:'Every 3 years', deadline:'As per Bureau of Energy Efficiency (BEE) schedule', authority:'BEE (Bureau of Energy Efficiency)', penalty:'Fine up to ₹10 lakh', desc:'Designated Consumers (industries consuming > 500 TOE/year or > 30,000 units/month) must conduct energy audits by accredited energy auditors.'},
+    {title:'Appoint Energy Manager (for Designated Consumers)', freq:'One-time', deadline:'Within 6 months of designation', authority:'BEE / State Designated Agency', penalty:'Fine', desc:'Designated Consumers must appoint a certified Energy Manager and register with BEE.'},
+    {title:'File Annual Energy Consumption Return', freq:'Annual', deadline:'30th September', authority:'BEE', penalty:'Fine', desc:'Designated Consumers must file annual return showing energy consumption, efficiency measures taken, and targets.'}
+  ]
+},
+{
+  id:'bureau_standards', name:'Bureau of Indian Standards Act, 2016',
+  shortName:'BIS Act, 2016', category:'Consumer', priority:'medium',
+  description:'Mandates BIS certification for a specified list of goods; ensures products conform to Indian Standards.',
+  reason: c => c.isManufacturing || c.primarySector === 'manufacturing' ? 'Applicable: manufacturing company may need BIS certification for specified products' : null,
+  actions:[
+    {title:'Obtain BIS Certification Mark (ISI mark) for compulsorily certified products', freq:'One-time + Annual surveillance', deadline:'Before selling compulsorily certified products', authority:'Bureau of Indian Standards (BIS)', penalty:'Imprisonment up to 2 years + fine up to ₹5 lakh', desc:'100+ product categories are compulsorily required to have BIS ISI mark (e.g., electrical appliances, cement, steel, packaged drinking water, children\'s toys).'},
+    {title:'Maintain quality management system and records for BIS surveillance', freq:'Ongoing', deadline:'At all times', authority:'BIS Inspector', penalty:'Suspension/cancellation of licence', desc:'BIS conducts factory visits and testing. Maintain calibration records, raw material test reports, and finished product test records.'},
+    {title:'Foreign manufacturers: obtain Compulsory Registration Scheme (CRS) for electronics', freq:'Per model', deadline:'Before import/sale in India', authority:'BIS', penalty:'Cannot sell in India without registration', desc:'Electronics items (phones, laptops, power banks, etc.) must be registered under BIS CRS before import or sale.'}
+  ]
+},
+{
+  id:'labourwelfarefund', name:'Labour Welfare Fund Act (State-specific)',
+  shortName:'Labour Welfare Fund Act', category:'Labour', priority:'medium',
+  description:'State legislation requiring contribution to Labour Welfare Fund for welfare activities of workers.',
+  reason: c => {
+    const lwfStates = ['andhra','telangana','chandigarh','delhi','goa','gujarat','haryana','karnataka','kerala','madhyapradesh','maharashtra','orissa','punjab','tamilnadu','uttarakhand','westbengal'];
+    const ops = (c.statesOfOperation||[]).map(s=>s.toLowerCase());
+    const applicable = lwfStates.filter(s => ops.some(o => o.includes(s)));
+    return applicable.length > 0 && c.totalEmployees > 0 ? `Applicable in states: ${applicable.join(', ')}` : null;
+  },
+  actions:[
+    {title:'Deduct and deposit Labour Welfare Fund contributions', freq:'Half-yearly or Annual (varies by state)', deadline:'31st Jan and 31st July (most states)', authority:'State Labour Welfare Board', penalty:'Fine (varies by state)', desc:'Contribution amounts vary by state (e.g., Maharashtra: Employee ₹6, Employer ₹18 per employee per 6 months; Kerala: ₹20/₹60). Deposit to State Labour Welfare Board.'},
+    {title:'Maintain register of contributions', freq:'Ongoing', deadline:'At all times', authority:'Labour Welfare Inspector', penalty:'Fine', desc:'Register showing employee-wise contributions deducted and deposited.'},
+    {title:'File Labour Welfare Fund returns', freq:'Annual or Half-yearly', deadline:'As per state rules', authority:'State Labour Welfare Board', penalty:'Fine', desc:'Return showing number of employees, contributions, and welfare fund payments.'}
+  ]
+},
+{
+  id:'csr', name:'Corporate Social Responsibility — Companies Act, 2013 (Section 135)',
+  shortName:'CSR (Section 135)', category:'Corporate', priority:'high',
+  description:'Mandates eligible companies to spend 2% of average net profits on CSR activities and report compliance annually.',
+  reason: c => {
+    const reasons = [];
+    if (c.netProfit >= 5) reasons.push(`net profit ₹${c.netProfit} Cr (threshold ₹5 Cr)`);
+    if (c.annualTurnover >= 100000) reasons.push(`turnover ₹${c.annualTurnover} lakhs (threshold ₹1,000 Cr)`);
+    if (c.netWorth >= 500) reasons.push(`net worth ₹${c.netWorth} Cr (threshold ₹500 Cr)`);
+    return reasons.length > 0 ? `CSR applicable: ${reasons.join('; ')}` : null;
+  },
+  actions:[
+    {title:'Constitute CSR Committee of the Board', freq:'One-time (review annually)', deadline:'Within 30 days of becoming eligible; before filing annual report', authority:'Board of Directors / MCA', penalty:'Company fine ₹50,000–₹25 lakh; officer fine ₹50,000–₹5 lakh', desc:'For companies with net worth ≥ ₹500 Cr or turnover ≥ ₹1,000 Cr or net profit ≥ ₹5 Cr, constitute a CSR Committee of minimum 3 directors (including 1 independent director if required). Smaller companies (net profit < ₹50 lakh) may not require committee — Board can act directly.'},
+    {title:'Formulate and approve CSR Policy', freq:'Annual review', deadline:'Before commencement of financial year', authority:'Board of Directors', penalty:'Non-compliance with Section 135 attracts company fine', desc:'CSR Policy must list activities under Schedule VII of Companies Act, implementation modalities, monitoring mechanism, and distribution among CSR activities. Must be displayed on company website.'},
+    {title:'Spend 2% of average net profits on CSR activities', freq:'Annual', deadline:'Within the financial year (31st March)', authority:'MCA / Board', penalty:'Unspent amount must be transferred to specified funds; fine on company and officers', desc:'Average net profit of immediately preceding 3 financial years. CSR spend must be on Schedule VII activities. If unable to spend, record reasons in Board Report. Ongoing multi-year projects may park unspent funds in Unspent CSR Account.'},
+    {title:'Transfer unspent CSR amount to designated accounts/funds', freq:'Annual', deadline:'Within 30 days of end of FY (30th April) for ongoing projects; within 6 months of end of FY for other unspent amounts (30th September)', authority:'MCA / Scheduled Bank', penalty:'Fine up to twice the amount not transferred; officer fine up to ₹1 lakh', desc:'Unspent amount for ongoing projects: transfer to "Unspent Corporate Social Responsibility Account" opened in scheduled bank within 30 days of year-end; spend within 3 years or transfer to Schedule VII fund. Other unspent: transfer to PM National Relief Fund or any Schedule VII fund within 6 months.'},
+    {title:'File Form CSR-2 (Annual CSR Report)', freq:'Annual', deadline:'31st December of the following financial year', authority:'MCA (Registrar of Companies)', penalty:'Additional fees on late filing; directors may face prosecution', desc:'Form CSR-2 must be filed as an addendum to Form AOC-4/AOC-4 XBRL disclosing CSR amount prescribed, spent, unspent, details of implementing agencies, and details of ongoing projects.'}
+  ]
+},
+{
+  id:'negotiable', name:'Negotiable Instruments Act, 1881',
+  shortName:'NI Act, 1881', category:'Corporate', priority:'medium',
+  description:'Governs cheques, bills of exchange, and promissory notes; creates criminal liability for dishonour of cheques.',
+  reason: c => c.totalEmployees > 0 ? 'Applicable: all business entities dealing in cheques and negotiable instruments' : null,
+  actions:[
+    {title:'Respond to Section 138 cheque dishonour legal demand notice', freq:'As applicable', deadline:'Within 15 days of receiving demand notice', authority:'Magistrate Court (Section 138 NI Act)', penalty:'Imprisonment up to 2 years and/or fine up to twice the cheque amount', desc:'If a cheque issued by the company is dishonoured and the payee sends a written demand notice, the company must make payment within 15 days. Failure entitles the payee to file a criminal complaint under Section 138. Appoint a director/authorised signatory to handle such notices promptly.'},
+    {title:'Maintain proper cheque issuance and stop-payment controls', freq:'Ongoing', deadline:'At all times', authority:'Internal / Bank', penalty:'Section 138 liability; civil liability', desc:'Ensure cheques are issued only when sufficient funds exist. Maintain a cheque register. Implement dual-authorisation for high-value cheques. Track post-dated cheques issued to vendors.'},
+    {title:'Adopt digital payment mechanisms to reduce NI Act risk', freq:'Ongoing', deadline:'Best practice', authority:'RBI / Internal policy', penalty:'Not directly penal but reduces exposure', desc:'Use NEFT/RTGS/UPI/IMPS for large payments to avoid cheque dishonour risk. For unavoidable cheques, ensure adequate bank balance and monitor real-time. Train accounts team on Section 138 timelines.'}
+  ]
+},
+{
+  id:'ibc', name:'Insolvency and Bankruptcy Code, 2016',
+  shortName:'IBC, 2016', category:'Corporate', priority:'medium',
+  description:'Provides time-bound insolvency resolution for companies and individuals; creates director liability for wrongful trading.',
+  reason: c => ['private_ltd','public_ltd','llp','opc'].includes(c.entityType) ? `Applicable: ${c.entityType} entity subject to IBC proceedings and director obligations` : null,
+  actions:[
+    {title:'Avoid wrongful trading and fraudulent trading', freq:'Ongoing', deadline:'At all times', authority:'NCLT / Insolvency Professional', penalty:'Personal liability of directors for company debts; imprisonment up to 5 years + fine up to ₹1 crore under IBC', desc:'Directors must not cause the company to incur debt when there is no reasonable prospect of repayment. Post insolvency commencement, directors must cooperate fully with the Insolvency Professional (IP). Maintain robust financial monitoring to detect insolvency risk early.'},
+    {title:'Maintain creditor records and aging analysis', freq:'Monthly', deadline:'Monthly review', authority:'CFO / Finance Department', penalty:'Inability to defend CIRP proceedings; regulatory scrutiny', desc:'Maintain up-to-date records of all financial creditors (banks, debenture holders) and operational creditors (suppliers, employees). Conduct monthly aging analysis. Ensure all creditor communications are documented. Dispute invalid claims promptly and in writing.'},
+    {title:'Comply with NCLT orders and CIRP process if initiated', freq:'As applicable', deadline:'As per NCLT/IP orders (moratorium period: 180 days + 90 days extension)', authority:'NCLT / Insolvency Professional', penalty:'Contempt of NCLT; personal liability under Sections 66–70 IBC', desc:'If Corporate Insolvency Resolution Process (CIRP) is initiated by any creditor or by the company itself, directors must hand over management to IP, provide all records, and refrain from alienating assets. Non-cooperation attracts personal liability.'},
+    {title:'Director KYC and disqualification monitoring', freq:'Annual', deadline:'30th September (DIR-3 KYC due date)', authority:'MCA (Registrar of Companies)', penalty:'DIN deactivation; company strike-off risk', desc:'Directors must file annual DIR-3 KYC. Ensure no director is disqualified under Section 164 (e.g., due to non-filing of returns for 3 consecutive years, non-payment of deposits). A disqualified director on the Board can trigger regulatory action and IBC vulnerability.'}
+  ]
+},
+{
+  id:'msme_act', name:'Micro, Small and Medium Enterprises Development Act, 2006',
+  shortName:'MSMED Act, 2006', category:'MSME & Trade', priority:'high',
+  description:'Governs MSME registration, mandates timely payment to MSME vendors, and provides dispute resolution through Samadhaan.',
+  reason: c => c.isMSME || c.totalEmployees > 0 ? (c.isMSME ? `Applicable: company is an MSME — registration and compliance benefits available` : `Applicable: company has ${c.totalEmployees} employees and may deal with MSME vendors (payment obligation under Section 15–16)`) : null,
+  actions:[
+    {title:'Obtain Udyam Registration (for MSMEs)', freq:'One-time', deadline:'At the time of commencement of business or upon eligibility', authority:'Ministry of MSME / Udyam Registration Portal', penalty:'Loss of MSME benefits; ineligible for schemes', desc:'Register at udyamregistration.gov.in using Aadhaar and PAN. Classification: Micro (investment ≤ ₹1 Cr, turnover ≤ ₹5 Cr), Small (≤ ₹10 Cr / ≤ ₹50 Cr), Medium (≤ ₹50 Cr / ≤ ₹250 Cr). Registration is self-declared and permanent (subject to update on change of classification).'},
+    {title:'Pay MSME suppliers within 45 days (or agreed period not exceeding 45 days)', freq:'Per invoice / Ongoing', deadline:'Within 45 days of acceptance of goods/services (or per agreement, not exceeding 45 days)', authority:'MSME Samadhaan / Facilitation Council', penalty:'Compound interest at 3× RBI bank rate on delayed amounts; mandatory disclosure in annual accounts and ROC filing', desc:'Section 15–16 of MSMED Act: buyers must pay MSME suppliers within 15 days (if no written agreement) or agreed period (max 45 days). Delayed payment attracts compound interest at 3× RBI bank rate from agreed date. This obligation applies to ALL buyers (large companies included) when the supplier is a registered MSME.'},
+    {title:'Disclose MSME dues in annual financial statements and file with ROC', freq:'Annual', deadline:'At time of filing annual accounts', authority:'MCA (ROC) / Statutory Auditor', penalty:'Qualification of audit report; non-compliance with AS / Ind AS disclosure norms', desc:'Schedule III of Companies Act requires disclosure of amounts due to micro and small enterprises exceeding the payment period, interest paid/accrued, and interest remaining unpaid. Statutory auditor will qualify accounts if disclosure is missing. Maintain a register of MSME suppliers with their Udyam numbers.'},
+    {title:'File MSME Form I (half-yearly return on outstanding dues)', freq:'Half-yearly', deadline:'31st October (April–September); 30th April (October–March)', authority:'MCA (Registrar of Companies)', penalty:'Fine up to ₹25,000 per return', desc:'Companies with paid-up capital > ₹1 crore OR turnover > ₹10 crore and outstanding dues to MSME suppliers beyond 45 days must file Form MSME-I online with MCA. Even if nil dues, the form is required by notified companies. Verify MSME status of all suppliers annually.'},
+    {title:'Use MSME Samadhaan portal for dispute resolution', freq:'As applicable', deadline:'Within 3 years of dispute arising', authority:'MSME Facilitation Council (State)', penalty:'Award by Facilitation Council is executable as decree of Civil Court', desc:'If an MSME supplier raises a dispute regarding delayed payment, the Facilitation Council will conciliate and, if unresolved, refer to arbitration. The buyer must participate and settlement/award binds both parties. Proactively resolve payment disputes to avoid Facilitation Council proceedings.'}
+  ]
+},
+{
+  id:'motorvehicles', name:'Motor Vehicles Act, 1988',
+  shortName:'MV Act, 1988', category:'Transport', priority:'high',
+  description:'Regulates motor vehicle registration, commercial permits, licences, insurance, and road safety compliance for vehicle operators.',
+  reason: c => c.primarySector === 'transport' || c.hasVehicleFleet ? `Applicable: ${c.primarySector === 'transport' ? 'transport sector company' : 'company operates a vehicle fleet'}` : null,
+  actions:[
+    {title:'Ensure all vehicles are registered with State RTO', freq:'One-time + Renewal', deadline:'Before use on public roads; re-registration every 15 years for vehicles older than 15 years', authority:'Regional Transport Office (RTO)', penalty:'Fine up to ₹5,000; vehicle impounding', desc:'All motor vehicles must be registered under Section 39 MV Act. Commercial vehicles must be registered in the appropriate category (goods carriage, passenger, taxi). Keep RC (Registration Certificate) in vehicle at all times. Ensure timely renewal and address updates.'},
+    {title:'Verify and maintain valid commercial driving licences for all drivers', freq:'Ongoing', deadline:'Licence renewal before expiry (typically every 3–5 years)', authority:'Licensing Authority / RTO', penalty:'Fine up to ₹5,000 per offence; imprisonment; company liability for accidents by unlicensed drivers', desc:'Commercial vehicle drivers must hold a valid Heavy Motor Vehicle (HMV) / Light Motor Vehicle (LMV) licence with commercial endorsement. Maintain a driver register with licence numbers, validity dates, and badge numbers. Conduct background verification and periodic licence checks. Under 2019 amendments, drivers have expanded rights but also stricter duties.'},
+    {title:'Maintain valid third-party motor insurance for all vehicles', freq:'Annual', deadline:'Before expiry of insurance; mandatory before vehicle use', authority:'IRDAI-licensed insurer / RTO', penalty:'Fine up to ₹2,000 (first offence); ₹4,000 (repeat); imprisonment up to 3 months; vehicle impounding', desc:'Third-party insurance is compulsory under Section 146 MV Act for all vehicles on public roads. Obtain comprehensive fleet insurance for commercial vehicles. Keep insurance certificate in vehicle. Notify insurer immediately on accident. Premium is regulated by IRDAI.'},
+    {title:'Obtain Goods Carriage Permit / Contract Carriage Permit', freq:'One-time + Annual renewal', deadline:'Before commercial use; renewal before expiry', authority:'State Transport Authority / RTA', penalty:'Fine up to ₹10,000; vehicle seizure', desc:'Goods vehicles require a National or State Goods Carriage Permit under Section 66 MV Act. National permits are issued by home state for all-India operation. Contract carriages (taxis, buses for hire) require Contract Carriage Permit. Air-conditioned buses need stage carriage permits. Maintain permit documents in vehicle.'},
+    {title:'Obtain valid PUC Certificate and Fitness Certificate for commercial vehicles', freq:'Annual (PUC), Annual/2-yearly (Fitness)', deadline:'PUC: annually; Fitness Certificate: annually for commercial vehicles > 15 years, every 2 years otherwise', authority:'RTO / Authorised Pollution Testing Centre', penalty:'PUC: fine ₹10,000; Fitness: fine up to ₹5,000 + vehicle detained', desc:'Pollution Under Control (PUC) certificate must be renewed annually from authorised centres. Commercial vehicles require Fitness Certificate from RTO certifying roadworthiness — brakes, lights, tyres, emission norms. Maintain a fleet calendar to track expiry dates. Vehicles without valid PUC/Fitness cannot ply legally.'}
+  ]
+},
+{
+  id:'irdai_reg', name:'Insurance Regulatory and Development Authority of India Act, 1999',
+  shortName:'IRDAI Act, 1999', category:'Financial', priority:'critical',
+  description:'Regulates insurance companies in India; mandates IRDAI registration, solvency requirements, product approvals, and policyholder protection.',
+  reason: c => c.isInsurance || c.primarySector === 'insurance' ? 'Applicable: company operates in insurance sector — IRDAI registration and continuous compliance mandatory' : null,
+  actions:[
+    {title:'Obtain Certificate of Registration from IRDAI', freq:'One-time + Annual renewal', deadline:'Before commencing insurance business; renewal by 31st December each year', authority:'Insurance Regulatory and Development Authority of India (IRDAI)', penalty:'Carrying on insurance business without registration: imprisonment up to 2 years + fine up to ₹5 Cr; cancellation of registration', desc:'Life, General, and Health insurers must obtain a Certificate of Registration from IRDAI under Section 3 of the Insurance Act, 1938 read with IRDAI Regulations. Minimum paid-up capital: ₹100 Cr for life/general, ₹200 Cr for reinsurance. Registration must be renewed annually by filing Form IRDAI-RA with prescribed fees.'},
+    {title:'Maintain prescribed Solvency Margin at all times', freq:'Quarterly reporting', deadline:'Quarterly solvency returns within 45 days of quarter end', authority:'IRDAI', penalty:'Restrictions on new business; scheme of arrangement; licence suspension', desc:'Section 64VA of Insurance Act: every insurer must maintain assets exceeding liabilities by the Required Solvency Margin (RSM). IRDAI prescribes minimum solvency ratio of 1.5 (150%). File quarterly solvency returns. If solvency ratio falls below threshold, submit a Financial Condition Report and corrective action plan immediately.'},
+    {title:'File and obtain approval for insurance products (Use and File / File and Use)', freq:'Per product launch or modification', deadline:'Prior approval or filing before launch as per product type', authority:'IRDAI', penalty:'Withdrawal of unapproved product; penalty up to ₹1 Cr', desc:'Insurance products must follow IRDAI\'s "Use and File" (certain standard products) or "File and Use" (complex/non-standard products) procedure. File product wordings, premium rates, sample policy documents, and actuarial certificates. Obtain IRDAI clearance before public launch. Do not modify approved products without re-filing.'},
+    {title:'Submit Annual Actuarial Report and Actuarial Certificate', freq:'Annual', deadline:'With annual accounts (within 6 months of financial year end, i.e., 30th September)', authority:'IRDAI / Appointed Actuary', penalty:'Regulatory action; qualification of accounts', desc:'Every insurer must appoint an Appointed Actuary (AA) who submits an Annual Actuarial Report covering adequacy of premium rates, outstanding claims reserves, and mathematical reserves. The AA must certify that the insurer is financially sound. The AA\'s certificate is filed with IRDAI along with annual audited accounts.'},
+    {title:'Comply with Policyholder Protection Regulations and Grievance Redressal', freq:'Ongoing', deadline:'Settle claims within prescribed timelines (e.g., death claims: 30 days of document receipt)', authority:'IRDAI / Insurance Ombudsman', penalty:'Fine per complaint; directions from IRDAI; public disclosure of non-compliance', desc:'IRDAI (Protection of Policyholders\' Interests) Regulations mandate disclosure at point of sale, free-look period, claim settlement timelines (30 days for death claims with no investigation, 120 days with investigation), and grievance redressal mechanism. Establish an Internal Grievance Redressal System. Escalated complaints go to Insurance Ombudsman — comply with Ombudsman awards within 30 days.'}
+  ]
+},
+{
+  id:'patentsact', name:'Patents Act, 1970',
+  shortName:'Patents Act, 1970', category:'Intellectual Property', priority:'medium',
+  description:'Grants patent protection for inventions; requires annual maintenance fees and disclosure of commercial working of patents.',
+  reason: c => c.hasIP || c.primarySector === 'pharma' || c.isITSector ? `Applicable: ${[c.hasIP && 'company holds IP/patents', c.primarySector === 'pharma' && 'pharma sector (product patents critical)', c.isITSector && 'IT sector (software/process patents)'].filter(Boolean).join('; ')}` : null,
+  actions:[
+    {title:'File patent application with Indian Patent Office (IPO)', freq:'Per invention', deadline:'File within 12 months of first public disclosure/priority date to preserve priority', authority:'Indian Patent Office (IPO) — Offices in Mumbai, Delhi, Chennai, Kolkata', penalty:'Loss of patent rights if not filed in time; non-patentable after public disclosure > 12 months', desc:'File Form 1 (Application), Form 2 (Provisional or Complete Specification), Form 5 (Declaration as to inventorship), and Form 26 (Power of Attorney if via agent). Request for Examination (RFE) must be filed within 48 months of priority date (Form 18 or 18A for expedited). Respond to First Examination Report (FER) within 6 months (extendable by 3 months).'},
+    {title:'File Form 27 — Statement of Working of Patents (Annual)', freq:'Annual', deadline:'31st March of each calendar year (for preceding calendar year)', authority:'Indian Patent Office', penalty:'Fine up to ₹10 lakh; false statement: imprisonment up to 6 months + fine', desc:'Every patentee (and exclusive licensee) must file Form 27 annually for each patent in force, disclosing: whether the patent has been worked commercially in India, the extent of working (revenue earned/units sold), and reasons if not worked. Non-filing or false disclosure attracts penalties and can trigger compulsory licensing applications.'},
+    {title:'Pay annual patent renewal fees to maintain patent in force', freq:'Annual', deadline:'Before the anniversary of the filing date each year (starting from 3rd year)', authority:'Indian Patent Office', penalty:'Patent lapses if renewal fee not paid; restoration possible within 18 months with surcharge', desc:'Patent term is 20 years from filing date. Annual renewal fees (escalating each year) must be paid before the anniversary date. Renewal fees can be paid in advance for multiple years. A patent that lapses can be restored if renewal fee + restoration fees are paid within 18 months of lapse, with reasonable cause shown.'},
+    {title:'Compulsory Licensing compliance and monitoring', freq:'Ongoing', deadline:'Respond to any CL application within timelines set by IPO Controller', authority:'Controller of Patents / IPO', penalty:'Grant of CL to third party; loss of exclusive rights; mandatory royalty rates set by Controller', desc:'Under Sections 84–92 of the Patents Act, any person may apply for a Compulsory Licence (CL) after 3 years from grant if the patent is not worked in India, is not reasonably available, or is not affordable. Pharma companies especially must demonstrate working of patents in India. Proactively license technology to reduce CL risk. Maintain records of licences, royalties, and commercial working evidence.'}
+  ]
+},
+{
+  id:'biomedwaste', name:'Bio-Medical Waste Management Rules, 2016',
+  shortName:'BMW Rules, 2016', category:'Environment', priority:'high',
+  description:'Mandates segregation, collection, treatment, and disposal of bio-medical waste generated by healthcare facilities.',
+  reason: c => c.primarySector === 'healthcare' || c.isHealthcare ? 'Applicable: healthcare entity generating bio-medical waste — authorisation and compliance mandatory' : null,
+  actions:[
+    {title:'Obtain authorisation from State Pollution Control Board (SPCB)', freq:'One-time + Annual renewal', deadline:'Before generating BMW; renewal before expiry (annually)', authority:'State Pollution Control Board (SPCB) / Pollution Control Committee (PCC)', penalty:'Imprisonment up to 5 years + fine up to ₹1 lakh (Environment Protection Act); closure of facility', desc:'All healthcare facilities (hospitals, nursing homes, labs, blood banks, vaccination centres, pharmacies) must obtain BMW Authorisation from SPCB/PCC under Rule 8. Submit Form I application with facility details, waste generation estimate, and pre-treatment/treatment facilities. Authorisation is facility-specific and must be renewed annually.'},
+    {title:'Implement colour-coded segregation of bio-medical waste', freq:'Daily / Ongoing', deadline:'At the point of generation', authority:'SPCB / MoEFCC', penalty:'Loss of authorisation; fine and imprisonment', desc:'Yellow bags: anatomical/pathological waste, discarded medicines, chemical waste. Red bags/containers: contaminated recyclable waste (IV sets, catheters, syringes without needle). White translucent containers: sharps waste (needles, syringes with needle, blades). Blue bags: glassware, metallic body implants. Black bags: general solid waste. Train all staff on segregation at source. Do not mix BMW with general waste.'},
+    {title:'Maintain Bio-Medical Waste logbook and online tracking', freq:'Daily', deadline:'Real-time entry; annual report by 30th June', authority:'SPCB / CPCB (BWMS portal)', penalty:'Non-maintenance: fine; non-reporting: authorisation cancellation', desc:'Maintain Form 2 (Logbook) recording daily waste generation by category, pre-treatment records, Common Bio-Medical Waste Treatment Facility (CBWTF) pickup receipts. Enter data on the BWMS online portal of CPCB. Obtain weighment slips from CBWTF for every pickup. Keep records for 5 years.'},
+    {title:'Submit Annual Report to SPCB (Form III)', freq:'Annual', deadline:'30th June each year (for preceding year April–March)', authority:'SPCB', penalty:'Fine; non-renewal of authorisation', desc:'File Form III Annual Report on the online portal disclosing waste generated per category, treatment/disposal method, CBWTF used, and accidents/spills. For facilities with captive treatment (autoclave, incinerator), report maintenance and calibration records.'},
+    {title:'Conduct annual staff training on BMW handling and infection control', freq:'Annual', deadline:'At least once a year; at time of joining for new staff', authority:'Healthcare Facility Management / SPCB', penalty:'Non-compliance cited during SPCB inspection', desc:'All staff handling BMW (doctors, nurses, ward boys, housekeeping, lab technicians) must receive annual training on segregation, PPE use, handling of sharps, spill management, and emergency procedures. Maintain training records with attendance sheets and trainer credentials. Include BMW module in induction for new hires.'}
+  ]
+},
+{
+  id:'ngt_act', name:'National Green Tribunal Act, 2010',
+  shortName:'NGT Act, 2010', category:'Environment', priority:'medium',
+  description:'Establishes the National Green Tribunal for adjudication of disputes relating to environmental laws and relief/compensation for environmental damage.',
+  reason: c => c.generatesHazardousWaste || c.emitsAirPollutants || c.dischargesWastewater || c.hasMines || c.hasConstruction ? `Applicable: company has environmental footprint (${[c.generatesHazardousWaste && 'hazardous waste', c.emitsAirPollutants && 'air emissions', c.dischargesWastewater && 'wastewater discharge', c.hasMines && 'mining operations', c.hasConstruction && 'construction activities'].filter(Boolean).join(', ')}) — NGT jurisdiction applies` : null,
+  actions:[
+    {title:'Obtain all required Environmental Clearances (EC) under EIA Notification 2006', freq:'Per project / Periodic renewal', deadline:'Before commencement of project/expansion; renewal as per EC conditions', authority:'MoEFCC / State Environment Impact Assessment Authority (SEIAA)', penalty:'NGT can impose fine up to ₹10 Cr + remediation costs; project shutdown orders; imprisonment', desc:'Projects in Schedule to EIA Notification 2006 (Category A: MoEFCC, Category B: SEIAA) require Environmental Clearance before construction or operation. Comply with all EC conditions (effluent limits, stack emission limits, green belt, ground water monitoring, STP/ETP capacity, solid waste disposal). Submit Half-Yearly Compliance Reports to the granting authority and CPCB/SPCB.'},
+    {title:'Comply with EIA conditions and submit periodic compliance reports', freq:'Half-yearly', deadline:'By 1st June (January–June period) and 1st December (July–December period)', authority:'MoEFCC / SPCB / SEIAA', penalty:'NGT can suo motu take cognisance; penalty up to ₹10 Cr; EC cancellation', desc:'Implement all mitigation measures specified in the Environmental Management Plan (EMP). Conduct monthly/quarterly ambient air quality, ground water, and effluent monitoring through NABL-accredited labs. Display Environmental Clearance on company website and at project site. Non-compliance with EC conditions is a leading cause of NGT petitions.'},
+    {title:'Respond promptly to NGT notices and summons', freq:'As applicable', deadline:'As per NGT order (typically 2–4 weeks)', authority:'National Green Tribunal (Principal Bench: Delhi; Zonal Benches: Bhopal, Pune, Kolkata, Chennai)', penalty:'Contempt of NGT; penalty up to ₹10 Cr; closure orders; personal liability of Managing Director', desc:'If an NGT petition is filed against the company (by citizens, NGOs, or authorities), respond with a detailed affidavit through a Senior Advocate before the NGT within the stipulated time. Do not ignore NGT notices — ex-parte orders can lead to immediate shutdown. Keep counsel retainer active for prompt response. Maintain all environmental records for at least 5 years to defend NGT proceedings.'},
+    {title:'Designate Environment Officer and constitute Environment Committee', freq:'One-time + Ongoing', deadline:'Immediately for facilities under EC/HWM/Air/Water Acts', authority:'SPCB / MoEFCC', penalty:'Regulatory non-compliance; personal liability of EO for defaults', desc:'Appoint a qualified Environment Officer (EO) responsible for all environmental compliance — permit renewals, monitoring, reporting, liaison with SPCB/CPCB, and incident response. For projects with significant environmental impact, constitute an Environment Committee with cross-functional members. Environment Officer should maintain a compliance calendar and ensure no permit lapses.'}
+  ]
+},
+{
+  id:'fcra', name:'Foreign Contribution Regulation Act, 2010',
+  shortName:'FCRA, 2010', category:'Corporate', priority:'critical',
+  description:'Regulates acceptance and utilisation of foreign contributions by associations and individuals; requires FCRA registration and annual reporting.',
+  reason: c => c.entityType === 'section8' || c.receivesForeignContrib ? `Applicable: ${c.entityType === 'section8' ? 'Section 8 (non-profit) company — FCRA registration required if receiving foreign funds' : 'entity receives foreign contributions — FCRA compliance mandatory'}` : null,
+  actions:[
+    {title:'Obtain FCRA Registration or Prior Permission from MHA', freq:'One-time + 5-year renewal', deadline:'Before receiving any foreign contribution; registration renewal 6 months before expiry', authority:'Ministry of Home Affairs (MHA) — FCRA Wing', penalty:'Imprisonment up to 5 years + fine; forfeiture of foreign contribution; cancellation of registration', desc:'Associations (Section 8 companies, societies, trusts) that intend to receive foreign contributions for cultural, economic, educational, religious, or social programmes must obtain FCRA Registration (if > 3 years old, with proven track record) or Prior Permission (new organisations). Apply online at fcraonline.nic.in (Form FC-3A for registration, FC-3B for prior permission). MHA processes within 90 days.'},
+    {title:'Open and operate exclusive SBI New Delhi Main Branch FCRA account', freq:'One-time setup; ongoing', deadline:'Before receiving first foreign contribution post-registration', authority:'State Bank of India, New Delhi Main Branch (as mandated by MHA)', penalty:'Violation of FCRA: imprisonment up to 5 years; forfeiture of funds', desc:'All FCRA-registered entities MUST receive all foreign contributions ONLY in a designated FCRA account at SBI, Main Branch, New Delhi (IFSC: SBIN0000691) — mandated since 2020 amendment. Funds may then be transferred to a utilisation account in any scheduled bank. Under no circumstances should foreign contributions be received in any other bank account.'},
+    {title:'Ensure utilisation only for permitted purposes (no administrative expenses > 20%)', freq:'Ongoing', deadline:'At all times', authority:'MHA / CBI (for enforcement)', penalty:'Imprisonment up to 5 years; forfeiture; cancellation of FCRA registration', desc:'Foreign contributions can only be used for the purposes for which registration was granted. Since 2020 amendment, administrative expenses are capped at 20% of total foreign contribution received (down from earlier 50%). Maintain strict separation of FC funds from domestic funds. Do not transfer FC to any other person or organisation without MHA permission. Capital assets purchased from FC must be reflected in accounts and cannot be sold without MHA approval.'},
+    {title:'File Annual FC-4 Return with MHA by 31st December', freq:'Annual', deadline:'31st December each year (for preceding financial year April–March)', authority:'Ministry of Home Affairs (FCRA Wing)', penalty:'Fine up to ₹1 lakh per year of default; non-filing triggers cancellation proceedings', desc:'File Form FC-4 Annual Return online at fcraonline.nic.in disclosing: name of donors, country of origin, amount received, purpose, and utilisation details with activity-wise expenditure. Attach audited balance sheet and income/expenditure statement certified by a Chartered Accountant. Nil return must also be filed even if no foreign contribution received during the year.'},
+    {title:'Renew FCRA Registration every 5 years', freq:'Every 5 years', deadline:'At least 6 months before expiry of registration', authority:'Ministry of Home Affairs', penalty:'Registration deemed cancelled on expiry if renewal not sought; entity cannot receive foreign contributions', desc:'FCRA registration is valid for 5 years. File Form FC-3C for renewal online, along with activity report, audited accounts for preceding years, and list of key functionaries with updated KYC (Aadhaar-linked). MHA may reject renewal if: utilisation was not proper, returns not filed, registration was suspended, or organisation is found to be prejudicial to national interest.'}
+  ]
+},
+{
+  id:'it_intermediary', name:'Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021',
+  shortName:'IT Intermediary Rules, 2021', category:'Technology & Data', priority:'high',
+  description:'Imposes due diligence, grievance redressal, and transparency obligations on online intermediaries and digital media platforms.',
+  reason: c => (c.hasWeb && c.isECommerce) || c.isDigitalPlatform || c.primarySector === 'media' || c.primarySector === 'ecommerce' ? `Applicable: ${[c.isDigitalPlatform && 'digital platform', c.isECommerce && 'e-commerce entity', c.primarySector === 'media' && 'digital media publisher', c.primarySector === 'ecommerce' && 'e-commerce sector'].filter(Boolean).join('; ')}` : null,
+  actions:[
+    {title:'Publish Privacy Policy, Terms of Service, and User Agreement', freq:'Maintain and update', deadline:'Before going live; update within 30 days of any material change', authority:'Ministry of Electronics and Information Technology (MeitY)', penalty:'Loss of safe harbour protection under Section 79 IT Act; civil/criminal liability for third-party content', desc:'Intermediaries must inform users of rules, regulations, privacy policy, and user agreement at the time of onboarding and update them on any change. Terms must clearly prohibit unlawful content (Rule 3(1)(b) categories: nudity, violence, hate speech, IP infringement, impersonation, election-related misinformation). Policies must be in English and Indian regional languages if user base is significant in that language.'},
+    {title:'Appoint Grievance Officer (resident in India) and publish contact details', freq:'One-time + update on change', deadline:'Immediately (requirement is continuous)', authority:'MeitY / Ministry of Information and Broadcasting (for news/media)', penalty:'Loss of safe harbour; MeitY may direct compliance; user complaints to courts', desc:'All intermediaries must appoint a Grievance Officer resident in India and publish their name and contact details (email/physical address) on the platform. The GO must acknowledge complaints within 24 hours and dispose of them within 15 days. For complaints related to sexual/violent content involving minors or non-consensual intimate images — action within 24 hours of receipt.'},
+    {title:'Handle user complaints within prescribed timelines', freq:'Ongoing', deadline:'Acknowledge: 24 hours; Resolve: 15 days (except certain content: 24 hours)', authority:'Grievance Officer / MeitY', penalty:'Loss of safe harbour under Section 79 IT Act; platforms may face court action for non-removal', desc:'Implement a robust complaint management system. Track complaints by category and resolution status. Monthly transparency reports (for SSMIs: Significant Social Media Intermediaries with 50L+ users) must disclose total complaints received, action taken, and content proactively removed. Maintain complaint records for 180 days for law enforcement purposes.'},
+    {title:'Significant Social Media Intermediaries (SSMIs): appoint Chief Compliance Officer, Nodal Officer, and Resident Grievance Officer', freq:'One-time + continuous', deadline:'SSMIs (50 lakh+ registered users) must comply within 3 months of crossing threshold', authority:'MeitY', penalty:'Loss of safe harbour; direct government action; potential blocking of platform', desc:'If the platform has 50 lakh+ registered users in India, it qualifies as an SSMI under Rule 2(1)(w). Must appoint: (1) Chief Compliance Officer (CCO) — employee of company, responsible for compliance; (2) Nodal Contact Person — 24×7 coordination with law enforcement; (3) Resident Grievance Officer — resident in India. All must be Indian residents. File monthly compliance reports publicly and with MeitY.'},
+    {title:'Remove unlawful content within 36 hours of government/court order', freq:'As applicable', deadline:'Within 36 hours of receiving government direction or court order', authority:'MeitY / CERT-In / Courts', penalty:'Loss of safe harbour protection; platform operator liable as publisher for non-removed content', desc:'Upon receiving a written direction from a competent authority (government order, court order) or upon notice of certain categories of content (CSAM, national security content), remove or disable access within 36 hours. For content involving user safety/public order, MeitY can issue emergency blocking orders under Section 69A IT Act — comply within 24 hours. Maintain records of all take-down orders and actions for audit.'}
+  ]
+},
+{
+  id:'trai_regs', name:'Telecom Regulatory Authority of India Act, 1997',
+  shortName:'TRAI Act, 1997', category:'Technology & Data', priority:'high',
+  description:'Regulates telecom services in India through licensing, quality of service standards, tariff regulation, and consumer protection.',
+  reason: c => c.primarySector === 'telecom' ? 'Applicable: telecom sector company — TRAI/DoT regulatory compliance mandatory' : null,
+  actions:[
+    {title:'Obtain Unified Licence from Department of Telecommunications (DoT)', freq:'One-time + periodic renewal', deadline:'Before commencing telecom services', authority:'Department of Telecommunications (DoT), Ministry of Communications', penalty:'Prosecution under Indian Telecom Act, 2023; fine up to ₹5 Cr per offence; service suspension', desc:'All telecom service providers (Access Services, Internet, NLD, ILD, VSAT, ISP, etc.) must obtain a Unified Licence (UL) from DoT under the New Telecom Policy/Indian Telecom Act, 2023. UL is technology-neutral and service-agnostic. Pay Licence Fee (currently 8% of Adjusted Gross Revenue — AGR) and Spectrum Usage Charge (SUC). UL term is typically 20 years.'},
+    {title:'File Quality of Service (QoS) reports with TRAI quarterly', freq:'Quarterly', deadline:'Within 30 days of end of each quarter', authority:'Telecom Regulatory Authority of India (TRAI)', penalty:'Financial disincentive/penalty as per TRAI QoS Regulations; public disclosure of non-compliance', desc:'TRAI mandates Quality of Service benchmarks for all service categories (voice call drop rate, broadband speed, billing accuracy, complaint resolution time). Operators must self-certify QoS parameters and file quarterly reports. TRAI conducts independent audits through TERM Cells. Non-compliance attracts financial disincentives under TRAI (Measures to Promote Competition) Regulations.'},
+    {title:'Comply with Mobile Number Portability (MNP) timelines', freq:'Ongoing', deadline:'Complete port within 7 working days of receipt of valid porting request (UPC); same-day porting for within-same-LSA ports', authority:'TRAI / MNP Service Providers (MNPSP)', penalty:'TRAI can impose financial disincentives for MNP delays', desc:'Mobile subscribers have the right to port their number while retaining the number (Mobile Number Portability). Donor operator must facilitate porting within prescribed timelines without undue hurdles. Do not reject valid porting requests or create artificial barriers. Maintain MNP transaction records and co-ordinate with MNPSP (Syniverse/TNSL) for database updates.'},
+    {title:'Register and comply with TRAI Telecom Commercial Communications Customer Preference Regulations (TCCP/NCPR)', freq:'Ongoing', deadline:'Register as Principal Entity (PE) on TRAI DLT platform before sending any commercial communications', authority:'TRAI / Access Providers (as regulators of PE registration)', penalty:'Non-registered senders: calls/SMS blocked; penalty on access providers who carry non-compliant traffic', desc:'Entities sending bulk SMS/calls for commercial purposes must register as Principal Entities on the TRAI Distributed Ledger Technology (DLT) platform. Register all SMS headers (Sender IDs) and Content Templates. Consumers on National Customer Preference Register (Do Not Disturb / NCPR) must not receive unsolicited commercial communications. Transactional/OTP messages must be sent through registered templates only.'},
+    {title:'Implement Lawful Interception and Monitoring (LIM) capability', freq:'Ongoing', deadline:'Before commencement of service; continuous operational readiness', authority:'Department of Telecommunications (DoT) / Intelligence Bureau', penalty:'Licence cancellation; national security implications; criminal prosecution', desc:'All licensed telecom operators must implement Lawful Interception and Monitoring systems as per DoT Security Conditions and the Indian Telecom Security Assurance Requirements (ITSAR). LIM equipment must be of Indian origin or trusted source. Intercept requests from authorised agencies (IB, CBI, RAW) must be actioned within prescribed timelines. LIM operations are classified and must not be disclosed.'}
+  ]
+},
+{
+  id:'sebi_insider', name:'SEBI (Prohibition of Insider Trading) Regulations, 2015',
+  shortName:'SEBI PIT Regulations, 2015', category:'Securities', priority:'critical',
+  description:'Prohibits insider trading and mandates code of conduct, trading window restrictions, and structured digital database for listed companies.',
+  reason: c => c.isListed ? 'Applicable: listed company — SEBI PIT Regulations mandatory for all designated persons and insiders' : null,
+  actions:[
+    {title:'Implement Code of Conduct for Designated Persons (DPs)', freq:'One-time setup + ongoing monitoring', deadline:'Adopt Code before listing; review annually; update within 30 days of any SEBI amendment', authority:'Board of Directors / Compliance Officer / SEBI', penalty:'Insider trading: disgorgement of profits + penalty up to ₹25 Cr or 3× profit whichever is higher; imprisonment up to 10 years (SEBI Act Section 24)', desc:'Frame and implement a Board-approved Code of Conduct for Prevention of Insider Trading covering: definition of Designated Persons (DPs — directors, KMP, employees with access to UPSI, their immediate relatives), obligations, pre-clearance requirements, restrictions, and reporting obligations. The Compliance Officer must be authorised to enforce the Code. Provide annual training to all DPs. Obtain annual acknowledgement of the Code from each DP.'},
+    {title:'Close trading window during UPSI periods and announce re-opening', freq:'Per UPSI event', deadline:'Trading window must be closed at least 2 days before the UPSI arises and until 48 hours after UPSI becomes generally available', authority:'Compliance Officer / Stock Exchanges (NSE/BSE)', penalty:'Any trade during closed window by DP is presumed insider trading; SEBI enforcement action', desc:'Trading Window Closure (TWC) is mandatory when the company is in possession of Unpublished Price Sensitive Information (UPSI) — financial results, dividends, mergers/acquisitions, regulatory orders, etc. Close window at least 2 trading days before board meeting for financial results. Reopen 48 hours after results are published on exchanges. Intimate all DPs and their immediate relatives of every TWC via email/formal communication. Maintain records of all TWC intimations.'},
+    {title:'Maintain Structured Digital Database (SDD) of UPSI sharing', freq:'Ongoing', deadline:'Create and update entry whenever UPSI is shared (before the meeting/event where UPSI is created)', authority:'Compliance Officer', penalty:'SEBI enforcement; failure to maintain SDD = presumption of insider trading guilt', desc:'SDD must contain: names of persons/entities with whom UPSI is shared, nature of UPSI, date of sharing, relationship of the person. SDD must be maintained on internal secure digital servers (not cloud/third-party), with time-stamp audit trails, tamper-proof, and maintained for 8 years. Audit SDD quarterly. Common categories: investment bankers, lawyers, consultants, due diligence teams, board committee members.'},
+    {title:'Obtain pre-clearance from Compliance Officer for trades by DPs', freq:'Per trade (for trades above threshold)', deadline:'Request pre-clearance minimum 2 trading days before intended trade; execute within 7 trading days of approval', authority:'Compliance Officer', penalty:'Trade without pre-clearance = violation of PIT Regulations; SEBI investigation', desc:'All DPs (and their immediate relatives) must obtain prior written approval from the Compliance Officer before dealing in company securities above a threshold value (typically ₹10 lakh per rolling 30-day period or as set in the Code). Compliance Officer checks: no TWC, no known UPSI. Pre-clearance is time-bound (typically 7 trading days). DPs must report executed trades within 2 trading days to the CO. Track and maintain pre-clearance register.'},
+    {title:'Annual affirmation of PIT Code compliance by all Designated Persons', freq:'Annual', deadline:'Within 30 days of financial year end (by 30th April)', authority:'Compliance Officer', penalty:'Non-affirmation = non-compliance with Code; regulatory scrutiny', desc:'Every Designated Person must submit an annual declaration to the Compliance Officer confirming: (a) they have not traded on any UPSI, (b) they have complied with the Code of Conduct, (c) they have disclosed all securities holdings and changes. Collect and file declarations. Update DP list to add/remove persons as their roles change. Report any violations discovered to the Board Audit Committee immediately.'}
+  ]
+},
+{
+  id:'ndps', name:'Narcotic Drugs and Psychotropic Substances Act, 1985',
+  shortName:'NDPS Act, 1985', category:'Sector-Specific', priority:'critical',
+  description:'Controls manufacture, import, export, sale, and use of narcotic drugs and psychotropic substances; requires strict licensing and records.',
+  reason: c => c.dealsPharma && (c.primarySector === 'pharma' || c.primarySector === 'healthcare') ? 'Applicable: pharma/healthcare company dealing with narcotic/psychotropic substances — NDPS Act strict compliance mandatory' : null,
+  actions:[
+    {title:'Obtain NDPS licence from State Drug Controller / Central Bureau of Narcotics (CBN)', freq:'Annual renewal', deadline:'Before manufacturing/stocking/selling NDPS-scheduled substances; renewal 3 months before expiry', authority:'Central Bureau of Narcotics (CBN) for narcotic substances; State Drug Controller for psychotropic substances', penalty:'Imprisonment up to 20 years + fine up to ₹2 lakh for commercial quantity offences; no bail for rigorous imprisonment cases', desc:'Manufacturers of essential narcotic drugs (morphine, codeine, opiates) require a licence from CBN under the NDPS Act. Psychotropic substance manufacturers/stockists require licence from State Drug Controllers. Licences are activity-specific (manufacture/import/export/sale). Display licence prominently. Every licence condition must be strictly adhered to — NDPS violations are non-bailable offences.'},
+    {title:'Maintain NDPS drug registers and submit reports to authority', freq:'Daily entries; Monthly/Quarterly reports', deadline:'Register entries: daily; Reports to CBN/Drug Controller: monthly or as specified in licence', authority:'Central Bureau of Narcotics / State Drug Controller', penalty:'Imprisonment up to 10 years (small quantity) to 20 years (commercial quantity); licence cancellation', desc:'Maintain prescribed registers: Form-2 (Opening/Closing Stock), receipts and issues register, destruction register, wastage register. All entries must be made on the day of transaction. Periodic returns to CBN (narcotic substances) and State Drug Controller (psychotropic substances) disclosing production, stock, sales, and import/export. Records must be maintained for 5 years.'},
+    {title:'Report theft, loss, or accidental destruction of NDPS substances immediately', freq:'As applicable', deadline:'Within 24 hours of discovery', authority:'Local Police + CBN/State Drug Controller', penalty:'Failure to report: prosecution under NDPS Act; presumption of diversion', desc:'Any theft, robbery, or unexplained loss of narcotic/psychotropic substances from factory, godown, or transport must be reported to the nearest police station AND the Narcotics Control Bureau/CBN/State Drug Controller within 24 hours. File FIR, provide inventory list of stolen/missing substances, and cooperate with investigation. Implement security controls: CCTV, biometric access, double-lock systems, security personnel for narcotics storage.'},
+    {title:'Ensure valid prescriptions for Schedule H1 and NDPS drugs at retail/hospital level', freq:'Per sale/dispensing', deadline:'At the time of sale/dispensing', authority:'State Drug Inspector / NDPS Enforcement Officers', penalty:'Imprisonment up to 1 year + fine for selling without prescription; aggravated penalties for commercial quantities', desc:'Schedule H1 drugs (strong psychotropics, some opioids) must only be dispensed against a prescription from a Registered Medical Practitioner with a specific rubber stamp and Register Number. Retain original prescription. Maintain a separate Schedule H1 prescription register. Do not dispense NDPS-scheduled substances (morphine, buprenorphine, etc.) without a special NDPS prescription with doctor registration details. Conduct staff training on prescription verification.'}
+  ]
+},
+{
+  id:'essentialcomm', name:'Essential Commodities Act, 1955',
+  shortName:'Essential Commodities Act, 1955', category:'Sector-Specific', priority:'high',
+  description:'Empowers government to control production, supply, and distribution of essential commodities; mandates stock limits and licensing for dealers.',
+  reason: c => c.dealsFoodBeverages || c.dealsPetroleum || c.dealsPharma ? `Applicable: deals in essential commodities (${[c.dealsFoodBeverages && 'food/beverages', c.dealsPetroleum && 'petroleum products', c.dealsPharma && 'pharmaceuticals/drugs'].filter(Boolean).join(', ')})` : null,
+  actions:[
+    {title:'Monitor and comply with stock limit orders issued by Central/State Government', freq:'Ongoing; check for new orders', deadline:'Immediately upon notification; declarations within timelines specified in order', authority:'State Government / District Collector / Central Government (MoCA)', penalty:'Imprisonment up to 7 years + fine; forfeiture of excess stock', desc:'Central and State Governments periodically issue stock limit orders for specific commodities (edible oils, pulses, sugar, onion, potato, petroleum products). When stock limit is notified, ensure stocks at any single location do not exceed prescribed limit. File declaration of stocks to the designated authority within the period specified in the order. Mandatory for wholesalers, retailers, processors, and importers.'},
+    {title:'Maintain statutory registers and accounts for essential commodities dealt in', freq:'Ongoing', deadline:'Contemporaneous entries; produced on demand during inspection', authority:'Civil Supplies Inspector / District Collector', penalty:'Fine; prosecution under EC Act; licence suspension', desc:'Maintain: daily stock register (opening stock, receipts, issues, closing stock), purchase invoices and sale bills, trader licences. Cooperate with inspection by authorised officers who have powers to enter, inspect, search and seize under Section 3 read with Control Orders. Maintain records for minimum 3 years.'},
+    {title:'Obtain licences required under commodity-specific Control Orders', freq:'Annual renewal or as per Control Order', deadline:'Before dealing in controlled commodity; renewal before expiry', authority:'State Government / District Collector / Department of Food and Public Distribution', penalty:'Dealing without licence: imprisonment up to 7 years + fine; forfeiture of stocks', desc:'Many commodities have specific Control Orders: Sugar Control Order, Edible Oils Packaging (Regulation) Order, Drugs (Prices Control) Order (DPCO under NPPA for pharma), Petroleum and Natural Gas Regulatory Board (PNGRB) for petroleum dealers, etc. Obtain the appropriate dealer/distributor licence under the applicable Control Order before engaging in trade. Display licence at business premises.'},
+    {title:'Comply with Maximum Retail Price (MRP) and price control notifications', freq:'Ongoing', deadline:'Immediately upon price notification', authority:'National Pharmaceutical Pricing Authority (NPPA) for pharma; MoCA for food; state authorities for others', penalty:'For DPCO violation (pharma): recovery of overcharged amount + interest + penalty up to 15% p.a.; prosecution', desc:'Under the DPCO 2013 (for pharma), ceiling prices for scheduled formulations are notified by NPPA; manufacturers and retailers cannot exceed these. For food commodities during shortage, State/Central Government may notify price ceilings. Monitor NPPA and government price notifications regularly. Update MRP on packaging immediately upon price change notification. Retailers must not charge above MRP under Legal Metrology Act as well.'}
+  ]
+},
+{
+  id:'labourcodes', name:'Four New Labour Codes (2019-2020)',
+  shortName:'New Labour Codes', category:'Labour', priority:'high',
+  description:'Four codes consolidating 29 central labour laws — Code on Wages, Industrial Relations Code, Code on Social Security, and OSHW&C Code — pending state implementation.',
+  reason: c => c.totalEmployees > 0 ? `Applicable: company has ${c.totalEmployees} employees — Four Labour Codes will replace existing labour laws upon state notification` : null,
+  actions:[
+    {title:'Restructure wage components per Code on Wages 2019 definition', freq:'One-time restructuring + annual review', deadline:'Upon state notification / before enforcement date (states still notifying rules)', authority:'Ministry of Labour and Employment; Central/State Governments', penalty:'Under Code on Wages: fine up to ₹50,000 (first offence); ₹1 lakh (repeat)', desc:'Code on Wages, 2019 defines "wages" to include basic + DA + retaining allowance — and mandates that allowances (HRA, special allowance, etc.) shall not exceed 50% of total wages. This means minimum 50% of CTC must be basic+DA, significantly impacting PF, gratuity, and bonus calculations. Audit current CTC structures. Model the financial impact of restructuring. Prepare employees and payroll systems in advance. The Code also mandates universal minimum wage (floor wage) and equal remuneration for men and women.'},
+    {title:'Review fixed-term employment provisions under Industrial Relations Code 2020', freq:'Policy review', deadline:'Before code enforcement in your state', authority:'Ministry of Labour / State Government', penalty:'Under IR Code: penalty up to ₹1 lakh for various violations', desc:'Industrial Relations Code, 2020 introduces Fixed-Term Employment (FTE) across all sectors — FTE workers get same benefits as permanent workers (proportionate gratuity from day 1, no retrenchment notice required at end of term). Review workforce strategy: opportunity to formalize contract workers under FTE framework. The IR Code also raises the threshold for retrenchment/layoff/closure permission from 100 to 300 workers — factories with < 300 workers can now retrench without prior government permission.'},
+    {title:'Update social security registrations under Code on Social Security 2020', freq:'One-time + ongoing', deadline:'Upon state notification; existing registrations to be migrated', authority:'EPFO / ESIC (implementing agencies)', penalty:'Under SS Code: existing penalties of EPFO/ESI Acts continue; new provisions for gig workers', desc:'Code on Social Security, 2020 extends social security to gig workers and platform workers (aggregators must contribute 1–2% of annual turnover for social security of gig/platform workers). Existing EPF and ESI registrations will continue under the Code. New features: universal account for social security, gratuity for fixed-term workers from day 1, optional voluntary EPF coverage for informal workers. Prepare for gig worker registration obligations if platform engages gig/platform workers.'},
+    {title:'Prepare for revised working hours and safety norms under OSHW&C Code 2020', freq:'Policy review and implementation', deadline:'Before state notification', authority:'Ministry of Labour / DGFASLI / State Factories Inspectorate', penalty:'Under OSHW&C Code: penalty up to ₹2 lakh; repeat violations: higher penalty + imprisonment', desc:'Occupational Safety, Health and Working Conditions Code, 2020 consolidates 13 laws (Factories Act, Contract Labour Act, Mines Act, Building and Other Construction Workers Act, etc.). Key changes: maximum 8 hours/day, 48 hours/week working hours; annual health check for all workers in notified categories; prohibition on contract labour in core activities; free annual health examination. Review current H&S policies for gaps. Assess applicability of OSHW&C Code sections to your sector.'},
+    {title:'Achieve single registration and single return readiness under Labour Codes', freq:'One-time preparation', deadline:'Before state notification of Labour Codes', authority:'Ministry of Labour / Shram Suvidha Portal', penalty:'Non-registration: fine under respective Code', desc:'All four Labour Codes aim for a single registration and single annual return for establishments. Currently establishments file multiple returns under different labour laws. Prepare data consolidation: employee-wise wages, PF, ESI, gratuity, bonus, working hours data in a unified format. Engage HR/payroll software vendors to update systems for Code-compliant reporting. Stay updated on state-specific rules — implementation dates and rule details vary state by state (as of 2025, most states have notified draft rules; actual enforcement pending).'}
+  ]
+},
+{
+  id:'energy_cons', name:'Energy Conservation Act, 2001 (amended 2022)',
+  shortName:'Energy Conservation Act, 2001', category:'Environment', priority:'medium',
+  description:'Mandates energy audits, energy managers, and annual energy consumption reporting for Designated Consumers; promotes energy efficiency and renewable energy.',
+  reason: c => ((c.hasFactory || c.hasMines || c.primarySector === 'energy' || c.primarySector === 'manufacturing') && c.annualTurnover >= 1000) ? `Applicable: ${c.primarySector} sector with turnover ₹${c.annualTurnover} lakhs — potential Designated Consumer under Energy Conservation Act` : null,
+  actions:[
+    {title:'Verify Designated Consumer (DC) status with Bureau of Energy Efficiency (BEE)', freq:'Annual verification', deadline:'Check DC notification annually; report to BEE if newly qualifying', authority:'Bureau of Energy Efficiency (BEE) / Ministry of Power', penalty:'Non-compliance by DC: penalty up to ₹10 lakh; subsequent non-compliance: ₹10,000/day', desc:'The EC Act designates energy-intensive industries as "Designated Consumers" (DCs) — currently covers 13 sectors including cement, aluminium, iron & steel, fertilisers, glass, paper, petrochemicals, railways, discoms, refineries, textiles. BEE specifies energy consumption threshold for DC status. Large manufacturing plants consuming > threshold energy must verify DC status annually. 2022 amendment adds obligations for carbon credit trading and energy-saving certificates.'},
+    {title:'Conduct mandatory energy audit every 3 years through BEE-accredited auditor', freq:'Once every 3 years', deadline:'Within 3 years of becoming a DC; thereafter every 3 years', authority:'Bureau of Energy Efficiency (BEE)', penalty:'Failure to conduct audit: penalty up to ₹10 lakh; non-implementation of audit recommendations may attract penalty', desc:'Designated Consumers must get an energy audit conducted by a BEE-accredited Energy Auditor. The audit identifies energy-saving opportunities, specific energy consumption benchmarks, and implementation plan. File the energy audit report with BEE (Form-3). BEE uses audit reports to set sector-wide energy consumption norms. Implement audit recommendations within prescribed timelines. Retain auditor accreditation certificate.'},
+    {title:'Appoint a certified Energy Manager', freq:'One-time + on change', deadline:'Before DC threshold is crossed; notify BEE within 30 days of appointment/change', authority:'Bureau of Energy Efficiency (BEE)', penalty:'Failure to appoint: penalty up to ₹10 lakh; false reporting by Energy Manager: personal fine', desc:'Every Designated Consumer must appoint a certified Energy Manager who has passed BEE\'s National Certification Examination for Energy Managers and Auditors (NCEEMA). Energy Manager is responsible for coordinating energy conservation activities, preparing energy audit reports, and filing annual returns. Notify BEE of the Energy Manager\'s name, qualifications, and contact details in Form-1. If the certified EM leaves, appoint a replacement within 30 days.'},
+    {title:'File Annual Energy Consumption Statement with BEE (Form-2)', freq:'Annual', deadline:'31st July each year (for preceding financial year)', authority:'Bureau of Energy Efficiency (BEE)', penalty:'Non-filing: penalty up to ₹10 lakh', desc:'Designated Consumers must file Form-2 (Annual Statement of Energy Consumption) with BEE online through the BEE portal disclosing: total energy consumed (coal, oil, gas, electricity, renewable) in million units/MT, production volumes, and Specific Energy Consumption (SEC). BEE uses this data to set and monitor energy consumption norms. Energy Managers must certify the form. Cross-verify with electricity bills, fuel invoices, and production records before filing.'},
+    {title:'Comply with BEE Star Labelling for energy-consuming products manufactured', freq:'Per product model', deadline:'Before marketing labelled products; mandatory for notified products', authority:'Bureau of Energy Efficiency (BEE)', penalty:'Manufacture/sale of non-compliant products: penalty up to ₹10 lakh per product category', desc:'BEE Star Labelling Programme applies to appliances/equipment manufactured and sold in India — currently mandatory for: air conditioners, refrigerators, washing machines, TVs, electric motors, distribution transformers, pumps, fans, and several more. Manufacturers must test products at BEE-recognised labs, obtain star rating, register with BEE, and display BEE star label on every unit. 2022 EC Amendment extends labelling to buildings (Energy Conservation Building Code compliance for commercial buildings > 100 kW connected load).'}
+  ]
+}
+
+]; // end INDIAN_LAWS
