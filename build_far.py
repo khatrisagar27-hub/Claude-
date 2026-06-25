@@ -168,69 +168,116 @@ dv_method.add("C8")
 #  Schedule II master table
 # =========================================================================== #
 hdr_row = r + 1
-ws_in.merge_cells(f"B{hdr_row-1}:F{hdr_row-1}")
+ws_in.merge_cells(f"B{hdr_row-1}:H{hdr_row-1}")
 style_cell(ws_in, f"B{hdr_row-1}",
-           "B.  SCHEDULE II – USEFUL LIVES OF ASSETS  (master lookup)",
+           "B.  ASSET MASTER – SCHEDULE II USEFUL LIVES + INCOME-TAX BLOCK MAPPING",
            fnt=font(11, True, WHITE), fl=fill(GREEN), al=align("center"))
 
 sched_headers = ["Sr.", "Asset Category", "Description / Notes",
-                 "Useful Life (Years)", "Indicative WDV Rate*"]
+                 "Useful Life (Years)", "Indicative WDV Rate*",
+                 "Income-Tax Block", "IT Dep Rate"]
 for i, h in enumerate(sched_headers):
     col = get_column_letter(2 + i)
-    style_cell(ws_in, f"{col}{hdr_row}", h, fnt=font(10, True, WHITE),
+    style_cell(ws_in, f"{col}{hdr_row}", h, fnt=font(9, True, WHITE),
                fl=fill(GREEN), al=align("center", wrap=True))
+ws_in.row_dimensions[hdr_row].height = 28
 
+# Companies Act useful life (Schedule II Part C) + mapped Income-Tax block & rate
+#   (category, description, life_yrs, IT block, IT WDV rate)
 schedule_ii = [
-    ("Buildings - RCC Frame",                 "Buildings other than factory (RCC frame)", 60),
-    ("Buildings - Other than RCC",            "Buildings other than factory (non-RCC)",   30),
-    ("Factory Building",                      "Factory buildings",                        30),
-    ("Plant & Machinery - General",           "General rate plant & machinery",           15),
-    ("Plant & Machinery - Continuous Process","Continuous process plant",                 25),
-    ("Furniture & Fittings",                  "General furniture and fittings",           10),
-    ("Office Equipment",                      "General office equipment",                  5),
-    ("Computers - End User Devices",          "Laptops, desktops, printers",               3),
-    ("Computers - Servers & Networks",        "Servers and network equipment",             6),
-    ("Electrical Installations",              "Electrical installations & equipment",     10),
-    ("Motor Vehicles - Motor Cars",           "Cars (other than used in hire business)",   8),
-    ("Motor Vehicles - Commercial",           "Buses, lorries, motor lorries (commercial)",6),
-    ("Motor Vehicles - Two Wheelers",         "Motor cycles, scooters",                   10),
-    ("Laboratory Equipment - General",        "General laboratory equipment",             10),
-    ("Plant & Machinery - Moulds/Dies",       "Moulds, jigs, dies and tooling",            8),
-    ("Air Conditioning Plant",                "AC plant (treated as P&M / office eqp.)",   5),
-    ("Intangible Assets - Software",          "Computer software (per AS/Ind AS)",         5),
-    ("Leasehold Improvements",                "Over primary lease period (illustrative)", 10),
+    ("Buildings - RCC Frame",                 "Buildings other than factory (RCC frame)",   60, "Building (General/Non-residential)",  0.10),
+    ("Buildings - Other than RCC",            "Buildings other than factory (non-RCC)",     30, "Building (General/Non-residential)",  0.10),
+    ("Factory Building",                      "Factory buildings",                          30, "Building (General/Non-residential)",  0.10),
+    ("Plant & Machinery - General",           "General rate plant & machinery",             15, "Plant & Machinery (General)",         0.15),
+    ("Plant & Machinery - Continuous Process","Continuous process plant",                   25, "Plant & Machinery (General)",         0.15),
+    ("Furniture & Fittings",                  "General furniture and fittings",             10, "Furniture & Fittings",                0.10),
+    ("Office Equipment",                      "General office equipment",                    5, "Plant & Machinery (General)",         0.15),
+    ("Computers - End User Devices",          "Laptops, desktops, printers",                 3, "Computers & Software",                0.40),
+    ("Computers - Servers & Networks",        "Servers and network equipment",               6, "Computers & Software",                0.40),
+    ("Electrical Installations",              "Electrical installations & equipment",       10, "Plant & Machinery (General)",         0.15),
+    ("Motor Vehicles - Motor Cars",           "Cars (other than used in hire business)",     8, "Motor Vehicles (Non-hire)",           0.15),
+    ("Motor Vehicles - Commercial",           "Buses/lorries used in business of hire",      6, "Motor Vehicles (Hire/Commercial)",    0.30),
+    ("Motor Vehicles - Two Wheelers",         "Motor cycles, scooters",                     10, "Motor Vehicles (Non-hire)",           0.15),
+    ("Laboratory Equipment - General",        "General laboratory equipment",               10, "Plant & Machinery (General)",         0.15),
+    ("Plant & Machinery - Moulds/Dies",       "Moulds, jigs, dies and tooling",              8, "Plant & Machinery (General)",         0.15),
+    ("Air Conditioning Plant",                "AC plant (treated as P&M)",                   5, "Plant & Machinery (General)",         0.15),
+    ("Intangible Assets - Software",          "Computer software (computers block)",         5, "Computers & Software",                0.40),
+    ("Leasehold Improvements",                "Over primary lease period (illustrative)",   10, "Building (General/Non-residential)",  0.10),
 ]
 first_data = hdr_row + 1
-for j, (cat, desc, life) in enumerate(schedule_ii):
+for j, (cat, desc, life, itblk, itrate) in enumerate(schedule_ii):
     rr = first_data + j
     band = LGREEN if j % 2 == 0 else WHITE
     style_cell(ws_in, f"B{rr}", j + 1, fnt=font(9), fl=fill(band), al=align("center"))
     style_cell(ws_in, f"C{rr}", cat, fnt=font(9, True, NAVY), fl=fill(band), al=align("left"))
-    style_cell(ws_in, f"D{rr}", desc, fnt=font(9, color=GREY), fl=fill(band), al=align("left"))
+    style_cell(ws_in, f"D{rr}", desc, fnt=font(8, color=GREY), fl=fill(band), al=align("left"))
     style_cell(ws_in, f"E{rr}", life, fnt=font(9, True), fl=fill(band),
                al=align("center"), numfmt=YRS_FMT)
-    # indicative WDV rate at default residual = 1 - (residual)^(1/life)
     style_cell(ws_in, f"F{rr}",
                f"=IF(E{rr}=0,0,1-(DefaultResidual)^(1/E{rr}))",
                fnt=font(9, color=ORANGE), fl=fill(band),
                al=align("center"), numfmt=PCT_FMT)
+    style_cell(ws_in, f"G{rr}", itblk, fnt=font(8, True, color=ORANGE),
+               fl=fill(band), al=align("left"))
+    style_cell(ws_in, f"H{rr}", itrate, fnt=font(9, True, color=RED),
+               fl=fill(band), al=align("center"), numfmt=PCT_FMT)
 last_data = first_data + len(schedule_ii) - 1
 
-ws_in.merge_cells(f"B{last_data+1}:F{last_data+1}")
+ws_in.merge_cells(f"B{last_data+1}:H{last_data+1}")
 style_cell(ws_in, f"B{last_data+1}",
-           "*Indicative WDV rate = 1 − (Residual Value)^(1/Useful Life), using the default residual % above. "
-           "Add or edit rows freely – the FAR dropdown & lookups follow this table.",
+           "*Companies Act indicative WDV rate = 1 − (Residual)^(1/Useful Life). The Income-Tax block & rate "
+           "(Sec. 32 / Appendix I, WDV) drive the Income-Tax Depreciation Chart. Edit rows freely – FAR & charts follow.",
            fnt=font(8, italic=True, color=GREY), fl=fill(LGREY), al=align("left", wrap=True))
-ws_in.row_dimensions[last_data+1].height = 26
+ws_in.row_dimensions[last_data+1].height = 28
 
-# defined names for the master table & category list
+# defined names for the master table & category list (now C..H)
 wb.defined_names.add(DefinedName(
-    "ScheduleIITable", attr_text=f"Input!$C${first_data}:$E${last_data}"))
+    "ScheduleIITable", attr_text=f"Input!$C${first_data}:$H${last_data}"))
 wb.defined_names.add(DefinedName(
     "AssetCategories", attr_text=f"Input!$C${first_data}:$C${last_data}"))
 
+# --------------------------------------------------------------------------- #
+#  Income-Tax block master (Section 32 / Appendix I, WDV rates)
+# --------------------------------------------------------------------------- #
+IT_BLOCKS = [
+    ("Building (Residential)",                        0.05),
+    ("Building (General/Non-residential)",            0.10),
+    ("Building (Temporary Structures)",               0.40),
+    ("Furniture & Fittings",                          0.10),
+    ("Plant & Machinery (General)",                   0.15),
+    ("Plant & Machinery (Energy-saving/Pollution)",   0.40),
+    ("Motor Vehicles (Non-hire)",                     0.15),
+    ("Motor Vehicles (Hire/Commercial)",              0.30),
+    ("Computers & Software",                          0.40),
+    ("Intangible Assets",                             0.25),
+    ("Ships",                                         0.20),
+    ("Books (annual publications / lending library)", 0.40),
+]
+itm_hdr = last_data + 3
+ws_in.merge_cells(f"B{itm_hdr-1}:H{itm_hdr-1}")
+style_cell(ws_in, f"B{itm_hdr-1}",
+           "C.  INCOME-TAX BLOCK OF ASSETS – WDV RATES (Sec. 32, Appendix I)",
+           fnt=font(11, True, WHITE), fl=fill(RED), al=align("center"))
+style_cell(ws_in, f"B{itm_hdr}", "Block of Assets", fnt=font(9, True, WHITE),
+           fl=fill(NAVY), al=align("center"))
+ws_in.merge_cells(f"B{itm_hdr}:E{itm_hdr}")
+style_cell(ws_in, f"F{itm_hdr}", "WDV Rate", fnt=font(9, True, WHITE),
+           fl=fill(NAVY), al=align("center"))
+for j, (blk, rate) in enumerate(IT_BLOCKS):
+    rr = itm_hdr + 1 + j
+    band = LORANGE if j % 2 == 0 else WHITE
+    ws_in.merge_cells(f"B{rr}:E{rr}")
+    style_cell(ws_in, f"B{rr}", blk, fnt=font(9, True, NAVY), fl=fill(band), al=align("left"))
+    style_cell(ws_in, f"F{rr}", rate, fnt=font(9, True, RED), fl=fill(band),
+               al=align("center"), numfmt=PCT_FMT)
+it_first = itm_hdr + 1
+it_last = itm_hdr + len(IT_BLOCKS)
+wb.defined_names.add(DefinedName("ITBlockTable", attr_text=f"Input!$B${it_first}:$F${it_last}"))
+wb.defined_names.add(DefinedName("ITBlockList", attr_text=f"Input!$B${it_first}:$B${it_last}"))
+
 # column widths
-for col, w in {"A": 2.5, "B": 26, "C": 26, "D": 34, "E": 16, "F": 16}.items():
+for col, w in {"A": 2.5, "B": 26, "C": 26, "D": 30, "E": 15,
+               "F": 14, "G": 30, "H": 11}.items():
     ws_in.column_dimensions[col].width = w
 ws_in.sheet_properties.tabColor = NAVY
 
@@ -264,9 +311,16 @@ fixed_cols = [
     ("Acc. Dep – Rep. FY (Rs.)",  16, "num"),
     ("WDV – Reporting FY (Rs.)",  16, "num"),
     ("Status",                    13, "text"),
+    # --- Schedule II extra-shift + CARO 2020 compliance ---
+    ("Shift Basis",               12, "shift"),
+    ("Shift Factor",              10, "num"),
+    ("Date of Physical Verif.",   15, "date"),
+    ("Title Deed in Co. Name?",   13, "deed"),
+    ("Remarks / Components",      26, "text"),
 ]
-N_FIXED = len(fixed_cols)              # 21
-YEAR_START_COL = N_FIXED + 1           # 22 -> 'V'
+N_FIXED = len(fixed_cols)              # 26
+YEAR_START_COL = N_FIXED + 1           # 27 -> 'AA'
+SHIFT_FACTOR_COL = get_column_letter(23)   # 'W' – multiplies the annual charge
 
 # Title rows
 last_col_idx = N_FIXED + 2 * N_YEARS
@@ -280,7 +334,7 @@ style_cell(ws, "A2",
            '=Input!C6&"   |   Depreciation Method: "&GlobalMethod&'
            '"   |   Reporting FY ending: "&TEXT(ReportingFYEnd,"dd-mmm-yyyy")&'
            '"   |   Default Residual: "&TEXT(DefaultResidual,"0%")&'
-           '"   |   Prepared per Companies Act, 2013 – Schedule II"',
+           '"   |   Companies Act, 2013 – Schedule II  (see Income-Tax Chart sheet for Sec. 32)"',
            fnt=font(9, True, color=NAVY), fl=fill(LGOLD), al=align("center"))
 ws.row_dimensions[2].height = 18
 
@@ -295,6 +349,7 @@ group_header(get_column_letter(1),  get_column_letter(9),  "ASSET MASTER DETAILS
 group_header(get_column_letter(10), get_column_letter(10), "DISPOSAL", ORANGE)
 group_header(get_column_letter(11), get_column_letter(17), "COST & DEPRECIATION BASIS", GREEN)
 group_header(get_column_letter(18), get_column_letter(21), "POSITION AS ON REPORTING FY", GOLD)
+group_header(get_column_letter(22), get_column_letter(26), "EXTRA-SHIFT (SCH. II) & CARO 2020 COMPLIANCE", ORANGE)
 
 # Year group: row-3 dep cell holds the FY-end date (formula off FirstFYEnd)
 for k in range(N_YEARS):
@@ -418,7 +473,8 @@ for ridx in range(N_ROWS):
         remaining = f"MAX(0,{prev}-$M{r})"
         slm = f'IF($N{r}=0,0,$Q{r}/$N{r}*{days}/{fulldays})'
         wdvm = f'{prev}*$P{r}*{days}/{fulldays}'
-        uncapped = f'IF($O{r}="WDV",{wdvm},{slm})'
+        # Schedule II extra-shift: charge x shift factor (1.0 / 1.5 / 2.0)
+        uncapped = f'IF($O{r}="WDV",{wdvm},{slm})*${SHIFT_FACTOR_COL}{r}'
         dep_formula = (
             f'=IF(OR($K{r}="",$H{r}=""),"",'
             f'MIN(MAX(0,{uncapped}),{remaining}))'
@@ -457,6 +513,25 @@ for ridx in range(N_ROWS):
                f'=IF($K{r}="","",IF($U{r}="Disposed",0,$K{r}-$T{r}))',
                fnt=font(9), fl=fill(band), al=align("right"), numfmt=INR_FMT)
 
+    # --- Schedule II extra-shift + CARO 2020 compliance (V..Z) ------------- #
+    # V: shift basis (Single / Double / Triple / NESD) – default Single
+    style_cell(ws, f"V{r}", ("Single" if s else None), fnt=font(9, color=BLUE),
+               fl=fill(band), al=align("center"))
+    # W: shift factor derived from basis (double +50%, triple +100%)
+    style_cell(ws, f"W{r}",
+               f'=IF($V{r}="Double",1.5,IF($V{r}="Triple",2,1))',
+               fnt=font(9, True), fl=fill(band), al=align("center"), numfmt='0.0')
+    # X: date of physical verification (CARO 3(i)(b)) – user fills
+    style_cell(ws, f"X{r}", None, fnt=font(9), fl=fill(band),
+               al=align("center"), numfmt=DATE_FMT)
+    # Y: title deed in company's name (CARO 3(i)(c)) – auto-flag immovables
+    style_cell(ws, f"Y{r}",
+               f'=IF($K{r}="","",IF(OR(ISNUMBER(SEARCH("Build",$C{r})),'
+               f'ISNUMBER(SEARCH("Lease",$C{r}))),"Yes","NA"))',
+               fnt=font(9, True), fl=fill(band), al=align("center"))
+    # Z: remarks / significant components (Schedule II componentisation)
+    style_cell(ws, f"Z{r}", None, fnt=font(8, color=GREY), fl=fill(band), al=align("left"))
+
 # Totals row
 TOT = DATA_END + 1
 style_cell(ws, f"A{TOT}", "TOTAL", fnt=font(10, True, WHITE), fl=fill(NAVY), al=align("center"))
@@ -466,7 +541,7 @@ for col in ["J", "K", "M", "Q", "R", "S", "T"]:
     style_cell(ws, f"{col}{TOT}",
                f"=SUM({col}{DATA_START}:{col}{DATA_END})",
                fnt=font(10, True, WHITE), fl=fill(NAVY), al=align("right"), numfmt=INR_FMT)
-for c in ["L", "N", "O", "P", "U"]:
+for c in ["L", "N", "O", "P", "U", "V", "W", "X", "Y", "Z"]:
     style_cell(ws, f"{c}{TOT}", "", fl=fill(NAVY))
 for k in range(N_YEARS):
     dep_idx = YEAR_START_COL + 2 * k
@@ -483,13 +558,27 @@ dv_cat.prompt = "Select an asset category (drives useful life & rate)."
 ws.add_data_validation(dv_cat)
 dv_cat.add(f"C{DATA_START}:C{DATA_END}")
 
+# Shift-basis dropdown (Schedule II extra-shift)
+dv_shift = DataValidation(type="list", formula1='"Single,Double,Triple,NESD"',
+                          allow_blank=True)
+dv_shift.prompt = ("Single shift = normal. Double shift = +50% dep, Triple = +100% "
+                   "(Schedule II). NESD = no extra-shift depreciation.")
+ws.add_data_validation(dv_shift)
+dv_shift.add(f"V{DATA_START}:V{DATA_END}")
+
+# Title-deed dropdown (CARO 3(i)(c))
+dv_deed = DataValidation(type="list", formula1='"Yes,No,NA"', allow_blank=True)
+dv_deed.prompt = "Is the title deed of this immovable property held in the company's name?"
+ws.add_data_validation(dv_deed)
+dv_deed.add(f"Y{DATA_START}:Y{DATA_END}")
+
 # Freeze panes so master columns + headers stay visible
 ws.freeze_panes = f"D{DATA_START}"
 
 # Conditional formatting: shade Disposed rows, flag #N/A category
 disp_rule = FormulaRule(formula=[f'$U{DATA_START}="Disposed"'],
                         fill=fill(LORANGE), font=font(9, italic=True, color=ORANGE))
-ws.conditional_formatting.add(f"A{DATA_START}:U{DATA_END}", disp_rule)
+ws.conditional_formatting.add(f"A{DATA_START}:Z{DATA_END}", disp_rule)
 na_rule = FormulaRule(formula=[f'$N{DATA_START}="#N/A"'], fill=fill("FFC7CE"),
                       font=font(9, bold=True, color=RED))
 ws.conditional_formatting.add(f"N{DATA_START}:N{DATA_END}", na_rule)
@@ -557,7 +646,7 @@ for k in range(N_YEARS):
                fnt=font(8, True, WHITE), fl=fill(NAVY), al=align("center"))
 rep.row_dimensions[mstart].height = 22
 
-for j, (cat, _d, _l) in enumerate(schedule_ii):
+for j, (cat, _d, _l, _b, _rt) in enumerate(schedule_ii):
     rr = mstart + 1 + j
     band = LGREEN if j % 2 == 0 else WHITE
     style_cell(rep, f"B{rr}",
@@ -617,7 +706,7 @@ fa_S = f"FAR!$S${DATA_START}:$S${DATA_END}"
 fa_T = f"FAR!$T${DATA_START}:$T${DATA_END}"
 fa_U = f"FAR!$U${DATA_START}:$U${DATA_END}"
 
-for j, (cat, _d, _l) in enumerate(schedule_ii):
+for j, (cat, _d, _l, _b, _rt) in enumerate(schedule_ii):
     rr = hr + 1 + j
     band = LGOLD if j % 2 == 0 else WHITE
     style_cell(sm, f"B{rr}", f"=Input!C{first_data+j}", fnt=font(9, True, NAVY),
@@ -669,6 +758,246 @@ for n, far_r in enumerate(disp_rows):
 
 for col, w in {"A": 2.5, "B": 30, "C": 22, "D": 20, "E": 20, "F": 20}.items():
     sm.column_dimensions[col].width = w
+
+# =========================================================================== #
+#  SHEET 5 : INCOME-TAX DEPRECIATION CHART  (Block of Assets, Sec. 32)
+# =========================================================================== #
+it = wb.create_sheet("Income-Tax Dep Chart")
+it.sheet_view.showGridLines = False
+it.sheet_properties.tabColor = RED
+
+it.merge_cells("B2:N2")
+style_cell(it, "B2", "INCOME-TAX DEPRECIATION CHART – BLOCK OF ASSETS",
+           fnt=font(16, True, WHITE), fl=fill(RED), al=align("center"), border=BORDER_BOX)
+it.row_dimensions[2].height = 26
+it.merge_cells("B3:N3")
+style_cell(it, "B3",
+           "Section 32, Income-Tax Act  •  WDV method on block of assets (Appendix I rates)  •  "
+           "180-day half-rate rule applied automatically from 'Date Put to Use' on FAR",
+           fnt=font(9, italic=True, color=WHITE), fl=fill(NAVY), al=align("center"))
+
+# IT computation FY selector
+style_cell(it, "B5", "Income-Tax Computation FY (year ending):",
+           fnt=font(10, True, NAVY), fl=fill(LLBLUE), al=align("left"))
+it.merge_cells("B5:D5")
+cell = style_cell(it, "E5", FIRST_FY_END, fnt=font(10, True, GOLD),
+                  fl=fill(LGOLD), al=align("center"), numfmt=DATE_FMT)
+wb.defined_names.add(DefinedName("ITFYEnd", attr_text="'Income-Tax Dep Chart'!$E$5"))
+it.merge_cells("F5:N5")
+style_cell(it, "F5",
+           "↳ Additions of THIS year auto-flow from FAR (≥180 / <180 days). Enter Opening WDV "
+           "(closing WDV of prior year) and any Additional Depreciation u/s 32(1)(iia) in the yellow cells.",
+           fnt=font(8, italic=True, color=GREY), fl=fill(LGREY), al=align("left", wrap=True))
+it.row_dimensions[5].height = 26
+
+ITFYSTART = "(EDATE(ITFYEnd,-12)+1)"
+
+# ---- Section B layout is computed first so Section A can SUM over it ------- #
+secA_hdr = 7
+secA_first = secA_hdr + 1
+secA_last = secA_first + len(IT_BLOCKS) - 1
+secA_tot = secA_last + 1
+
+secB_title = secA_tot + 3
+secB_hdr = secB_title + 1
+secB_first = secB_hdr + 1
+secB_last = secB_first + N_ROWS - 1
+
+# convenient Section-B ranges (for SUMIF in Section A)
+sb_block = f"$C${secB_first}:$C${secB_last}"
+sb_180 = f"$G${secB_first}:$G${secB_last}"
+sb_less = f"$H${secB_first}:$H${secB_last}"
+sb_sale = f"$J${secB_first}:$J${secB_last}"
+
+# ---- Section A : block-of-assets depreciation chart ----------------------- #
+it.merge_cells(f"B{secA_hdr-1}:N{secA_hdr-1}")
+style_cell(it, f"B{secA_hdr-1}",
+           "A.  BLOCK-OF-ASSETS DEPRECIATION CHART  (yellow = your input)",
+           fnt=font(11, True, WHITE), fl=fill(RED), al=align("center"))
+
+a_heads = ["Block of Assets", "Rate", "Opening WDV", "Additions ≥180 days",
+           "Additions <180 days", "Deletions (Sale)", "Normal Dep (full rate)",
+           "Dep on <180 (½ rate)", "Additional Dep", "Total Depreciation",
+           "Closing WDV", "Remarks"]
+for i, h in enumerate(a_heads):
+    col = get_column_letter(2 + i)
+    style_cell(it, f"{col}{secA_hdr}", h, fnt=font(8, True, WHITE),
+               fl=fill(NAVY), al=align("center", wrap=True))
+it.row_dimensions[secA_hdr].height = 40
+
+for j, (blk, rate) in enumerate(IT_BLOCKS):
+    rr = secA_first + j
+    band = LORANGE if j % 2 == 0 else WHITE
+    yin = LGOLD                                   # input cells
+    style_cell(it, f"B{rr}", f"=Input!B{it_first+j}", fnt=font(8, True, NAVY),
+               fl=fill(band), al=align("left"))
+    style_cell(it, f"C{rr}", f"=VLOOKUP($B{rr},ITBlockTable,5,FALSE)",
+               fnt=font(8, True, RED), fl=fill(band), al=align("center"), numfmt=PCT_FMT)
+    # Opening WDV – input
+    style_cell(it, f"D{rr}", 0, fnt=font(8, True, GOLD), fl=fill(yin),
+               al=align("right"), numfmt=INR_FMT)
+    # Additions / deletions from Section B
+    style_cell(it, f"E{rr}", f"=SUMIF({sb_block},$B{rr},{sb_180})",
+               fnt=font(8), fl=fill(band), al=align("right"), numfmt=INR_FMT)
+    style_cell(it, f"F{rr}", f"=SUMIF({sb_block},$B{rr},{sb_less})",
+               fnt=font(8), fl=fill(band), al=align("right"), numfmt=INR_FMT)
+    style_cell(it, f"G{rr}", f"=SUMIF({sb_block},$B{rr},{sb_sale})",
+               fnt=font(8, color=ORANGE), fl=fill(band), al=align("right"), numfmt=INR_FMT)
+    # net full base = Opening + Add>=180 - Deletions
+    netfull = f"($D{rr}+$E{rr}-$G{rr})"
+    fullbase = f"MAX(0,{netfull})"
+    halfbase = f"MAX(0,$F{rr}+MIN(0,{netfull}))"
+    style_cell(it, f"H{rr}", f"={fullbase}*$C{rr}", fnt=font(8, True),
+               fl=fill(band), al=align("right"), numfmt=INR_FMT)
+    style_cell(it, f"I{rr}", f"={halfbase}*$C{rr}*0.5", fnt=font(8, True),
+               fl=fill(band), al=align("right"), numfmt=INR_FMT)
+    # Additional dep – input
+    style_cell(it, f"J{rr}", 0, fnt=font(8, True, GOLD), fl=fill(yin),
+               al=align("right"), numfmt=INR_FMT)
+    blockwdv = f"($D{rr}+$E{rr}+$F{rr}-$G{rr})"
+    style_cell(it, f"K{rr}",
+               f"=IF({blockwdv}<=0,0,MIN($H{rr}+$I{rr}+$J{rr},{blockwdv}))",
+               fnt=font(8, True, RED), fl=fill(band), al=align("right"), numfmt=INR_FMT)
+    style_cell(it, f"L{rr}", f"=IF({blockwdv}<=0,0,{blockwdv}-$K{rr})",
+               fnt=font(8, True, NAVY), fl=fill(band), al=align("right"), numfmt=INR_FMT)
+    style_cell(it, f"M{rr}",
+               f'=IF({netfull}<0,"Block negative – examine STCG (Sec.50)",'
+               f'IF(AND(($D{rr}+$E{rr}+$F{rr})=0,$G{rr}>0),"Block ceased",""))',
+               fnt=font(7, italic=True, color=ORANGE), fl=fill(band), al=align("left"))
+# totals
+style_cell(it, f"B{secA_tot}", "TOTAL", fnt=font(9, True, WHITE), fl=fill(NAVY), al=align("center"))
+style_cell(it, f"C{secA_tot}", "", fl=fill(NAVY))
+for col in ["D", "E", "F", "G", "H", "I", "J", "K", "L"]:
+    style_cell(it, f"{col}{secA_tot}", f"=SUM({col}{secA_first}:{col}{secA_last})",
+               fnt=font(9, True, WHITE), fl=fill(NAVY), al=align("right"), numfmt=INR_FMT)
+style_cell(it, f"M{secA_tot}", "", fl=fill(NAVY))
+
+# ---- Section B : asset-wise detail feeding the chart ---------------------- #
+it.merge_cells(f"B{secB_title}:N{secB_title}")
+style_cell(it, f"B{secB_title}",
+           "B.  ASSET-WISE WORKING (auto-linked to FAR; classifies each addition by the 180-day rule)",
+           fnt=font(11, True, WHITE), fl=fill(NAVY), al=align("center"))
+b_heads = ["Asset", "(hidden block key)", "IT Block", "Gross Cost", "Date Put to Use",
+           "Days Used in FY", "Addition ≥180", "Addition <180", "Disposal Date",
+           "Sale Proceeds (FY)"]
+# map: B=Asset, C=block key, D=cost, E=put, F=days, G=add>=180, H=add<180, I=disp, J=sale
+hdr_map = {"B": "Asset", "C": "IT Block", "D": "Gross Cost", "E": "Date Put to Use",
+           "F": "Days Used in FY", "G": "Addition ≥180", "H": "Addition <180",
+           "I": "Disposal Date", "J": "Sale Proceeds (FY)"}
+for col, h in hdr_map.items():
+    style_cell(it, f"{col}{secB_hdr}", h, fnt=font(8, True, WHITE),
+               fl=fill(GREEN), al=align("center", wrap=True))
+it.row_dimensions[secB_hdr].height = 28
+
+for idx in range(N_ROWS):
+    fr = DATA_START + idx                # corresponding FAR row
+    rr = secB_first + idx
+    band = LGREEN if idx % 2 == 0 else WHITE
+    style_cell(it, f"B{rr}", f'=IF(FAR!K{fr}="","",FAR!B{fr})', fnt=font(8, NAVY),
+               fl=fill(band), al=align("left"))
+    style_cell(it, f"C{rr}",
+               f'=IF(FAR!C{fr}="","",IFERROR(VLOOKUP(FAR!C{fr},ScheduleIITable,5,FALSE),""))',
+               fnt=font(8, color=ORANGE), fl=fill(band), al=align("left"))
+    style_cell(it, f"D{rr}", f'=IF(FAR!K{fr}="","",FAR!K{fr})', fnt=font(8),
+               fl=fill(band), al=align("right"), numfmt=INR_FMT)
+    style_cell(it, f"E{rr}", f'=IF(FAR!H{fr}="","",FAR!H{fr})', fnt=font(8),
+               fl=fill(band), al=align("center"), numfmt=DATE_FMT)
+    in_fy = f'AND(FAR!H{fr}<>"",FAR!H{fr}>={ITFYSTART},FAR!H{fr}<=ITFYEnd)'
+    style_cell(it, f"F{rr}",
+               f'=IF({in_fy},ITFYEnd-FAR!H{fr}+1,"")', fnt=font(8, GREY),
+               fl=fill(band), al=align("center"), numfmt="0")
+    style_cell(it, f"G{rr}",
+               f'=IF(AND(FAR!K{fr}<>"",{in_fy},(ITFYEnd-FAR!H{fr}+1)>=180),FAR!K{fr},0)',
+               fnt=font(8), fl=fill(band), al=align("right"), numfmt=INR_FMT)
+    style_cell(it, f"H{rr}",
+               f'=IF(AND(FAR!K{fr}<>"",{in_fy},(ITFYEnd-FAR!H{fr}+1)<180),FAR!K{fr},0)',
+               fnt=font(8), fl=fill(band), al=align("right"), numfmt=INR_FMT)
+    style_cell(it, f"I{rr}", f'=IF(FAR!I{fr}="","",FAR!I{fr})', fnt=font(8, ORANGE),
+               fl=fill(band), al=align("center"), numfmt=DATE_FMT)
+    in_disp = f'AND(FAR!I{fr}<>"",FAR!I{fr}>={ITFYSTART},FAR!I{fr}<=ITFYEnd)'
+    style_cell(it, f"J{rr}", f'=IF({in_disp},FAR!J{fr},0)', fnt=font(8, ORANGE),
+               fl=fill(band), al=align("right"), numfmt=INR_FMT)
+
+for col, w in {"A": 2.5, "B": 26, "C": 30, "D": 15, "E": 14, "F": 12,
+               "G": 15, "H": 15, "I": 13, "J": 14, "K": 15, "L": 15,
+               "M": 28, "N": 4}.items():
+    it.column_dimensions[col].width = w
+it.freeze_panes = f"B{secA_first}"
+
+# =========================================================================== #
+#  SHEET 6 : NOTES & COMPLIANCE
+# =========================================================================== #
+nt = wb.create_sheet("Notes & Compliance")
+nt.sheet_view.showGridLines = False
+nt.sheet_properties.tabColor = GREY
+nt.column_dimensions["A"].width = 2.5
+nt.column_dimensions["B"].width = 4
+nt.column_dimensions["C"].width = 110
+
+nt.merge_cells("B2:C2")
+style_cell(nt, "B2", "NOTES, ASSUMPTIONS & STATUTORY COMPLIANCE",
+           fnt=font(15, True, WHITE), fl=fill(NAVY), al=align("center"), border=BORDER_BOX)
+nt.row_dimensions[2].height = 26
+
+def note_section(row, title, color):
+    nt.merge_cells(f"B{row}:C{row}")
+    style_cell(nt, f"B{row}", title, fnt=font(11, True, WHITE), fl=fill(color),
+               al=align("left"))
+    return row + 1
+
+def note_line(row, num, text, bold=False, color="000000"):
+    if num:
+        style_cell(nt, f"B{row}", num, fnt=font(9, True, color=GREY),
+                   al=align("center", v="top"), border=None)
+    style_cell(nt, f"C{row}", text, fnt=font(9, bold, color),
+               al=align("left", wrap=True, v="top"), border=None)
+    nt.row_dimensions[row].height = 14 * (1 + len(text) // 95)
+    return row + 1
+
+rN = 4
+rN = note_section(rN, "A.  COMPANIES ACT, 2013 – SCHEDULE II (depreciation on PPE)", BLUE)
+for n, t in [
+    ("1", "Depreciation is based on the USEFUL LIFE of the asset (Part C of Schedule II), not on fixed rates. The FAR looks up each asset's useful life from the master table on the Input sheet."),
+    ("2", "Residual / scrap value shall NOT exceed 5% of the original cost (default set to 5% on Input; editable per asset on FAR)."),
+    ("3", "Method: SLM or WDV may be used (and disclosed). The global switch on Input drives the whole register; a single asset can be overridden in the 'Method' column on FAR."),
+    ("4", "Pro-rata depreciation is charged from the date the asset is 'put to use' and up to the date of sale/disposal (day-count based)."),
+    ("5", "EXTRA-SHIFT (Schedule II Note): for double shift, depreciation increases by 50%; for triple shift by 100%, for the period of such use. Assets marked NESD get no extra-shift depreciation. Set this per asset via the 'Shift Basis' column (Single/Double/Triple/NESD) on FAR."),
+    ("6", "COMPONENTISATION: where the cost of a significant part of an asset has a useful life different from the asset, it must be depreciated separately. Record such parts as separate FAR rows and note linkage in 'Remarks / Components'."),
+]:
+    rN = note_line(rN, n, t)
+
+rN += 1
+rN = note_section(rN, "B.  INCOME-TAX ACT – DEPRECIATION (Sec. 32 / Appendix I)", RED)
+for n, t in [
+    ("1", "Income-tax depreciation is computed on the WRITTEN DOWN VALUE of a BLOCK OF ASSETS (assets of the same class with the same rate), not asset-by-asset. See the 'Income-Tax Dep Chart' sheet."),
+    ("2", "Indicative WDV rates used: Buildings 10% (residential 5%, temporary structures 40%); Furniture & Fittings 10%; Plant & Machinery (general) 15%; Motor vehicles 15% (commercial/used in hire 30%); Computers & software 40%; Intangibles 25%; Books 40%; Ships 20%. (Verify against the latest Appendix I each year.)"),
+    ("3", "180-DAY RULE: if an asset is acquired AND put to use for less than 180 days during the year of acquisition, depreciation for that year is restricted to 50% of the normal rate. The chart classifies each addition automatically from the FAR 'Date Put to Use'."),
+    ("4", "ADDITIONAL DEPRECIATION u/s 32(1)(iia): new plant & machinery acquired by a manufacturing undertaking is eligible for 20% additional depreciation (10% if used <180 days, balance allowed next year). Enter the eligible amount in the 'Additional Dep' input column."),
+    ("5", "Block computation: Closing WDV = Opening WDV + Additions − Moneys payable on sale − Depreciation. If sale proceeds exceed (Opening + Additions), the block value turns negative → short-term capital gain u/s 50 (flagged in 'Remarks')."),
+    ("6", "No depreciation on individual asset is relevant for tax; gains/losses are computed at block level, except where the entire block ceases to exist."),
+]:
+    rN = note_line(rN, n, t)
+
+rN += 1
+rN = note_section(rN, "C.  CARO 2020 – CLAUSE 3(i): PPE & INTANGIBLE ASSETS (audit reporting)", GREEN)
+for n, t in [
+    ("a", "Proper records showing full particulars, including QUANTITATIVE DETAILS and SITUATION, of Property, Plant & Equipment and of intangible assets (this FAR captures ID, description, location/cost-centre, cost and movement)."),
+    ("b", "Whether PPE have been PHYSICALLY VERIFIED by management at reasonable intervals and material discrepancies dealt with — record the date in 'Date of Physical Verif.' on FAR."),
+    ("c", "Whether TITLE DEEDS of all immovable properties are held in the company's name — flagged via 'Title Deed in Co. Name?' on FAR (auto-set to apply for buildings/leasehold)."),
+    ("d", "Whether the company has REVALUED its PPE/intangibles based on a Registered Valuer's report (note in 'Remarks' and adjust cost if applicable)."),
+    ("e", "Whether any proceedings for holding BENAMI property are initiated/pending (disclose in 'Remarks')."),
+]:
+    rN = note_line(rN, n, t)
+
+rN += 1
+rN = note_section(rN, "D.  SOURCES & DISCLAIMER", GOLD)
+for n, t in [
+    ("", "Companies Act, 2013 – Schedule II (useful lives, residual value, extra-shift, componentisation)."),
+    ("", "Income-Tax Act – Section 32 read with Rule 5 and Appendix I (block-of-assets WDV rates, 180-day rule, additional depreciation)."),
+    ("", "CARO 2020 – Companies (Auditor's Report) Order, 2020, paragraph 3(i)(a)–(e)."),
+    ("", "DISCLAIMER: This template is an illustrative working tool. Useful lives and tax rates change by Finance Act/MCA notification and by asset specifics. Verify the current Schedule II and Appendix I, and consult your auditor/tax advisor before filing."),
+]:
+    rN = note_line(rN, n, t, color=GREY)
 
 # =========================================================================== #
 #  Save

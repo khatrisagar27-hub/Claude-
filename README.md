@@ -13,10 +13,12 @@ recalculate.
 
 | Sheet | Purpose |
 |-------|---------|
-| **Input** | Control panel. The yellow cells drive everything: global depreciation **Method (SLM/WDV)**, default **residual %**, **first FY-end** (anchor for the year columns) and the **reporting FY-end**. Also holds the **Schedule II useful-life master table** used for lookups and the category dropdown. |
-| **FAR** | The single **Register of Fixed Assets** — one row per asset with master details, cost basis, and **year-wise pro-rata depreciation + closing WDV** for each financial year, plus the position (Dep / Acc. Dep / WDV / Status) as on the reporting FY. |
+| **Input** | Control panel. The yellow cells drive everything: global depreciation **Method (SLM/WDV)**, default **residual %**, **first FY-end** (anchor for the year columns) and the **reporting FY-end**. Holds the **Schedule II useful-life master** (with each category mapped to its **Income-Tax block & rate**) and the **Income-Tax block master** (Sec. 32 / Appendix I WDV rates). |
+| **FAR** | The single **Register of Fixed Assets** — one row per asset with master details, cost basis, **year-wise pro-rata depreciation + closing WDV** for each financial year, the position as on the reporting FY, plus **Schedule II extra-shift** (Single/Double/Triple/NESD) and **CARO 2020** compliance fields (physical-verification date, title-deed flag, remarks/components). |
 | **Reports** | Year-wise total depreciation & net-block movement, and a **Category × Year** depreciation matrix. |
 | **Summary** | Category-wise **Gross Block / Depreciation for the year / Accumulated Depreciation / Net Block** as on the reporting FY, a reconciliation check, and a disposals section. |
+| **Income-Tax Dep Chart** | **Block-of-assets depreciation chart under Section 32** (WDV, Appendix I rates). Additions auto-flow from the FAR and are split by the **180-day rule**; you enter Opening WDV and any **additional depreciation u/s 32(1)(iia)**. Computes normal + half-rate + additional depreciation and closing WDV, and flags blocks that turn negative (short-term capital gain u/s 50). |
+| **Notes & Compliance** | Plain-language notes on Schedule II, Income-Tax Sec. 32, and the **CARO 2020 clause 3(i)(a)–(e)** checklist, with sources and a disclaimer. |
 
 ## How to use
 
@@ -43,6 +45,33 @@ recalculate.
   below the residual value.
 - **Disposal**: depreciation is charged up to the disposal date; the asset's
   closing WDV becomes 0 and it is excluded from the closing block in Summary.
+
+## Income-Tax depreciation (Block of Assets — Section 32)
+
+The **Income-Tax Dep Chart** is separate from the book (Companies Act) depreciation:
+
+- Depreciation is on the **WDV of a block of assets**, not asset-by-asset. Rates
+  (Appendix I): Buildings 10% (residential 5%, temporary 40%), Furniture 10%,
+  Plant & Machinery 15%, Motor vehicles 15% (commercial/hire 30%), Computers &
+  software 40%, Intangibles 25%, Books 40%, Ships 20%.
+- **180-day rule**: an asset put to use for `< 180 days` in its year of
+  acquisition gets only **50%** of the rate. The chart classifies every addition
+  automatically from the FAR *Date Put to Use*.
+- **Additional depreciation u/s 32(1)(iia)** (20% on eligible new plant &
+  machinery) is an input column.
+- `Closing WDV = Opening WDV + Additions − Sale proceeds − Depreciation`; if sale
+  proceeds exceed the block, the value goes negative and is flagged for **STCG
+  u/s 50**.
+
+Set the **Income-Tax Computation FY** cell on that sheet to pick the year.
+
+## Schedule II additions in this version
+
+- **Extra-shift depreciation** — set *Shift Basis* per asset (Single / Double /
+  Triple / NESD); double shift adds 50% and triple adds 100% to the charge.
+- **CARO 2020 clause 3(i)** fields — physical-verification date, title-deed-in-
+  company-name flag (auto-applies for immovables), and remarks for
+  componentisation, revaluation or benami disclosures.
 
 ## Customising
 
