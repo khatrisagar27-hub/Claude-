@@ -54,7 +54,7 @@ a:hover { text-decoration: underline; }
   background: var(--navy); color: #fff; font-family: "Lora", serif; font-size: 15px;
 }
 .brand-text { font-family: "Lora", serif; font-size: 1.1rem; }
-.ca-logo { display: block; border-radius: 6px; object-fit: contain; }
+.ca-logo { display: block; height: 40px; width: auto; object-fit: contain; }
 
 .site-nav { display: flex; gap: 28px; }
 .site-nav a { color: var(--ink); font-weight: 500; font-size: 0.95rem; }
@@ -199,7 +199,7 @@ a:hover { text-decoration: underline; }
 /* ---------- Footer ---------- */
 .site-footer { background: var(--navy); color: #c4d0db; padding: 40px 0; font-size: 0.9rem; }
 .footer-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; font-family: "Lora", serif; color: #fff; font-size: 1rem; }
-.ca-logo-footer { background: #fff; padding: 2px; }
+.ca-logo-footer { height: 34px; background: #fff; padding: 3px 6px; border-radius: 6px; }
 .footer-inner p { margin: 0 0 8px; }
 .updated { color: #8fa3b5; }
 .disclaimer { color: #7e93a6; font-size: 0.82rem; max-width: 640px; margin-top: 14px; line-height: 1.55; }

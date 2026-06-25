@@ -47,24 +47,18 @@ change the content (ICAI requires this to be shown).
 
 ---
 
-## 1a. The CA Logo (important)
+## 1a. The CA Logo & profile photo (image files)
 
-The header and footer show a **placeholder** in the CA-logo slot
-(`assets/ca-logo.svg`). It is **not** the official mark. To use the real one:
+The header/footer reference **`assets/ca-logo.png`** (official ICAI "CA India"
+logo) and the Profile references **`assets/profile.jpg`** (proprietor's photo).
+Upload those two image files into `assets/` with those exact names — easiest via
+GitHub: open the `assets` folder → **Add file → Upload files** → drag them in →
+commit to the branch. Until the files exist, those two slots show a broken image.
 
-1. Download the official **"CA Logo"** artwork from ICAI — it is provided to
-   members (ICAI website → logo / branding guidelines, or your members' login).
-2. Save it as `assets/ca-logo.svg` (or `.png`) — overwrite the placeholder. If
-   you use a `.png`/`.jpg`, update the two `src="assets/ca-logo.svg"` references
-   in `index.html` to the new filename.
-3. **Use it exactly as provided** — ICAI's logo guidelines require that you do
-   **not** alter its design, colour, font or proportions, do not add effects,
-   and do not display it more prominently than the firm name. When in doubt,
-   read ICAI's current logo guidelines.
-
-Similarly, replace `assets/profile-placeholder.svg` with a passport-style photo
-(save as `assets/profile.jpg` and update the `<img src>` in the Profile section).
-Photographs are permitted by ICAI.
+**Use the CA logo exactly as provided by ICAI** — do not alter its design,
+colour, font or proportions, do not add effects, and do not display it more
+prominently than the firm name. When in doubt, read ICAI's current logo
+guidelines. Photographs of the member are permitted by ICAI.
 
 ---
 
