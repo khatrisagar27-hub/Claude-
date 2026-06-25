@@ -13,12 +13,14 @@ ICAI guidelines** on what a CA's website may contain.
 │   ├── script.js                   # Mobile menu, copyright year, "last updated" date
 │   ├── ca-logo.svg                 # PLACEHOLDER — replace with the official ICAI CA Logo
 │   └── profile-placeholder.svg     # PLACEHOLDER — replace with the proprietor's photo
+├── downloads/                      # Put free tool/utility files here (see downloads/README.md)
 └── README.md                       # This file
 ```
 
 The site is built for **Sagar Khatri & Associates, Chartered Accountants**
 (Proprietor: **CA Sagar Khatri**, established **2022**). Sections: Profile (with
-photo), Services, Knowledge/Articles, FAQ, Firm particulars, Contact.
+photo), Services, Knowledge/Articles, Tools & Utilities (free downloads), FAQ,
+Firm particulars, Contact.
 
 > By choice, the **ICAI membership number and Firm Registration Number are not
 > shown** on this site. (Both are *permitted* by ICAI but not mandatory — you can
