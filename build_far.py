@@ -1215,6 +1215,176 @@ for col, w in {"A": 2.5, "B": 26, "C": 16, "D": 15, "E": 14, "F": 10,
 dt_ws.freeze_panes = f"B{secB_first}"
 
 # =========================================================================== #
+#  SHEET 8 : SCHEDULE III – PPE NOTE  (movement schedule, CY vs PY)
+# =========================================================================== #
+pn = wb.create_sheet("Schedule III PPE Note")
+pn.sheet_view.showGridLines = False
+pn.sheet_properties.tabColor = "375623"
+
+pn.merge_cells("B2:L2")
+style_cell(pn, "B2", "NOTE 2.1 – PROPERTY, PLANT AND EQUIPMENT",
+           fnt=font(15, True, WHITE), fl=fill("375623"), al=align("center"), border=BORDER_BOX)
+pn.row_dimensions[2].height = 26
+pn.merge_cells("B3:L3")
+style_cell(pn, "B3",
+           '="Reconciliation of gross & net carrying amounts (Schedule III, Companies Act 2013)   |   '
+           'Current year ended "&TEXT(ReportingFYEnd,"dd-mmm-yyyy")&"   |   '
+           'Previous year ended "&TEXT(EDATE(ReportingFYEnd,-12),"dd-mmm-yyyy")&"   |   (Amounts in Rs.)"',
+           fnt=font(9, italic=True, color=WHITE), fl=fill(NAVY), al=align("center"))
+
+# ---- helper section (per-asset) computed first ---------------------------- #
+ph_title = 12 + len(schedule_ii) + 6       # leave room for the note + total + check
+ph_hdr = ph_title + 1
+ph_first = ph_hdr + 1
+ph_last = ph_first + N_ROWS - 1
+
+PRIOREND = "EDATE(ReportingFYEnd,-12)"
+REPSTART = "(EDATE(ReportingFYEnd,-12)+1)"
+fa_first_yr = yc(YEAR_START_COL)            # 'AA'
+fa_last_yr = yc(last_col_idx)               # 'BF'
+
+# ---- Section A : the formatted PPE note ----------------------------------- #
+# super-headers
+pn.merge_cells("C5:F5")
+style_cell(pn, "C5", "GROSS BLOCK (at cost)", fnt=font(9, True, WHITE),
+           fl=fill(BLUE), al=align("center"))
+pn.merge_cells("G5:J5")
+style_cell(pn, "G5", "DEPRECIATION / AMORTISATION", fnt=font(9, True, WHITE),
+           fl=fill(ORANGE), al=align("center"))
+pn.merge_cells("K5:L5")
+style_cell(pn, "K5", "NET BLOCK", fnt=font(9, True, WHITE),
+           fl=fill(GREEN), al=align("center"))
+style_cell(pn, "B5", "", fl=fill("375623"))
+
+sub = ["Class of Asset", "Opening", "Additions", "Disposals", "Closing",
+       "Opening", "For the Year", "On Disposals", "Closing",
+       "As at CY", "As at PY"]
+for i, h in enumerate(sub):
+    col = get_column_letter(2 + i)
+    style_cell(pn, f"{col}6", h, fnt=font(8, True, WHITE), fl=fill(NAVY),
+               al=align("center", wrap=True))
+pn.row_dimensions[6].height = 28
+
+hC = f"$C${ph_first}:$C${ph_last}"          # category keys (helper)
+def ph_rng(c):  return f"${c}${ph_first}:${c}${ph_last}"
+
+a_first = 7
+for j, (cat, _d, _l, _b, _rt) in enumerate(schedule_ii):
+    rr = a_first + j
+    band = LGREEN if j % 2 == 0 else WHITE
+    style_cell(pn, f"B{rr}", f"=Input!C{first_data+j}", fnt=font(8, True, NAVY),
+               fl=fill(band), al=align("left"))
+    style_cell(pn, f"C{rr}", f'=SUMIF({hC},$B{rr},{ph_rng("I")})', fnt=font(8),
+               fl=fill(band), al=align("right"), numfmt=INR_FMT)
+    style_cell(pn, f"D{rr}", f'=SUMIF({hC},$B{rr},{ph_rng("J")})', fnt=font(8),
+               fl=fill(band), al=align("right"), numfmt=INR_FMT)
+    style_cell(pn, f"E{rr}", f'=SUMIF({hC},$B{rr},{ph_rng("K")})', fnt=font(8, ORANGE),
+               fl=fill(band), al=align("right"), numfmt=INR_FMT)
+    style_cell(pn, f"F{rr}", f"=C{rr}+D{rr}-E{rr}", fnt=font(8, True),
+               fl=fill(band), al=align("right"), numfmt=INR_FMT)
+    style_cell(pn, f"G{rr}", f'=SUMIF({hC},$B{rr},{ph_rng("L")})', fnt=font(8),
+               fl=fill(band), al=align("right"), numfmt=INR_FMT)
+    style_cell(pn, f"H{rr}", f'=SUMIF({hC},$B{rr},{ph_rng("M")})', fnt=font(8),
+               fl=fill(band), al=align("right"), numfmt=INR_FMT)
+    style_cell(pn, f"I{rr}", f'=SUMIF({hC},$B{rr},{ph_rng("O")})', fnt=font(8, ORANGE),
+               fl=fill(band), al=align("right"), numfmt=INR_FMT)
+    style_cell(pn, f"J{rr}", f"=G{rr}+H{rr}-I{rr}", fnt=font(8, True),
+               fl=fill(band), al=align("right"), numfmt=INR_FMT)
+    style_cell(pn, f"K{rr}", f"=F{rr}-J{rr}", fnt=font(8, True, GREEN),
+               fl=fill(band), al=align("right"), numfmt=INR_FMT)
+    style_cell(pn, f"L{rr}", f"=C{rr}-G{rr}", fnt=font(8, color=GREY),
+               fl=fill(band), al=align("right"), numfmt=INR_FMT)
+a_tot = a_first + len(schedule_ii)
+style_cell(pn, f"B{a_tot}", "TOTAL", fnt=font(9, True, WHITE), fl=fill(NAVY), al=align("center"))
+for col in ["C", "D", "E", "F", "G", "H", "I", "J", "K", "L"]:
+    style_cell(pn, f"{col}{a_tot}", f"=SUM({col}{a_first}:{col}{a_tot-1})",
+               fnt=font(9, True, WHITE), fl=fill(NAVY), al=align("right"), numfmt=INR_FMT)
+
+# reconciliation checks
+ck = a_tot + 1
+style_cell(pn, f"B{ck}", "Checks:", fnt=font(8, True, GREY), al=align("left"), border=None)
+style_cell(pn, f"K{ck}",
+           f'=IF(ROUND(K{a_tot}-(F{a_tot}-J{a_tot}),0)=0,"Net = Gross − Dep  ✓","CHECK")',
+           fnt=font(8, True, GREEN), fl=fill(LGREEN), al=align("center"))
+style_cell(pn, f"H{ck}",
+           f"=IF(ROUND(H{a_tot}-SUM(FAR!R{DATA_START}:R{DATA_END}),0)=0,"
+           f'"Charge ties to FAR  ✓","CHECK")',
+           fnt=font(8, True, GREEN), fl=fill(LGREEN), al=align("center"))
+
+# disclosure footnotes
+fn = ck + 2
+foot = [
+    "Presentation as per Schedule III to the Companies Act, 2013. Intangible assets (e.g. software) are required to be disclosed in a separate note in the same movement format.",
+    "Additions and disposals are captured from the asset 'Date Put to Use' and 'Date of Sale/Disposal' on the FAR for the selected reporting year; depreciation 'For the Year' is the Schedule II charge.",
+    "Disclose separately, where applicable: assets held for sale, revalued amounts (Registered Valuer), title deeds of immovable property not in the company's name, and assets given as security (see Notes & Compliance / CARO).",
+]
+for i, t in enumerate(foot):
+    pn.merge_cells(f"B{fn+i}:L{fn+i}")
+    style_cell(pn, f"B{fn+i}", f"{i+1}.  {t}", fnt=font(8, italic=True, color=GREY),
+               fl=fill(LGREY), al=align("left", wrap=True), border=None)
+    pn.row_dimensions[fn+i].height = 14 * (1 + len(t) // 130)
+
+# ---- Section B : per-asset working ---------------------------------------- #
+pn.merge_cells(f"B{ph_title}:O{ph_title}")
+style_cell(pn, f"B{ph_title}",
+           "Working – per-asset movement for the reporting year (auto-linked to FAR)",
+           fnt=font(9, True, WHITE), fl=fill(NAVY), al=align("left"))
+ph_heads = {"B": "Asset", "C": "Class (key)", "D": "Cost", "E": "Put to Use",
+            "F": "Disposal", "G": "WDV @ PY-end", "H": "In Opening?",
+            "I": "Gross Opening", "J": "Additions", "K": "Disposals",
+            "L": "AccDep Opening", "M": "Charge (FY)", "N": "Disp. this yr?",
+            "O": "AccDep Eliminated"}
+for col, h in ph_heads.items():
+    style_cell(pn, f"{col}{ph_hdr}", h, fnt=font(7, True, WHITE), fl=fill(GREEN),
+               al=align("center", wrap=True))
+pn.row_dimensions[ph_hdr].height = 26
+
+for idx in range(N_ROWS):
+    fr = DATA_START + idx
+    r = ph_first + idx
+    band = LGREEN if idx % 2 == 0 else WHITE
+    style_cell(pn, f"B{r}", f'=IF(FAR!K{fr}="","",FAR!B{fr})', fnt=font(7, NAVY),
+               fl=fill(band), al=align("left"))
+    style_cell(pn, f"C{r}", f'=IF(FAR!K{fr}="","",FAR!C{fr})', fnt=font(7),
+               fl=fill(band), al=align("left"))
+    style_cell(pn, f"D{r}", f'=IF(FAR!K{fr}="","",FAR!K{fr})', fnt=font(7),
+               fl=fill(band), al=align("right"), numfmt=INR_FMT)
+    style_cell(pn, f"E{r}", f'=IF(FAR!H{fr}="","",FAR!H{fr})', fnt=font(7),
+               fl=fill(band), al=align("center"), numfmt=DATE_FMT)
+    style_cell(pn, f"F{r}", f'=IF(FAR!I{fr}="","",FAR!I{fr})', fnt=font(7, ORANGE),
+               fl=fill(band), al=align("center"), numfmt=DATE_FMT)
+    style_cell(pn, f"G{r}",
+               f'=IF(FAR!K{fr}="","",IFERROR(INDEX(FAR!${fa_first_yr}{fr}:${fa_last_yr}{fr},'
+               f'MATCH({PRIOREND},FAR!${fa_first_yr}$3:${fa_last_yr}$3,0)+1),FAR!K{fr}))',
+               fnt=font(7, GREY), fl=fill(band), al=align("right"), numfmt=INR_FMT)
+    in_open = (f'AND(FAR!H{fr}<>"",FAR!H{fr}<={PRIOREND},'
+               f'OR(FAR!I{fr}="",FAR!I{fr}>{PRIOREND}))')
+    style_cell(pn, f"H{r}", f'=IF(FAR!K{fr}="",0,IF({in_open},1,0))',
+               fnt=font(7), fl=fill(band), al=align("center"))
+    style_cell(pn, f"I{r}", f"=IF($H{r}=1,FAR!K{fr},0)", fnt=font(7),
+               fl=fill(band), al=align("right"), numfmt=INR_FMT)
+    add_cond = f'AND(FAR!H{fr}<>"",FAR!H{fr}>={REPSTART},FAR!H{fr}<=ReportingFYEnd)'
+    style_cell(pn, f"J{r}", f"=IF({add_cond},FAR!K{fr},0)", fnt=font(7),
+               fl=fill(band), al=align("right"), numfmt=INR_FMT)
+    disp_cond = f'AND(FAR!I{fr}<>"",FAR!I{fr}>={REPSTART},FAR!I{fr}<=ReportingFYEnd)'
+    style_cell(pn, f"K{r}", f"=IF({disp_cond},FAR!K{fr},0)", fnt=font(7, ORANGE),
+               fl=fill(band), al=align("right"), numfmt=INR_FMT)
+    style_cell(pn, f"L{r}", f"=IF($H{r}=1,FAR!K{fr}-$G{r},0)", fnt=font(7),
+               fl=fill(band), al=align("right"), numfmt=INR_FMT)
+    style_cell(pn, f"M{r}", f'=IF(FAR!K{fr}="",0,FAR!R{fr})', fnt=font(7),
+               fl=fill(band), al=align("right"), numfmt=INR_FMT)
+    style_cell(pn, f"N{r}", f"=IF({disp_cond},1,0)", fnt=font(7),
+               fl=fill(band), al=align("center"))
+    style_cell(pn, f"O{r}", f"=IF($N{r}=1,$L{r}+$M{r},0)", fnt=font(7, ORANGE),
+               fl=fill(band), al=align("right"), numfmt=INR_FMT)
+
+for col, w in {"A": 2.5, "B": 28, "C": 22, "D": 14, "E": 13, "F": 13,
+               "G": 14, "H": 9, "I": 14, "J": 13, "K": 13, "L": 14,
+               "M": 13, "N": 9, "O": 15}.items():
+    pn.column_dimensions[col].width = w
+pn.freeze_panes = "B7"
+
+# =========================================================================== #
 #  Save
 # =========================================================================== #
 wb.save(OUT_FILE)

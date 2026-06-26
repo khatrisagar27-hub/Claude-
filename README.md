@@ -19,6 +19,7 @@ recalculate.
 | **Summary** | Category-wise **Gross Block / Depreciation for the year / Accumulated Depreciation / Net Block** as on the reporting FY, a reconciliation check, and a disposals section. |
 | **Income-Tax Dep Chart** | **Block-of-assets depreciation chart under Section 32** (WDV, Appendix I rates). Additions auto-flow from the FAR and are split by the **180-day rule**; you enter Opening WDV and any **additional depreciation u/s 32(1)(iia)**. Computes normal + half-rate + additional depreciation and closing WDV, and flags blocks that turn negative (short-term capital gain u/s 50). |
 | **Book vs Tax (Def. Tax)** | **Deferred tax working (AS 22 / Ind AS 12)** reconciling Schedule II (book) vs Section 32 (tax) depreciation. A per-asset tax-WDV roll-forward (Appendix I rates + 180-day rule) gives year-wise tax depreciation; the sheet shows the year-wise difference, the deferred-tax charge/(credit), and the closing **DTL/(DTA)** = (Book WDV − Tax WDV) × tax rate. Headline deferred tax as on the reporting year sits at the top. |
+| **Schedule III PPE Note** | The **Note to the financial statements for Property, Plant & Equipment** in Schedule III format — a movement schedule of Gross Block (Opening / Additions / Disposals / Closing), Depreciation (Opening / For the year / On disposals / Closing) and Net Block (current year vs previous year), by class of asset, with built-in reconciliation checks. Auto-built from the FAR for the selected reporting year. |
 | **Notes & Compliance** | Plain-language notes on Schedule II, Income-Tax Sec. 32, and the **CARO 2020 clause 3(i)(a)–(e)** checklist, with sources and a disclaimer. |
 
 ## How to use
@@ -93,6 +94,21 @@ book and tax depreciation:
 > The deferred-tax engine uses an asset-level approximation of the tax block. For
 > the formal block computation (additional depreciation, disposals, STCG u/s 50)
 > use the **Income-Tax Dep Chart** sheet.
+
+## Schedule III PPE Note (Note to the accounts)
+
+The **Schedule III PPE Note** is the disclosure-ready movement schedule:
+
+- **Gross Block**: Opening + Additions − Disposals = Closing
+- **Depreciation**: Opening + For the year − On disposals = Closing
+- **Net Block**: Closing (current year) and Closing (previous year)
+
+…by class of asset, for the **reporting year** selected on Input. A per-asset
+working below the note pulls additions, disposals, opening accumulated
+depreciation and the year's charge from the FAR, and two checks confirm
+`Net = Gross − Depreciation` and that the charge ties back to the FAR. Intangible
+assets should be shown in a separate note in the same format (footnoted on the
+sheet).
 
 ## Customising
 
