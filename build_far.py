@@ -1000,6 +1000,221 @@ for n, t in [
     rN = note_line(rN, n, t, color=GREY)
 
 # =========================================================================== #
+#  SHEET 7 : BOOK vs TAX  (Deferred Tax – AS 22 / Ind AS 12)
+# =========================================================================== #
+dt_ws = wb.create_sheet("Book vs Tax (Def. Tax)")
+dt_ws.sheet_view.showGridLines = False
+dt_ws.sheet_properties.tabColor = "7030A0"
+PURPLE = "7030A0"
+LPURPLE = "E5DEF0"
+
+dt_ws.merge_cells("B2:K2")
+style_cell(dt_ws, "B2", "BOOK vs TAX DEPRECIATION – DEFERRED TAX WORKING",
+           fnt=font(16, True, WHITE), fl=fill(PURPLE), al=align("center"), border=BORDER_BOX)
+dt_ws.row_dimensions[2].height = 26
+dt_ws.merge_cells("B3:K3")
+style_cell(dt_ws, "B3",
+           "Timing difference between Schedule II (book) and Section 32 (tax) depreciation  •  "
+           "AS 22 / Ind AS 12  •  Tax-WDV roll-forward at Appendix I rates with the 180-day rule",
+           fnt=font(9, italic=True, color=WHITE), fl=fill(NAVY), al=align("center"))
+
+# Tax rate input
+style_cell(dt_ws, "B5", "Applicable Income-Tax Rate (incl. surcharge & cess):",
+           fnt=font(10, True, NAVY), fl=fill(LPURPLE), al=align("left"))
+dt_ws.merge_cells("B5:E5")
+style_cell(dt_ws, "F5", 0.25168, fnt=font(11, True, PURPLE), fl=fill(LGOLD),
+           al=align("center"), numfmt=PCT_FMT)
+wb.defined_names.add(DefinedName("TaxRate", attr_text="'Book vs Tax (Def. Tax)'!$F$5"))
+dt_ws.merge_cells("G5:K5")
+style_cell(dt_ws, "G5",
+           "↳ e.g. 25.168% u/s 115BAA, 17.16% u/s 115BAB, or 25%/30% + surcharge & cess as applicable.",
+           fnt=font(8, italic=True, color=GREY), fl=fill(LGREY), al=align("left"))
+
+# ----- Section C row math computed first (Section B & A reference it) ------- #
+# Section C: per-asset tax roll-forward; year pairs start at column I (9)
+sc_year0 = 9
+sc_title = 36                              # placed below Sections A & B (B ends row 33)
+sc_hdr   = sc_title + 1                    # date/label header row
+sc_first = sc_hdr + 1
+sc_last  = sc_first + N_ROWS - 1
+sc_tot   = sc_last + 1
+
+def sc_dep_letter(k):  return get_column_letter(sc_year0 + 2 * k)
+def sc_wdv_letter(k):  return get_column_letter(sc_year0 + 2 * k + 1)
+
+# ----- Section A : headline deferred tax as on the Reporting FY ------------- #
+style_cell(dt_ws, "B7", "A.  DEFERRED TAX AS ON THE REPORTING FINANCIAL YEAR",
+           fnt=font(11, True, WHITE), fl=fill(PURPLE), al=align("center"))
+dt_ws.merge_cells("B7:F7")
+secB_first = 17                            # (defined below; used for INDEX/MATCH)
+secB_last = secB_first + N_YEARS - 1
+mB = f"MATCH(ReportingFYEnd,$B${secB_first}:$B${secB_last},0)"
+hl = [
+    ("Net block as per books (Schedule II WDV)",  f"=INDEX($G${secB_first}:$G${secB_last},{mB})"),
+    ("Written-down value as per Income-Tax",       f"=INDEX($H${secB_first}:$H${secB_last},{mB})"),
+    ("Timing difference (Book WDV − Tax WDV)",      "=C8-C9"),
+    ("Applicable tax rate",                         "=TaxRate"),
+    ("Deferred Tax Liability / (Asset)",            "=C10*C11"),
+]
+for i, (lbl, frm) in enumerate(hl):
+    rr = 8 + i
+    last = (i == len(hl) - 1)
+    style_cell(dt_ws, f"B{rr}", lbl, fnt=font(10, last, NAVY if not last else WHITE),
+               fl=fill(PURPLE if last else LPURPLE), al=align("left"))
+    nf = PCT_FMT if i == 3 else INR_FMT
+    style_cell(dt_ws, f"C{rr}", frm,
+               fnt=font(11 if last else 10, True, WHITE if last else PURPLE),
+               fl=fill(PURPLE if last else WHITE), al=align("right"), numfmt=nf)
+style_cell(dt_ws, "D13",
+           '=IF(C12>=0,"➜  Deferred Tax LIABILITY (book value > tax value)",'
+           '"➜  Deferred Tax ASSET – recognise only if reasonable/virtual certainty exists")',
+           fnt=font(9, True, ORANGE), al=align("left"), border=None)
+dt_ws.merge_cells("D13:K13")
+
+# ----- Section B : year-wise reconciliation -------------------------------- #
+style_cell(dt_ws, "B15", "B.  YEAR-WISE BOOK vs TAX RECONCILIATION & DEFERRED-TAX ROLL-FORWARD",
+           fnt=font(11, True, WHITE), fl=fill(NAVY), al=align("center"))
+dt_ws.merge_cells("B15:K15")
+b_heads = ["Financial Year", "Book Dep (Sch. II)", "Tax Dep (Sec. 32)",
+           "Difference (Tax − Book)", "Deferred Tax Charge/(Credit)",
+           "Closing Book WDV", "Closing Tax WDV", "Timing Diff (Book−Tax)",
+           "Closing DTL/(DTA)", "Nature"]
+hdr_row_b = 16
+for i, h in enumerate(b_heads):
+    col = get_column_letter(2 + i)
+    style_cell(dt_ws, f"{col}{hdr_row_b}", h, fnt=font(8, True, WHITE),
+               fl=fill(NAVY), al=align("center", wrap=True))
+dt_ws.row_dimensions[hdr_row_b].height = 40
+
+for k in range(N_YEARS):
+    rr = secB_first + k
+    band = LPURPLE if k % 2 == 0 else WHITE
+    far_dep = f"FAR!{yc(YEAR_START_COL + 2*k)}{TOT}"
+    far_wdv = f"FAR!{yc(YEAR_START_COL + 2*k + 1)}{TOT}"
+    tax_dep = f"${sc_dep_letter(k)}${sc_tot}"
+    tax_wdv = f"${sc_wdv_letter(k)}${sc_tot}"
+    style_cell(dt_ws, f"B{rr}", f"=FAR!{yc(YEAR_START_COL + 2*k)}$3",
+               fnt=font(9, True, NAVY), fl=fill(band), al=align("center"),
+               numfmt='"FY "yyyy')
+    style_cell(dt_ws, f"C{rr}", f"={far_dep}", fnt=font(9), fl=fill(band),
+               al=align("right"), numfmt=INR_FMT)
+    style_cell(dt_ws, f"D{rr}", f"={tax_dep}", fnt=font(9, color=RED), fl=fill(band),
+               al=align("right"), numfmt=INR_FMT)
+    style_cell(dt_ws, f"E{rr}", f"=D{rr}-C{rr}", fnt=font(9), fl=fill(band),
+               al=align("right"), numfmt=INR_FMT)
+    style_cell(dt_ws, f"F{rr}", f"=E{rr}*TaxRate", fnt=font(9, True, PURPLE),
+               fl=fill(band), al=align("right"), numfmt=INR_FMT)
+    style_cell(dt_ws, f"G{rr}", f"={far_wdv}", fnt=font(9), fl=fill(band),
+               al=align("right"), numfmt=INR_FMT)
+    style_cell(dt_ws, f"H{rr}", f"={tax_wdv}", fnt=font(9, color=RED), fl=fill(band),
+               al=align("right"), numfmt=INR_FMT)
+    style_cell(dt_ws, f"I{rr}", f"=G{rr}-H{rr}", fnt=font(9), fl=fill(band),
+               al=align("right"), numfmt=INR_FMT)
+    style_cell(dt_ws, f"J{rr}", f"=I{rr}*TaxRate", fnt=font(9, True, NAVY),
+               fl=fill(band), al=align("right"), numfmt=INR_FMT)
+    style_cell(dt_ws, f"K{rr}",
+               f'=IF(I{rr}>0,"DTL",IF(I{rr}<0,"DTA","-"))',
+               fnt=font(9, True), fl=fill(band), al=align("center"))
+btot = secB_last + 1
+style_cell(dt_ws, f"B{btot}", "TOTAL", fnt=font(9, True, WHITE), fl=fill(NAVY), al=align("center"))
+for col in ["C", "D", "E", "F"]:
+    style_cell(dt_ws, f"{col}{btot}", f"=SUM({col}{secB_first}:{col}{secB_last})",
+               fnt=font(9, True, WHITE), fl=fill(NAVY), al=align("right"), numfmt=INR_FMT)
+for col in ["G", "H", "I", "J", "K"]:
+    style_cell(dt_ws, f"{col}{btot}", "", fl=fill(NAVY))
+
+# ----- Section C : per-asset tax depreciation roll-forward ----------------- #
+dt_ws.merge_cells(f"B{sc_title}:N{sc_title}")
+style_cell(dt_ws, f"B{sc_title}",
+           "C.  INCOME-TAX DEPRECIATION WORKING – per asset (WDV at Appendix I rates, 180-day rule; "
+           "auto-linked to FAR). Tax base held at cost until put to use; written off on disposal.",
+           fnt=font(10, True, WHITE), fl=fill(RED), al=align("left"))
+fixed_hdr = {"B": "Asset", "C": "Cost (Rs.)", "D": "Date Put to Use",
+             "E": "Disposal Date", "F": "IT Rate", "G": "Acq. FY-end Yr",
+             "H": "1st-yr Factor"}
+for col, h in fixed_hdr.items():
+    style_cell(dt_ws, f"{col}{sc_hdr}", h, fnt=font(8, True, WHITE),
+               fl=fill(NAVY), al=align("center", wrap=True))
+for k in range(N_YEARS):
+    dcol = sc_dep_letter(k)
+    wcol = sc_wdv_letter(k)
+    style_cell(dt_ws, f"{dcol}{sc_hdr}", f"=EDATE(FirstFYEnd,12*{k})",
+               fnt=font(7, True, WHITE), fl=fill(RED), al=align("center"), numfmt='"Dep "yyyy')
+    style_cell(dt_ws, f"{wcol}{sc_hdr}", f'="WDV "&TEXT(EDATE(FirstFYEnd,12*{k}),"yyyy")',
+               fnt=font(7, True, WHITE), fl=fill(GOLD), al=align("center"))
+    dt_ws.column_dimensions[dcol].width = 12
+    dt_ws.column_dimensions[wcol].width = 12
+dt_ws.row_dimensions[sc_hdr].height = 24
+
+for idx in range(N_ROWS):
+    fr = DATA_START + idx
+    r = sc_first + idx
+    band = LGREEN if idx % 2 == 0 else WHITE
+    style_cell(dt_ws, f"B{r}", f'=IF(FAR!K{fr}="","",FAR!B{fr})', fnt=font(8, NAVY),
+               fl=fill(band), al=align("left"))
+    style_cell(dt_ws, f"C{r}", f'=IF(FAR!K{fr}="","",FAR!K{fr})', fnt=font(8),
+               fl=fill(band), al=align("right"), numfmt=INR_FMT)
+    style_cell(dt_ws, f"D{r}", f'=IF(FAR!H{fr}="","",FAR!H{fr})', fnt=font(8),
+               fl=fill(band), al=align("center"), numfmt=DATE_FMT)
+    style_cell(dt_ws, f"E{r}", f'=IF(FAR!I{fr}="","",FAR!I{fr})', fnt=font(8, ORANGE),
+               fl=fill(band), al=align("center"), numfmt=DATE_FMT)
+    style_cell(dt_ws, f"F{r}",
+               f'=IF(FAR!C{fr}="",0,IFERROR(VLOOKUP(FAR!C{fr},ScheduleIITable,6,FALSE),0))',
+               fnt=font(8, RED), fl=fill(band), al=align("center"), numfmt=PCT_FMT)
+    style_cell(dt_ws, f"G{r}",
+               f'=IF($D{r}="","",YEAR($D{r})+IF(MONTH($D{r})>=4,1,0))',
+               fnt=font(8, GREY), fl=fill(band), al=align("center"), numfmt="0")
+    style_cell(dt_ws, f"H{r}",
+               f'=IF($D{r}="","",IF((DATE($G{r},3,31)-$D{r}+1)>=180,1,0.5))',
+               fnt=font(8, GREY), fl=fill(band), al=align("center"), numfmt="0.0")
+    for k in range(N_YEARS):
+        dcol = sc_dep_letter(k)
+        wcol = sc_wdv_letter(k)
+        hdr = f"{dcol}${sc_hdr}"
+        yexpr = f"(YEAR({hdr})-$G{r})"
+        dep = (f'=IF(OR($C{r}="",$D{r}=""),0,'
+               f'IF(AND($E{r}<>"",$E{r}<={hdr}),0,'
+               f'IF({yexpr}<0,0,'
+               f'IF({yexpr}=0,$C{r}*$F{r}*$H{r},'
+               f'$C{r}*(1-$F{r}*$H{r})*(1-$F{r})^({yexpr}-1)*$F{r}))))')
+        wdv = (f'=IF($C{r}="",0,'
+               f'IF(AND($E{r}<>"",$E{r}<={hdr}),0,'
+               f'IF(OR($D{r}="",$D{r}>{hdr}),$C{r},'
+               f'IF({yexpr}=0,$C{r}*(1-$F{r}*$H{r}),'
+               f'$C{r}*(1-$F{r}*$H{r})*(1-$F{r})^{yexpr}))))')
+        style_cell(dt_ws, f"{dcol}{r}", dep, fnt=font(7),
+                   fl=fill(LGREEN if idx % 2 == 0 else WHITE),
+                   al=align("right"), numfmt=INR_FMT)
+        style_cell(dt_ws, f"{wcol}{r}", wdv, fnt=font(7),
+                   fl=fill(LGOLD if idx % 2 == 0 else WHITE),
+                   al=align("right"), numfmt=INR_FMT)
+style_cell(dt_ws, f"B{sc_tot}", "TOTAL", fnt=font(8, True, WHITE), fl=fill(NAVY), al=align("center"))
+for c in "CDEFGH":
+    style_cell(dt_ws, f"{c}{sc_tot}", "", fl=fill(NAVY))
+for k in range(N_YEARS):
+    for cl in (sc_dep_letter(k), sc_wdv_letter(k)):
+        style_cell(dt_ws, f"{cl}{sc_tot}", f"=SUM({cl}{sc_first}:{cl}{sc_last})",
+                   fnt=font(7, True, WHITE), fl=fill(NAVY), al=align("right"), numfmt=INR_FMT)
+
+# notes
+nrow = sc_tot + 2
+notes_dt = [
+    "Deferred tax = timing difference between book (Schedule II) and tax (Section 32) depreciation × applicable tax rate (AS 22 / Ind AS 12).",
+    "Tax depreciation here uses an asset-level WDV roll-forward at Appendix I rates (50% in the year of acquisition if used < 180 days). For the formal block computation, additional depreciation and disposals/STCG, see the 'Income-Tax Dep Chart' sheet.",
+    "Where book carrying value exceeds the tax WDV, a Deferred Tax LIABILITY arises; the reverse gives a Deferred Tax ASSET (recognise only where reasonable / virtual certainty of future taxable income exists).",
+]
+for i, t in enumerate(notes_dt):
+    dt_ws.merge_cells(f"B{nrow+i}:N{nrow+i}")
+    style_cell(dt_ws, f"B{nrow+i}", "• " + t, fnt=font(8, italic=True, color=GREY),
+               fl=fill(LGREY), al=align("left", wrap=True), border=None)
+    dt_ws.row_dimensions[nrow+i].height = 14 * (1 + len(t) // 120)
+
+for col, w in {"A": 2.5, "B": 26, "C": 16, "D": 15, "E": 14, "F": 10,
+               "G": 12, "H": 11}.items():
+    dt_ws.column_dimensions[col].width = w
+dt_ws.freeze_panes = f"B{secB_first}"
+
+# =========================================================================== #
 #  Save
 # =========================================================================== #
 wb.save(OUT_FILE)

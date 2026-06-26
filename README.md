@@ -18,6 +18,7 @@ recalculate.
 | **Reports** | Year-wise total depreciation & net-block movement, and a **Category × Year** depreciation matrix. |
 | **Summary** | Category-wise **Gross Block / Depreciation for the year / Accumulated Depreciation / Net Block** as on the reporting FY, a reconciliation check, and a disposals section. |
 | **Income-Tax Dep Chart** | **Block-of-assets depreciation chart under Section 32** (WDV, Appendix I rates). Additions auto-flow from the FAR and are split by the **180-day rule**; you enter Opening WDV and any **additional depreciation u/s 32(1)(iia)**. Computes normal + half-rate + additional depreciation and closing WDV, and flags blocks that turn negative (short-term capital gain u/s 50). |
+| **Book vs Tax (Def. Tax)** | **Deferred tax working (AS 22 / Ind AS 12)** reconciling Schedule II (book) vs Section 32 (tax) depreciation. A per-asset tax-WDV roll-forward (Appendix I rates + 180-day rule) gives year-wise tax depreciation; the sheet shows the year-wise difference, the deferred-tax charge/(credit), and the closing **DTL/(DTA)** = (Book WDV − Tax WDV) × tax rate. Headline deferred tax as on the reporting year sits at the top. |
 | **Notes & Compliance** | Plain-language notes on Schedule II, Income-Tax Sec. 32, and the **CARO 2020 clause 3(i)(a)–(e)** checklist, with sources and a disclaimer. |
 
 ## How to use
@@ -72,6 +73,26 @@ Set the **Income-Tax Computation FY** cell on that sheet to pick the year.
 - **CARO 2020 clause 3(i)** fields — physical-verification date, title-deed-in-
   company-name flag (auto-applies for immovables), and remarks for
   componentisation, revaluation or benami disclosures.
+
+## Deferred tax (Book vs Tax — AS 22 / Ind AS 12)
+
+The **Book vs Tax (Def. Tax)** sheet quantifies the timing difference between
+book and tax depreciation:
+
+- A per-asset **tax-WDV roll-forward** computes Section 32 depreciation for every
+  year (full rate, or 50% in the year of acquisition if used `< 180 days`), held
+  at cost until the asset is put to use and written off on disposal.
+- For each year it shows: **Book Dep vs Tax Dep → Difference → Deferred Tax
+  charge/(credit)**, and the closing **DTL/(DTA) = (Book WDV − Tax WDV) × tax
+  rate**.
+- Set the **applicable tax rate** at the top (default 25.168% u/s 115BAA; change
+  for 115BAB / 25% / 30% + surcharge & cess).
+- Book WDV > Tax WDV ⇒ **Deferred Tax Liability**; the reverse ⇒ **Deferred Tax
+  Asset** (recognise only with reasonable/virtual certainty).
+
+> The deferred-tax engine uses an asset-level approximation of the tax block. For
+> the formal block computation (additional depreciation, disposals, STCG u/s 50)
+> use the **Income-Tax Dep Chart** sheet.
 
 ## Customising
 
