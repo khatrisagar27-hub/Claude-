@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Prompt Library — CA, vCFO & Family Office (India)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 14px;
+    color: #1a1a1a;
+    background: #f4f6fa;
+    line-height: 1.7;
+  }
+  .page {
+    max-width: 900px;
+    margin: 30px auto;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+    overflow: hidden;
+  }
+  .cover {
+    background: linear-gradient(135deg, #0a1628 0%, #1d3a6b 100%);
+    color: #fff;
+    padding: 55px 50px;
+    text-align: center;
+  }
+  .cover h1 { font-size: 30px; font-weight: 800; color: #f0c060; margin-bottom: 10px; }
+  .cover h2 { font-size: 17px; font-weight: 400; color: #7fb3d3; margin-bottom: 25px; }
+  .cover .subtitle {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    padding: 15px 25px;
+    font-size: 13px;
+    color: #c8d8f0;
+  }
+  .content { padding: 40px 50px; }
+
+  h3 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #0a1628;
+    border-left: 5px solid #c8a951;
+    padding-left: 15px;
+    margin: 35px 0 15px;
+    scroll-margin-top: 20px;
+  }
+  h4 { font-size: 15px; font-weight: 700; color: #1d3a6b; margin: 20px 0 8px; }
+  p { margin-bottom: 12px; color: #333; }
+  a { color: #1d3a6b; }
+  .note { background: #fffbea; border-left: 4px solid #f0c060; padding: 12px 16px; border-radius: 0 6px 6px 0; margin: 12px 0; font-size: 13px; }
+  .warn { background: #fff0f0; border-left: 4px solid #dc2626; padding: 14px 18px; border-radius: 0 6px 6px 0; margin: 14px 0; font-size: 13px; }
+  .tip { background: #f0fdf4; border-left: 4px solid #16a34a; padding: 12px 16px; border-radius: 0 6px 6px 0; margin: 12px 0; font-size: 13px; }
+  .warn ul, .note ul, .tip ul { margin: 6px 0 0 18px; }
+  .warn li, .note li, .tip li { margin: 4px 0; }
+
+  code { background: #1a1a2e; color: #f0c060; padding: 2px 8px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; }
+
+  .cmd-block {
+    background: #0d1117;
+    color: #c9d1d9;
+    padding: 16px 20px;
+    border-radius: 8px;
+    font-family: 'Courier New', monospace;
+    font-size: 12.5px;
+    margin: 0;
+    white-space: pre-wrap;
+    line-height: 1.7;
+  }
+  .cmd-block .ph { color: #f0c060; font-weight: 700; }
+
+  table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 13px; }
+  th { background: #0a1628; color: #f0c060; padding: 10px 14px; text-align: left; font-weight: 600; }
+  td { padding: 9px 14px; border-bottom: 1px solid #e8eef5; vertical-align: top; }
+  tr:nth-child(even) td { background: #f8faff; }
+
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+  .badge.t1 { background: #d1fae5; color: #059669; }
+  .badge.t2 { background: #e0f2fe; color: #0284c7; }
+  .badge.t3 { background: #fef3c7; color: #d97706; }
+  .badge.t4 { background: #fee2e2; color: #dc2626; }
+  .badge.tool { background: #ede9fe; color: #7c3aed; }
+
+  .section-divider { display: flex; align-items: center; gap: 15px; margin: 42px 0 20px; }
+  .section-divider span { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; color: #c8a951; white-space: nowrap; }
+  .section-divider::before, .section-divider::after { content: ''; flex: 1; height: 1px; background: #dde8ff; }
+
+  .toc { background: #f8faff; border: 1px solid #dde8ff; border-radius: 8px; padding: 20px 25px; margin: 20px 0; }
+  .toc h4 { margin: 0 0 12px; color: #0a1628; }
+  .toc ul { list-style: none; columns: 2; column-gap: 30px; }
+  .toc li { margin: 5px 0; font-size: 13px; }
+  .toc a { text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+
+  /* prompt card */
+  .card {
+    border: 1px solid #dde8ff;
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin: 16px 0;
+    background: #fff;
+  }
+  .card h4 { margin: 0 0 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .card .use { font-size: 13px; color: #444; margin: 0 0 10px; }
+  .card .meta { font-size: 12.5px; color: #444; margin: 8px 0 0; }
+  .card .meta.caveat { color: #8a4b00; }
+
+  .prompt { position: relative; margin: 8px 0; }
+  .copy {
+    position: absolute; top: 8px; right: 8px;
+    background: #1d3a6b; color: #fff; border: none;
+    padding: 5px 12px; border-radius: 6px; font-size: 11px; font-weight: 700;
+    cursor: pointer; font-family: 'Segoe UI', sans-serif;
+  }
+  .copy:hover { background: #2a4d8f; }
+  .copy.done { background: #16a34a; }
+
+  /* search */
+  .searchbar { position: sticky; top: 0; z-index: 5; background: #fff; padding: 14px 0 10px; margin-bottom: 8px; border-bottom: 1px solid #e8eef5; }
+  #filter {
+    width: 100%; padding: 11px 16px; font-size: 14px;
+    border: 2px solid #dde8ff; border-radius: 8px; outline: none; font-family: inherit;
+  }
+  #filter:focus { border-color: #1d3a6b; }
+  .filter-hint { font-size: 11px; color: #888; margin-top: 5px; }
+  .nores { display: none; color: #888; font-style: italic; padding: 20px 0; }
+
+  footer { background: #0a1628; color: #7fb3d3; padding: 25px 50px; font-size: 12px; text-align: center; }
+  footer strong { color: #f0c060; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="cover">
+    <h1>Claude Prompt Library</h1>
+    <h2>For Chartered Accountants, Virtual CFOs &amp; Family Offices · India</h2>
+    <div class="subtitle">
+      44 copy-paste prompts across audit, direct &amp; indirect tax, corporate &amp; legal compliance,
+      financial reporting, vCFO advisory, family office, transactions and FEMA — with use cases,
+      time saved and verification caveats.<br><br>
+      Prepared for <strong>Sagar Khatri &amp; Associates, Chartered Accountants</strong>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- SEARCH -->
+    <div class="searchbar">
+      <input id="filter" type="text" placeholder="🔍  Filter prompts — type a keyword (e.g. GST, notice, cash flow, succession)…" oninput="filterCards()">
+      <div class="filter-hint">Filters the prompt cards below by title and use case. Clear the box to show all.</div>
+    </div>
+
+    <!-- GUARDRAILS -->
+    <div class="warn">
+      <strong>⚠ Guardrails — read this first.</strong>
+      <ul>
+        <li><strong>Confidentiality (ICAI Code of Ethics).</strong> Never paste a client's PII, price-sensitive or UDIN-linked data into a consumer chatbot. Anonymise — mask PAN/GSTIN/Aadhaar, replace names with roles. For sensitive work, use an enterprise / no-training deployment.</li>
+        <li><strong>AI can hallucinate.</strong> It may invent a section number, circular, case citation or due date. <strong>Verify every statutory reference, rate, threshold and date against the bare Act, the latest Finance Act, CBDT/CBIC circulars or ICAI material before relying on it.</strong></li>
+        <li><strong>Judgement is not outsourced.</strong> Claude drafts and reasons; the CA reviews, applies professional skepticism and <strong>signs</strong>. Opinions, certifications, UDINs and filings remain your responsibility.</li>
+        <li><strong>Law changes yearly.</strong> State the assessment/financial year and re-verify — the model has a knowledge cut-off.</li>
+      </ul>
+    </div>
+
+    <!-- HOW TO USE -->
+    <h3 id="how">How to use this library</h3>
+    <p>Each card below has: <strong>Use case</strong> → <strong>the prompt</strong> (with a <em>Copy</em> button — just fill the <span class="ph" style="background:#0d1117;padding:1px 6px;border-radius:4px;">[PLACEHOLDERS]</span>) → <strong>what you get</strong> → a <strong>time-saved</strong> chip → <strong>caveats</strong>. Copy the prompt, replace the placeholders, paste your data, then review the output with professional skepticism before you sign off. Claude produces the first draft and the reasoning; <em>you</em> remain the professional of record.</p>
+
+    <h4>How these prompts save time &amp; energy</h4>
+    <table>
+      <tr><th>Where time goes today</th><th>What Claude accelerates</th><th>Typical saving</th></tr>
+      <tr><td>Drafting (letters, notices, resolutions, memos, reports)</td><td>First draft in your house style, properly structured</td><td>60–80%</td></tr>
+      <tr><td>Reconciliation <em>reasoning</em> (not the maths)</td><td>Why lines differ, what to check, how to bucket exceptions</td><td>30–50%</td></tr>
+      <tr><td>Summarising long documents</td><td>Plain-English summary + action list + risk flags</td><td>70–90%</td></tr>
+      <tr><td>Building checklists &amp; audit programs</td><td>Complete, section-referenced, client-tailored</td><td>50–70%</td></tr>
+      <tr><td>First-draft research / "explain the law"</td><td>A structured starting point you then verify</td><td>40–60%</td></tr>
+      <tr><td>Client communication</td><td>Clear, professional, plain-language explainers</td><td>50–70%</td></tr>
+    </table>
+    <p class="tip" style="margin-top:10px;">The compounding benefit is <strong>less mental fatigue</strong>: offloading the mechanical first draft means you reach the <em>review</em> stage fresh — which is where errors get caught and where you add value.</p>
+
+    <h4>Prompt anatomy for CAs — the 5-part formula</h4>
+    <p><strong>1. Role</strong> ("You are a CA in India specialising in…") · <strong>2. Context</strong> (entity, turnover, period, the figures) · <strong>3. Task</strong> (exactly what to produce) · <strong>4. Format</strong> (table / memo / letter; length) · <strong>5. Constraints</strong> (Indian law, cite sections, flag assumptions, no fabricated citations).</p>
+    <div class="note"><strong>Keep this in your back pocket — paste at the end of any prompt:</strong><br>
+    "Cite exact Indian sections/forms; clearly mark anything you are assuming; if you are not certain a case/citation exists, say so rather than inventing it; ask me for any figure you need instead of guessing."</div>
+
+    <!-- ============ A ============ -->
+    <div class="section-divider"><span>A · Audit &amp; Assurance</span></div>
+    <h3 id="audit">A. Audit &amp; Assurance</h3>
+
+    <div class="card" data-k="audit statutory program sa engagement planning">
+      <h4>A1 · Build a statutory audit program <span class="badge t3">Saves 2–4 hrs</span></h4>
+      <p class="use"><strong>Use case:</strong> Kick off a new statutory audit with a tailored, SA-referenced program.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a chartered accountant planning a statutory audit under the Companies Act, 2013 and the ICAI Standards on Auditing.
+Client: <span class="ph">[INDUSTRY]</span> <span class="ph">[PRIVATE/PUBLIC LTD]</span>, turnover ₹<span class="ph">[X]</span> cr, <span class="ph">[NUMBER]</span> locations, accounting under <span class="ph">[Ind AS / AS]</span>.
+Key risk areas I already see: <span class="ph">[E.G. REVENUE RECOGNITION, RELATED-PARTY TXNS, INVENTORY]</span>.
+Produce an audit program organised by financial-statement area (revenue, purchases, payroll, fixed assets, inventory, cash &amp; bank, statutory dues, related parties). For each area give: assertion(s) covered, the audit procedure, and the relevant SA reference. Format as a table. Flag where I should consider analytical vs. substantive testing.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A ready-to-edit, area-wise audit program mapped to assertions and SAs.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Verify SA numbers; cover CARO 2020 reporting separately.</p>
+    </div>
+
+    <div class="card" data-k="audit cae exceptions fraud working capital review notes">
+      <h4>A2 · Turn CAE exceptions into review notes <span class="badge t3">Saves 1–3 hrs</span> <span class="badge tool">CAE</span></h4>
+      <p class="use"><strong>Use case:</strong> Convert raw exceptions from your Continuous Audit Engine into client-ready observations.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA documenting audit findings. Below are exception rows from our continuous-audit system <span class="ph">[PASTE: rule name, transaction, amount, date, counterparty, why-flagged]</span>.
+For each, draft a concise audit observation with: (1) the issue in plain English, (2) the risk/impact, (3) the likely root cause, (4) the further evidence I should obtain, and (5) a suggested recommendation to management. Group similar exceptions. Output as a numbered working-paper note.</pre></div>
+      <p class="meta"><strong>What you get:</strong> Structured working-paper notes and a draft management-letter point per exception.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Pairs with <code>cae/backend/app/engines/fraud_engine.py</code> and <code>cae/backend/app/rules/</code>. The engine flags; you conclude — confirm amounts/causes against the transaction.</p>
+    </div>
+
+    <div class="card" data-k="audit management letter observations findings">
+      <h4>A3 · Management letter / audit observations <span class="badge t2">Saves 1–2 hrs</span></h4>
+      <p class="use"><strong>Use case:</strong> Draft the management letter at the end of fieldwork.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA drafting a management letter for <span class="ph">[CLIENT]</span>, FY <span class="ph">[YEAR]</span>. Here are my raw observations: <span class="ph">[BULLET LIST OF FINDINGS]</span>.
+For each, write a formal paragraph with: Observation, Implication/Risk, and Recommendation. Order by severity (high to low). Open with a short covering paragraph and close professionally. Keep the tone constructive, not accusatory.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A polished, severity-ordered management letter.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Ensure each point is supported by your working papers before issuing.</p>
+    </div>
+
+    <div class="card" data-k="audit going concern sa 570 memo">
+      <h4>A4 · Going-concern assessment memo (SA 570) <span class="badge t2">Saves 1–2 hrs</span></h4>
+      <p class="use"><strong>Use case:</strong> Document the going-concern evaluation.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA assessing going concern under SA 570 for <span class="ph">[CLIENT]</span>, FY <span class="ph">[YEAR]</span>.
+Financial indicators: <span class="ph">[NET WORTH, CURRENT RATIO, CASH POSITION, LOSSES, DEFAULTS, MATURING LOANS]</span>.
+Other indicators: <span class="ph">[LOSS OF KEY CUSTOMER / LITIGATION / PROMOTER FUNDING etc.]</span>.
+Draft a going-concern assessment memo: list the events/conditions casting doubt, management's mitigating plans I should ask for, the additional procedures I should perform, and a recommended reporting conclusion with the SA 570 reference. Mark anything you assume.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A structured going-concern memo for the audit file.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Obtain management's written representation and cash-flow projections before concluding; verify SA 570 references.</p>
+    </div>
+
+    <div class="card" data-k="audit sampling icfr ifc internal controls narrative">
+      <h4>A5 · Sampling rationale &amp; ICFR narrative <span class="badge t2">Saves 1–2 hrs</span></h4>
+      <p class="use"><strong>Use case:</strong> Justify a sampling approach or document an internal-control narrative.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA documenting <span class="ph">[SAMPLING APPROACH for AREA]</span> / <span class="ph">[the internal financial controls narrative for the PROCESS, e.g. PROCURE-TO-PAY]</span>.
+Context: <span class="ph">[POPULATION SIZE, VALUE, KEY RISKS, CONTROLS IN PLACE]</span>.
+Produce: a clear rationale referencing the relevant SA / IFC framework, the control objectives, the key controls and how I would test each (design + operating effectiveness), and the deficiencies to watch for. Format as a table.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A defensible sampling/ICFR working paper.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Align with your firm's methodology; AI output supports but is not itself audit evidence.</p>
+    </div>
+
+    <!-- ============ B ============ -->
+    <div class="section-divider"><span>B · Direct Tax — Income Tax &amp; TDS</span></div>
+    <h3 id="dtax">B. Direct Tax — Income Tax &amp; TDS</h3>
+
+    <div class="card" data-k="income tax computation review deductions regime">
+      <h4>B1 · Review an income-tax computation <span class="badge t1">Saves 45–90 min</span></h4>
+      <p class="use"><strong>Use case:</strong> Sanity-check a computation before filing.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA reviewing an income-tax computation for <span class="ph">[INDIVIDUAL / FIRM / COMPANY]</span>, AY <span class="ph">[YEAR]</span>, <span class="ph">[OLD/NEW REGIME]</span>.
+Here is the computation: <span class="ph">[PASTE HEADS OF INCOME, DEDUCTIONS, ADJUSTMENTS]</span>.
+Review for: missed deductions/exemptions, incorrect head classification, disallowances under sections 40(a)/43B/14A, set-off &amp; carry-forward errors, and applicable surcharge/cess. List issues as: line item → concern → section → suggested correction. Then flag the top 3 tax-planning opportunities I should discuss with the client. Verify-against-current-law where rates/limits are involved.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A line-by-line review note plus planning ideas.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Confirm every rate, limit and section against the current Finance Act and chosen regime.</p>
+    </div>
+
+    <div class="card" data-k="income tax notice reply 143 142 148 139 scrutiny intimation">
+      <h4>B2 · Draft a reply to an income-tax notice <span class="badge t2">Saves 1–2 hrs</span></h4>
+      <p class="use"><strong>Use case:</strong> Respond to notices u/s 139(9), 143(1), 142(1), 143(2) or 148.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA drafting a reply to an income-tax notice. The notice is u/s <span class="ph">[SECTION]</span> for AY <span class="ph">[YEAR]</span> for <span class="ph">[ASSESSEE TYPE]</span>. Notice text/issue: <span class="ph">[PASTE OR SUMMARISE THE DISCREPANCY]</span>.
+The actual facts/explanation are: <span class="ph">[YOUR EXPLANATION + EVIDENCE AVAILABLE]</span>.
+Draft a formal point-wise reply suitable for upload on the e-filing portal: restate each query, give the factual response, reference the relevant section/rule, and list the documents I will annex. Keep it precise and respectful. Flag any point where my facts are weak.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A portal-ready, point-wise reply plus an annexure list.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Anonymise PAN/name. Verify limitation dates yourself.</p>
+    </div>
+
+    <div class="card" data-k="26as ais reconciliation tds books mismatch">
+      <h4>B3 · AIS / 26AS vs. books reconciliation <span class="badge t1">Saves 30–90 min</span></h4>
+      <p class="use"><strong>Use case:</strong> Explain mismatches between AIS/Form 26AS and the books.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA reconciling Form 26AS / AIS with the books for <span class="ph">[ASSESSEE]</span>, AY <span class="ph">[YEAR]</span>.
+26AS/AIS shows: <span class="ph">[PASTE ENTRIES]</span>. Books show: <span class="ph">[PASTE ENTRIES]</span>.
+Identify each mismatch, the likely reason (timing, TDS not booked, income reported by deductor but not received, double-count, wrong PAN), and the action to resolve it. Output a reconciliation table with a "treatment in return" column.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A reconciliation table with causes and treatment.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Do the figure-matching in a spreadsheet; verify TDS credits on the portal.</p>
+    </div>
+
+    <div class="card" data-k="tds default applicability section rate 195 dtaa 201">
+      <h4>B4 · TDS default &amp; applicability analysis <span class="badge t1">Saves 20–45 min</span></h4>
+      <p class="use"><strong>Use case:</strong> Determine correct TDS section, rate and exposure.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA advising on TDS. Transaction: <span class="ph">[NATURE OF PAYMENT]</span>, to <span class="ph">[RESIDENT/NON-RESIDENT]</span>, amount ₹<span class="ph">[X]</span>, payer is <span class="ph">[ENTITY TYPE]</span>. PAN available: <span class="ph">[Y/N]</span>. Lower-deduction certificate: <span class="ph">[Y/N]</span>.
+Tell me: the applicable TDS section, the correct rate, the threshold, the timing of deduction, and the consequences of short/non-deduction (interest u/s 201, disallowance u/s 40(a)). If non-resident, note any DTAA/Section 195 considerations. Show your reasoning and flag what to verify.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A TDS determination note with exposure and next steps.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Rates/thresholds change annually. For non-residents, get the TRC/Form 10F position from the file.</p>
+    </div>
+
+    <div class="card" data-k="advance tax capital gains planning 54 54f 54ec exemption">
+      <h4>B5 · Advance-tax &amp; capital-gains planning <span class="badge t2">Saves 45–90 min</span></h4>
+      <p class="use"><strong>Use case:</strong> Plan advance-tax instalments or structure a capital-gains transaction.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA advising <span class="ph">[ASSESSEE]</span> for FY <span class="ph">[YEAR]</span>. <span class="ph">[Estimated income by head / details of the asset being sold: type, cost, indexation year, sale value, holding period]</span>.
+Compute the indicative tax/capital-gains position, the advance-tax instalment schedule with due dates, and the exemptions available (e.g. 54/54F/54EC) with their conditions and timelines. Present as a clear plan with dates and amounts, and list the documents/actions needed to claim each exemption. Note that I will verify all rates.</pre></div>
+      <p class="meta"><strong>What you get:</strong> An indicative computation, instalment plan and exemption roadmap.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Treat figures as indicative; re-verify indexation, rates and exemption limits before advising.</p>
+    </div>
+
+    <!-- ============ C ============ -->
+    <div class="section-divider"><span>C · Indirect Tax — GST</span></div>
+    <h3 id="gst">C. Indirect Tax — GST</h3>
+
+    <div class="card" data-k="gst reconciliation 3b 2b gstr1 books itc mismatch">
+      <h4>C1 · GSTR-3B vs. 2B vs. books reconciliation <span class="badge t2">Saves 1–2 hrs</span> <span class="badge tool">CAE</span></h4>
+      <p class="use"><strong>Use case:</strong> Make sense of ITC and output-tax mismatches.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA reconciling GST for <span class="ph">[CLIENT]</span>, GSTIN <span class="ph">[MASKED]</span>, for <span class="ph">[PERIOD]</span>.
+Data: GSTR-3B <span class="ph">[VALUES]</span>, GSTR-2B <span class="ph">[VALUES]</span>, books <span class="ph">[VALUES]</span>, GSTR-1 <span class="ph">[VALUES]</span>.
+Identify mismatches across output tax and ITC. For each, give the likely cause (supplier filed late, RCM, ineligible/blocked credit u/s 17(5), timing, amendment) and the corrective action (claim, reverse, follow up with supplier, report in next return). Output a reconciliation table with an "action + section/rule" column and a short summary of net impact.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A cause-and-action reconciliation table with net GST impact.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Pairs with <code>cae/backend/app/engines/gst_engine.py</code>. Do numeric matching in your tool; use Claude for the <em>why</em> and treatment.</p>
+    </div>
+
+    <div class="card" data-k="gst itc eligibility rcm reverse charge 17(5) blocked credit 16">
+      <h4>C2 · ITC eligibility &amp; RCM analysis <span class="badge t1">Saves 15–40 min</span></h4>
+      <p class="use"><strong>Use case:</strong> Decide if a credit is eligible and whether RCM applies.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA advising on GST input tax credit. Expense/transaction: <span class="ph">[DESCRIPTION]</span>, supplier type: <span class="ph">[REGISTERED/UNREGISTERED/IMPORT]</span>, amount ₹<span class="ph">[X]</span>, used for <span class="ph">[BUSINESS PURPOSE]</span>.
+Tell me: is ITC eligible or blocked under Section 17(5)? Does RCM apply (and under which notification/category)? What conditions under Section 16 must be met? Give a clear yes/no with reasoning and the section/rule. Flag documentation I must retain.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A clear eligibility/RCM determination with reasoning.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Verify the blocked-credit list and RCM notifications against current CBIC material.</p>
+    </div>
+
+    <div class="card" data-k="gst notice reply asmt-10 drc-01 scrutiny litigation">
+      <h4>C3 · Reply to GST notice (ASMT-10 / DRC-01) <span class="badge t3">Saves 1.5–3 hrs</span></h4>
+      <p class="use"><strong>Use case:</strong> Draft a reply to a GST departmental notice.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA handling GST litigation. Notice: <span class="ph">[ASMT-10 / DRC-01A / DRC-01]</span>, period <span class="ph">[X]</span>, allegation: <span class="ph">[SUMMARISE, e.g. ITC MISMATCH, TURNOVER UNDER-REPORTING]</span>.
+Actual position/explanation: <span class="ph">[YOUR FACTS + EVIDENCE]</span>. Draft a formal point-wise reply: restate each allegation, give the factual + legal response with CGST/SGST Act sections and rules, and list annexures. Keep it under <span class="ph">[LENGTH]</span>. Mark weak points and suggest a fallback position.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A point-wise, annexure-backed reply.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Anonymise the GSTIN/name. Verify section references and response deadlines.</p>
+    </div>
+
+    <div class="card" data-k="gst hsn sac classification rate tariff aar">
+      <h4>C4 · HSN/SAC classification &amp; rate reasoning <span class="badge t1">Saves 30–60 min</span></h4>
+      <p class="use"><strong>Use case:</strong> Justify a classification and rate.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA advising on GST classification. Product/service: <span class="ph">[DETAILED DESCRIPTION, COMPOSITION, USE]</span>.
+Suggest the most appropriate HSN/SAC, the GST rate, and the reasoning (rules of interpretation, relevant chapter notes, any AAR positions you are certain about). Flag classification risk and any alternative the department might argue.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A reasoned classification note with risk flags.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Classification is litigation-prone — verify against the tariff and confirm any AAR/case before citing.</p>
+    </div>
+
+    <div class="card" data-k="gstr-9 gstr-9c annual return reconciliation statement">
+      <h4>C5 · GSTR-9 / 9C preparation notes <span class="badge t2">Saves 1–2 hrs</span></h4>
+      <p class="use"><strong>Use case:</strong> Build the working notes for the annual return and reconciliation statement.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA preparing GSTR-9 and GSTR-9C for <span class="ph">[CLIENT]</span>, FY <span class="ph">[YEAR]</span>, turnover ₹<span class="ph">[X]</span> cr.
+Inputs: <span class="ph">[ANNUAL 3B/1 SUMMARY, BOOKS TURNOVER, ITC SUMMARY]</span>.
+Produce a table-by-table preparation checklist mapping each GSTR-9 table to its data source, list the common reconciling items between books and returns for 9C, and flag the items most likely to attract notice. Note where auditor reconciliation remarks are typically needed.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A table-wise prep checklist and 9C reconciliation map.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Confirm current-year table structure and thresholds; figures must tie to filed returns.</p>
+    </div>
+
+    <!-- ============ D ============ -->
+    <div class="section-divider"><span>D · Companies Act 2013 / ROC &amp; Secretarial</span></div>
+    <h3 id="roc">D. Companies Act 2013 / ROC &amp; Secretarial</h3>
+
+    <div class="card" data-k="board agm resolution special ordinary mgt-14 dir-12 188 180">
+      <h4>D1 · Draft board / AGM resolutions <span class="badge t1">Saves 20–40 min</span></h4>
+      <p class="use"><strong>Use case:</strong> Produce a resolution quickly and correctly.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a company-secretary-grade drafter under the Companies Act, 2013. Draft a <span class="ph">[BOARD / SPECIAL / ORDINARY]</span> resolution for <span class="ph">[COMPANY]</span>, a <span class="ph">[PRIVATE/PUBLIC]</span> company, for the purpose of <span class="ph">[E.G. APPOINTMENT OF AUDITOR / BORROWING u/s 180 / RELATED-PARTY TXN u/s 188 / DIRECTOR APPOINTMENT]</span>.
+Include the correct recital, the operative resolution, and any "RESOLVED FURTHER" authorisations. Note the section/rule, the type of meeting required, and the related ROC form + deadline. Use formal Indian corporate drafting style.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A ready resolution plus the filing form and deadline.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Confirm the section, e-form (e.g. MGT-14, DIR-12) and timeline against current MCA rules.</p>
+    </div>
+
+    <div class="card" data-k="directors report 134 aoc-4 mgt-7 disclosures annual">
+      <h4>D2 · Director's Report &amp; AOC-4 / MGT-7 narratives <span class="badge t2">Saves 1–2 hrs</span></h4>
+      <p class="use"><strong>Use case:</strong> Draft the board's report and statutory narratives.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA drafting the Director's Report under Section 134 for <span class="ph">[COMPANY]</span>, FY <span class="ph">[YEAR]</span>.
+Inputs: <span class="ph">[FINANCIAL HIGHLIGHTS, DIVIDEND, RESERVES, KEY EVENTS, CHANGES IN DIRECTORS, LOANS/INVESTMENTS, RPTs]</span>.
+Draft the report covering all mandatory disclosures under Section 134(3) and the Companies (Accounts) Rules, including the directors' responsibility statement. Use headings per the statutory list and insert <span class="ph">[PLACEHOLDER]</span> where I must add data. List the annexures required (e.g. AOC-2, MGT-9 extract if applicable).</pre></div>
+      <p class="meta"><strong>What you get:</strong> A structured, disclosure-complete Director's Report skeleton.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Verify the current list of mandatory disclosures and applicable annexures.</p>
+    </div>
+
+    <div class="card" data-k="contract agreement review redline tax clauses legal">
+      <h4>D3 · Contract / agreement review <span class="badge t3">Saves 1–3 hrs</span></h4>
+      <p class="use"><strong>Use case:</strong> Review a commercial contract for a client.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA/legal-savvy advisor reviewing a contract for <span class="ph">[CLIENT]</span>. Here is the agreement: <span class="ph">[PASTE OR SUMMARISE]</span>.
+Give me: (1) a plain-English summary of key terms, (2) the financial and tax implications (GST, TDS, stamp duty), (3) risky or one-sided clauses with suggested redlines, (4) missing protections, and (5) a short list of questions to raise with the counterparty. Output as a structured memo.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A reviewer's memo with redlines and tax flags.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> For enforceability questions, involve a lawyer; AI is not a substitute for legal opinion.</p>
+    </div>
+
+    <div class="card" data-k="roc compliance checklist statutory register filings due dates aoc mgt">
+      <h4>D4 · Statutory register &amp; compliance checklist <span class="badge t2">Saves 45–90 min</span> <span class="badge tool">LexComply</span></h4>
+      <p class="use"><strong>Use case:</strong> Confirm ROC/secretarial housekeeping for a company.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA. For a <span class="ph">[PRIVATE/PUBLIC]</span> company, FY <span class="ph">[YEAR]</span>, produce a Companies Act, 2013 compliance checklist covering: statutory registers to maintain, board/AGM meeting requirements and minimum numbers, annual filings with forms and due dates (AOC-4, MGT-7/7A, DIR-3 KYC, etc.), and event-based filings. Format as a table with "form / section / due date / status" columns I can fill in.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A fill-in compliance tracker.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Cross-check against LexComply and current MCA due dates — these shift.</p>
+    </div>
+
+    <!-- ============ E ============ -->
+    <div class="section-divider"><span>E · Labour &amp; Other Statutory Compliance</span></div>
+    <h3 id="labour">E. Labour &amp; Other Statutory Compliance</h3>
+
+    <div class="card" data-k="labour law applicability epf esi gratuity bonus posh professional tax">
+      <h4>E1 · Applicability analysis across labour laws <span class="badge t2">Saves 1–2 hrs</span> <span class="badge tool">LexComply</span></h4>
+      <p class="use"><strong>Use case:</strong> Determine which labour laws apply and the resulting obligations.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA advising on Indian labour-law compliance. Establishment: <span class="ph">[TYPE]</span>, <span class="ph">[STATE]</span>, <span class="ph">[NUMBER]</span> employees, <span class="ph">[HAS FACTORY? FACTORY WORKERS]</span>, wage range <span class="ph">[X]</span>, started <span class="ph">[DATE]</span>.
+Tell me which laws apply (EPF, ESI, Gratuity, Bonus, POSH, Shops &amp; Establishments, Professional Tax, Labour Welfare Fund, Contract Labour) with the trigger threshold for each, and for each applicable law list the registration, the periodic returns with due dates, the contribution rates, and the penalties for default. Output as a table.</pre></div>
+      <p class="meta"><strong>What you get:</strong> An applicability + obligations matrix.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Mirrors LexComply <code>laws.js</code> logic (EPF ≥ 20, Gratuity ≥ 10) — use LexComply as the authoritative source. State laws vary; verify locally.</p>
+    </div>
+
+    <div class="card" data-k="labour calendar notice gratuity computation posh committee">
+      <h4>E2 · Draft notice / calendar for a specific law <span class="badge t1">Saves 30–60 min</span></h4>
+      <p class="use"><strong>Use case:</strong> Produce a compliance calendar or notice (POSH constitution, gratuity computation, etc.).</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA. For <span class="ph">[LAW, e.g. PAYMENT OF GRATUITY ACT 1972]</span>, produce <span class="ph">[a 12-month compliance calendar / a gratuity computation for an employee with details: last drawn salary ₹[X], years of service [Y] / a POSH Internal Committee constitution note]</span>.
+Include exact due dates, forms, authorities, and penalties. Format clearly for the client.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A calendar/notice/computation ready to share.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Verify formulae (e.g. gratuity = 15/26 × last salary × years) and caps against the Act.</p>
+    </div>
+
+    <!-- ============ F ============ -->
+    <div class="section-divider"><span>F · Financial Reporting &amp; Accounting</span></div>
+    <h3 id="reporting">F. Financial Reporting &amp; Accounting</h3>
+
+    <div class="card" data-k="ind as accounting standard treatment memo revenue lease ecl">
+      <h4>F1 · Ind AS / AS application memo <span class="badge t2">Saves 1–2 hrs</span></h4>
+      <p class="use"><strong>Use case:</strong> Document the accounting treatment for a transaction.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA determining the accounting treatment under <span class="ph">[Ind AS / AS]</span> for <span class="ph">[CLIENT]</span>.
+Transaction: <span class="ph">[DESCRIBE — e.g. multi-element revenue contract / lease / ECL on receivables / business combination]</span>.
+Identify the applicable standard, the recognition &amp; measurement principle, the journal entries, the disclosures required, and any judgement areas. Cite the standard and paragraph. Output as a memo with a worked example using my figures: <span class="ph">[FIGURES]</span>.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A standard-referenced accounting memo with entries and disclosures.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Verify the standard paragraph and confirm whether Ind AS or AS applies to the entity.</p>
+    </div>
+
+    <div class="card" data-k="schedule iii notes to accounts disclosures ageing ratios division">
+      <h4>F2 · Schedule III formatting &amp; notes drafting <span class="badge t3">Saves 1–3 hrs</span></h4>
+      <p class="use"><strong>Use case:</strong> Draft notes and ensure Schedule III presentation.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA preparing financial statements under Schedule III, Division <span class="ph">[I/II/III]</span> for <span class="ph">[CLIENT]</span>, FY <span class="ph">[YEAR]</span>.
+Here is the trial balance / grouping: <span class="ph">[PASTE]</span>. Draft the notes to accounts for <span class="ph">[SPECIFIC ITEMS, e.g. PPE, BORROWINGS, RELATED PARTIES, AGEING SCHEDULES]</span>, in Schedule III format with prior-year columns as <span class="ph">[PLACEHOLDER]</span>, and list the additional regulatory disclosures (ratios, ageing, CSR, etc.) now required.</pre></div>
+      <p class="meta"><strong>What you get:</strong> Draft notes in the correct presentation format.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Confirm the current Schedule III disclosure list (ageing schedules, ratios, struck-off companies) — it has expanded recently.</p>
+    </div>
+
+    <div class="card" data-k="ratio analysis mda commentary liquidity solvency profitability">
+      <h4>F3 · Ratio analysis &amp; MD&amp;A commentary <span class="badge t2">Saves 1–2 hrs</span></h4>
+      <p class="use"><strong>Use case:</strong> Turn financials into narrative analysis.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA/financial analyst. Here are two years of financials for <span class="ph">[CLIENT]</span>: <span class="ph">[PASTE P&amp;L + BALANCE SHEET]</span>.
+Compute the key ratios (liquidity, solvency, profitability, efficiency), explain the year-on-year movement in plain English, flag concerns and positives, and draft a short management-discussion-style commentary. Present ratios as a table followed by the narrative.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A ratio table plus written commentary.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Check the ratio formulae match your figures; commentary is a draft for your review.</p>
+    </div>
+
+    <!-- ============ G ============ -->
+    <div class="section-divider"><span>G · vCFO / FP&amp;A</span></div>
+    <h3 id="vcfo">G. vCFO / FP&amp;A</h3>
+
+    <div class="card" data-k="vcfo mis monthly commentary board founder variance runway">
+      <h4>G1 · Monthly MIS commentary <span class="badge t2">Saves 45–90 min</span></h4>
+      <p class="use"><strong>Use case:</strong> Write the narrative for a monthly MIS pack.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are the virtual CFO for <span class="ph">[COMPANY]</span>, a <span class="ph">[SECTOR]</span> business. Here is this month's data: revenue ₹<span class="ph">[X]</span> (budget ₹<span class="ph">[Y]</span>), gross margin <span class="ph">[%]</span>, EBITDA ₹<span class="ph">[Z]</span>, cash balance ₹<span class="ph">[C]</span>, key variances <span class="ph">[LIST]</span>.
+Write a crisp one-page MIS commentary for the founder/board: performance vs budget, what drove the variances, cash position and runway, three risks, and three recommended actions. Use clear business language, not accounting jargon.</pre></div>
+      <p class="meta"><strong>What you get:</strong> Board-ready MIS narrative.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Feed accurate figures; sanity-check the interpretation.</p>
+    </div>
+
+    <div class="card" data-k="vcfo 13 week cash flow forecast runway pinch points">
+      <h4>G2 · 13-week cash-flow forecast structure <span class="badge t2">Saves 1–2 hrs</span></h4>
+      <p class="use"><strong>Use case:</strong> Build or review a short-term cash forecast.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a vCFO building a 13-week rolling cash-flow forecast for <span class="ph">[COMPANY]</span>.
+Inputs: opening cash ₹<span class="ph">[X]</span>, weekly receipts assumptions <span class="ph">[DETAIL]</span>, payroll ₹<span class="ph">[X]</span> on <span class="ph">[DATES]</span>, statutory dues <span class="ph">[GST/TDS/PF DATES &amp; AMOUNTS]</span>, loan EMIs <span class="ph">[DETAIL]</span>, capex <span class="ph">[DETAIL]</span>.
+Lay out the forecast structure week-by-week, list the line items, show where the cash pinch points fall, and recommend actions (collection focus, payment deferral, drawdown) for the tightest weeks. Output as a table plus a short action note.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A forecast layout with pinch-point analysis.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Keep the live model in a spreadsheet for accuracy.</p>
+    </div>
+
+    <div class="card" data-k="vcfo budget actual variance analysis bridge favourable adverse">
+      <h4>G3 · Budget vs. actual variance analysis <span class="badge t2">Saves 45–90 min</span></h4>
+      <p class="use"><strong>Use case:</strong> Explain budget variances for management.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a vCFO. Here is the budget vs. actual for <span class="ph">[COMPANY]</span>, <span class="ph">[PERIOD]</span>: <span class="ph">[PASTE TABLE]</span>.
+For each significant variance (&gt; <span class="ph">[THRESHOLD]</span>%), state whether it is favourable/adverse, the likely driver, whether it is timing or permanent, and the recommended management response. Summarise the overall story in three sentences at the top.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A variance bridge in words plus an executive summary.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Confirm drivers with operational data before presenting as fact.</p>
+    </div>
+
+    <div class="card" data-k="vcfo board deck investor update narrative slides kpis">
+      <h4>G4 · Board deck / investor-update narrative <span class="badge t3">Saves 1.5–3 hrs</span></h4>
+      <p class="use"><strong>Use case:</strong> Draft the board pack or monthly investor update.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a vCFO preparing the <span class="ph">[BOARD DECK / MONTHLY INVESTOR UPDATE]</span> for <span class="ph">[COMPANY]</span>, <span class="ph">[PERIOD]</span>.
+Inputs: <span class="ph">[KEY METRICS, WINS, CHALLENGES, FINANCIALS, ASKS]</span>.
+Draft the narrative slide-by-slide: highlights, financial performance, KPIs, cash &amp; runway, risks &amp; mitigation, and asks. Keep each slide to tight bullets a founder can present. Suggest one chart per section.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A slide-by-slide narrative outline.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Keep confidential metrics anonymised if using a public tool.</p>
+    </div>
+
+    <div class="card" data-k="vcfo fundraising cap table dilution safe ccps esop valuation seed series">
+      <h4>G5 · Fundraising — model, cap table &amp; dilution <span class="badge t3">Saves 1–3 hrs</span></h4>
+      <p class="use"><strong>Use case:</strong> Prepare for a raise and explain the mechanics to founders.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a vCFO advising <span class="ph">[COMPANY]</span> on a <span class="ph">[SEED/SERIES A]</span> round of ₹<span class="ph">[X]</span> at a <span class="ph">[PRE/POST]</span> valuation of ₹<span class="ph">[Y]</span>.
+Existing cap table: <span class="ph">[PASTE]</span>. Explain in plain English: the post-round cap table and each shareholder's dilution, the impact of an <span class="ph">[ESOP POOL]</span> top-up, how a <span class="ph">[SAFE/CCPS/CONVERTIBLE]</span> would convert, and the key terms (liquidation preference, anti-dilution) a founder must understand. Show the cap table as a before/after table.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A before/after cap table and a founder-friendly explainer.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Double-check the dilution maths; CCPS/SAFE terms have specific Indian regulatory and tax angles to verify.</p>
+    </div>
+
+    <!-- ============ H ============ -->
+    <div class="section-divider"><span>H · Family Office &amp; Private Wealth</span></div>
+    <h3 id="family">H. Family Office &amp; Private Wealth</h3>
+
+    <div class="card" data-k="family office constitution charter governance council succession next-gen">
+      <h4>H1 · Family constitution / charter <span class="badge t4">Saves 3–6 hrs</span></h4>
+      <p class="use"><strong>Use case:</strong> Draft a governance charter for a business family.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are an advisor to a <span class="ph">[GENERATION]</span>-generation Indian business family with <span class="ph">[BUSINESS + INVESTMENT ASSETS]</span>.
+Draft a family constitution covering: family values &amp; vision, ownership vs. management separation, the family council and its role, entry/exit of family members into the business, dividend &amp; reinvestment policy, conflict-resolution mechanism, and a framework for next-gen induction. Use clear, non-legal language as a starting charter the family will refine with counsel. Insert <span class="ph">[PLACEHOLDER]</span> where family-specific choices are needed.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A structured first-draft charter for facilitation.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> A starting point — final governance/legal structuring needs lawyers and family buy-in.</p>
+    </div>
+
+    <div class="card" data-k="succession estate planning will trust huf gifting clubbing">
+      <h4>H2 · Succession &amp; estate-planning options memo <span class="badge t3">Saves 2–4 hrs</span></h4>
+      <p class="use"><strong>Use case:</strong> Lay out succession structuring choices.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA advising on succession and estate planning for <span class="ph">[FAMILY HEAD]</span>, with assets: <span class="ph">[BUSINESS STAKE, REAL ESTATE, FINANCIAL ASSETS, FOREIGN ASSETS]</span>. Family: <span class="ph">[SPOUSE, CHILDREN, DEPENDANTS]</span>.
+Lay out the structuring options — will, private family trust, HUF, gifting — with the pros/cons, the tax implications (no estate duty currently, but income clubbing, capital gains on transfer, stamp duty), control and succession outcomes for each. Recommend a combination and list the next steps and documents. Present as a comparison table + recommendation.</pre></div>
+      <p class="meta"><strong>What you get:</strong> An options comparison with a recommended structure.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> High-stakes — validate trust/tax positions with specialists; verify current law (estate duty, clubbing, trust taxation).</p>
+    </div>
+
+    <div class="card" data-k="investment policy statement ips asset allocation portfolio family office">
+      <h4>H3 · Investment Policy Statement (IPS) <span class="badge t3">Saves 2–3 hrs</span></h4>
+      <p class="use"><strong>Use case:</strong> Create an IPS for the family's portfolio.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a family-office advisor drafting an Investment Policy Statement for <span class="ph">[FAMILY/ENTITY]</span>.
+Inputs: total investable corpus ₹<span class="ph">[X]</span>, objectives <span class="ph">[GROWTH/PRESERVATION/INCOME]</span>, risk tolerance <span class="ph">[LOW/MED/HIGH]</span>, time horizon, liquidity needs, constraints <span class="ph">[E.G. NO TOBACCO, ESG, REAL-ESTATE HEAVY ALREADY]</span>.
+Draft an IPS covering objectives, target asset allocation with ranges, permitted instruments, rebalancing policy, liquidity reserve, and review frequency. Present allocation as a table.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A board-quality IPS document.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Allocation is illustrative; align with a registered investment adviser where regulated advice is involved.</p>
+    </div>
+
+    <div class="card" data-k="portfolio review asset allocation consolidated rebalancing ltcg">
+      <h4>H4 · Consolidated portfolio review <span class="badge t3">Saves 1.5–3 hrs</span></h4>
+      <p class="use"><strong>Use case:</strong> Turn a multi-asset portfolio into a review note.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a family-office CA reviewing a consolidated portfolio for <span class="ph">[FAMILY]</span>, as at <span class="ph">[DATE]</span>.
+Holdings: <span class="ph">[EQUITY ₹X, MF ₹X, DEBT ₹X, REAL ESTATE ₹X, GOLD ₹X, PMS/AIF ₹X, FOREIGN ₹X]</span>.
+Produce: current allocation vs. the target <span class="ph">[IPS allocation]</span>, concentration/risk flags, performance commentary, tax-efficiency observations (LTCG harvesting, exit timing), and rebalancing recommendations. Output an allocation table + commentary + action list.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A consolidated review with rebalancing actions.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Verify valuations and current capital-gains rules before acting on tax suggestions.</p>
+    </div>
+
+    <div class="card" data-k="philanthropy csr 80g 12a section 8 next-gen financial literacy education">
+      <h4>H5 · Philanthropy / CSR &amp; next-gen education <span class="badge t3">Saves 2–4 hrs</span></h4>
+      <p class="use"><strong>Use case:</strong> Structure giving or build a next-gen finance primer.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a family-office advisor. <span class="ph">[Design a philanthropy structure for the family — options: donation, Section 8 company, charitable trust, CSR alignment — with tax (80G/12A) and governance implications]</span> OR <span class="ph">[create a 6-module financial-literacy curriculum for the family's next generation covering reading financials, investing basics, the family business, taxes and wealth stewardship]</span>.
+Present clearly with steps/modules and key points.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A giving structure or a ready training curriculum.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Confirm 80G/12A and CSR rules; registration processes change.</p>
+    </div>
+
+    <!-- ============ I ============ -->
+    <div class="section-divider"><span>I · Transactions / M&amp;A / Valuation / DD</span></div>
+    <h3 id="ma">I. Transaction Advisory / M&amp;A / Valuation / Due Diligence</h3>
+
+    <div class="card" data-k="due diligence red flag memo quality of earnings working capital request list">
+      <h4>I1 · Financial DD request list &amp; red-flag memo <span class="badge t3">Saves 2–4 hrs</span></h4>
+      <p class="use"><strong>Use case:</strong> Run buy-side or sell-side financial due diligence.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA leading financial due diligence on <span class="ph">[TARGET]</span>, a <span class="ph">[SECTOR]</span> company, turnover ₹<span class="ph">[X]</span> cr, for a potential <span class="ph">[ACQUISITION/INVESTMENT]</span>.
+First, produce a comprehensive DD information-request list grouped by area (quality of earnings, working capital, debt &amp; debt-like items, tax, related parties, contingent liabilities, statutory compliance).
+Then, given these preliminary findings: <span class="ph">[PASTE WHAT YOU'VE SEEN]</span>, draft a red-flag memo highlighting deal risks, their potential financial impact, and recommended further work or deal protections (price adjustment, indemnity, escrow).</pre></div>
+      <p class="meta"><strong>What you get:</strong> A DD request list and a red-flag memo.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Quantify impacts from actual data; AI structures, you substantiate.</p>
+    </div>
+
+    <div class="card" data-k="valuation dcf comparable nav 11ua fema assumptions sensitivity">
+      <h4>I2 · Valuation approach note <span class="badge t3">Saves 1.5–3 hrs</span></h4>
+      <p class="use"><strong>Use case:</strong> Document a valuation methodology and assumptions.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA/registered valuer preparing a valuation note for <span class="ph">[COMPANY/ASSET]</span>, purpose <span class="ph">[E.G. FUNDRAISE / FEMA / 56(2)(x) / SLUMP-SUM SALE]</span>.
+Inputs: <span class="ph">[FINANCIALS, GROWTH, MARGINS, COMPARABLES, DISCOUNT RATE BASIS]</span>.
+Explain which approach(es) apply (DCF, comparable companies, NAV), the key assumptions and how I'd justify each, a worked DCF skeleton with my figures, and the sensitivities to disclose. Note the regulatory valuation requirement for the stated purpose. Present assumptions in a table.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A methodology note with a worked skeleton and sensitivities.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Statutory valuations (FEMA, Rule 11UA) have prescribed methods — verify and ensure a registered valuer signs where required.</p>
+    </div>
+
+    <div class="card" data-k="spa term sheet review earn-out indemnity mac clause negotiation">
+      <h4>I3 · SPA / term-sheet plain-English review <span class="badge t3">Saves 1–3 hrs</span></h4>
+      <p class="use"><strong>Use case:</strong> Decode deal documents for a client.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA advising a <span class="ph">[BUYER/SELLER/FOUNDER]</span> on a <span class="ph">[TERM SHEET / SHARE PURCHASE AGREEMENT]</span>. Document: <span class="ph">[PASTE OR SUMMARISE]</span>.
+Summarise the commercial terms in plain English, flag clauses with financial/tax consequences (consideration mechanism, earn-out, indemnity caps, tax indemnities, MAC clause), identify one-sided terms, and list the negotiation points I should raise. Output a structured memo.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A plain-English review with negotiation points.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Loop in legal counsel for binding interpretation.</p>
+    </div>
+
+    <!-- ============ J ============ -->
+    <div class="section-divider"><span>J · FEMA &amp; Cross-border</span></div>
+    <h3 id="fema">J. FEMA &amp; Cross-border</h3>
+
+    <div class="card" data-k="fema remittance 15ca 15cb dtaa section 195 withholding trc 10f">
+      <h4>J1 · Remittance &amp; 15CA/CB determination <span class="badge t1">Saves 30–60 min</span></h4>
+      <p class="use"><strong>Use case:</strong> Decide the correct treatment for a foreign remittance.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA advising on a foreign remittance. Payer: <span class="ph">[RESIDENT ENTITY]</span>. Beneficiary: <span class="ph">[COUNTRY]</span>, nature of payment: <span class="ph">[E.G. SOFTWARE / ROYALTY / IMPORT / DIVIDEND / CONSULTANCY]</span>, amount <span class="ph">[CURRENCY + VALUE]</span>.
+Determine: whether the income is taxable in India, the withholding rate under the Act vs. the DTAA, whether Form 15CA/15CB is required and which part, the FEMA route/permissibility, and the documents needed (TRC, Form 10F, no-PE declaration). Show reasoning and flag what to verify.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A remittance determination with the 15CA/CB position.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Verify the DTAA article and rate; non-resident taxation is fact-sensitive.</p>
+    </div>
+
+    <div class="card" data-k="fema odi fdi fc-gpr fc-trs fla apr sectoral cap automatic approval route">
+      <h4>J2 · ODI / FDI compliance note <span class="badge t2">Saves 1–2 hrs</span></h4>
+      <p class="use"><strong>Use case:</strong> Map the compliance for inbound/outbound investment.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA advising on <span class="ph">[INBOUND FDI into / OUTBOUND ODI from]</span> <span class="ph">[ENTITY]</span> of <span class="ph">[AMOUNT]</span> in <span class="ph">[SECTOR/COUNTRY]</span>.
+Set out: the applicable route (automatic/approval), sectoral caps/conditions, the RBI/FEMA filings with forms and timelines (e.g. FC-GPR, FC-TRS, FLA, APR, Form ODI), pricing-guideline requirements, and the penalties for non-compliance/compounding. Output as a step-by-step compliance checklist.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A route-and-filings checklist.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> FEMA forms and sectoral caps change — verify against current Master Directions.</p>
+    </div>
+
+    <div class="card" data-k="forex gain loss exposure ind as 21 as 11 realised unrealised hedging">
+      <h4>J3 · Forex gain/loss &amp; exposure commentary <span class="badge t2">Saves 45–90 min</span> <span class="badge tool">Forex WB</span></h4>
+      <p class="use"><strong>Use case:</strong> Explain forex impact for the books or management.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA analysing foreign-exchange gain/(loss) for <span class="ph">[CLIENT]</span>, <span class="ph">[PERIOD]</span>.
+Data: <span class="ph">[FOREIGN-CURRENCY RECEIVABLES/PAYABLES, RATES AT TXN DATE, YEAR-END RATE, REALISED SETTLEMENTS]</span>.
+Explain the realised vs. unrealised forex gain/loss, the correct accounting treatment under <span class="ph">[Ind AS 21 / AS 11]</span>, the P&amp;L vs. equity classification, and the tax treatment. Summarise the entity's net forex exposure and suggest a simple hedging consideration.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A forex impact note with accounting and tax treatment.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Pairs with your Foreign Gain/(Loss) workbook — use the workbook for figures, Claude for treatment. Verify restatement rules.</p>
+    </div>
+
+    <!-- ============ K ============ -->
+    <div class="section-divider"><span>K · Practice Management &amp; Client Communication</span></div>
+    <h3 id="practice">K. Practice Management &amp; Client Communication</h3>
+
+    <div class="card" data-k="engagement letter proposal scope fee retainer terms">
+      <h4>K1 · Engagement letter / proposal <span class="badge t2">Saves 45–90 min</span></h4>
+      <p class="use"><strong>Use case:</strong> Issue a scoped engagement letter or pitch.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA drafting an <span class="ph">[ENGAGEMENT LETTER / PROPOSAL]</span> for <span class="ph">[CLIENT]</span> for <span class="ph">[SERVICE: e.g. STATUTORY AUDIT / vCFO RETAINER / GST COMPLIANCE]</span>.
+Include: scope of work, exclusions, deliverables and timelines, our and the client's responsibilities, fee and billing terms, and standard clauses (confidentiality, limitation of liability, dispute resolution). Use professional Indian CA-firm language. Insert <span class="ph">[PLACEHOLDER]</span> for fees and dates.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A ready-to-edit engagement letter/proposal.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Align scope and liability clauses with ICAI norms and your firm's standard terms.</p>
+    </div>
+
+    <div class="card" data-k="client explainer plain language simple law notice budget change">
+      <h4>K2 · Client-friendly explainer of complex law <span class="badge t1">Saves 20–40 min</span></h4>
+      <p class="use"><strong>Use case:</strong> Explain a notice, a budget change or a new compliance to a non-finance client.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA explaining <span class="ph">[TOPIC, e.g. THE NEW TDS ON E-COMMERCE / WHY THEY GOT A 143(1) INTIMATION / THE NEW GST RULE]</span> to a business owner with no finance background.
+Explain in simple language: what it is, why it matters to them, what they must do, by when, and what happens if they don't. Keep it under <span class="ph">[LENGTH]</span>, friendly and reassuring. End with a clear next step.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A plain-language client explainer.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Verify the technical facts before sending; simplicity must not introduce error.</p>
+    </div>
+
+    <div class="card" data-k="sop standard operating procedure training article onboarding review">
+      <h4>K3 · Internal SOP / training material <span class="badge t2">Saves 1–2 hrs</span></h4>
+      <p class="use"><strong>Use case:</strong> Standardise a recurring process for your team/articles.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA-firm partner documenting a standard operating procedure for <span class="ph">[PROCESS, e.g. MONTHLY GST FILING / AUDIT FILE REVIEW / NEW-CLIENT ONBOARDING]</span>.
+Write a step-by-step SOP with: responsibilities, the sequence of steps, the documents/tools used, the review checkpoints, and the common errors to avoid. Format so a first-year article can follow it.</pre></div>
+      <p class="meta"><strong>What you get:</strong> A team-ready SOP.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Tailor to your actual tools (LexComply, CAE, Tally) and review controls.</p>
+    </div>
+
+    <div class="card" data-k="minutes meeting summary action items transcript notes board call">
+      <h4>K4 · Meeting minutes &amp; summary generation <span class="badge t1">Saves 30–60 min</span></h4>
+      <p class="use"><strong>Use case:</strong> Turn rough notes or a transcript into minutes/action points.</p>
+      <div class="prompt"><button class="copy" onclick="copyPrompt(this)">Copy</button><pre class="cmd-block">You are a CA assistant. Here are my rough notes / the transcript from a <span class="ph">[BOARD MEETING / CLIENT CALL]</span>: <span class="ph">[PASTE]</span>.
+Produce: formal minutes (or a structured summary), a decisions list, and an action-item table with owner and due date. Keep it factual and concise.</pre></div>
+      <p class="meta"><strong>What you get:</strong> Clean minutes plus an action tracker.</p>
+      <p class="meta caveat"><strong>Caveats:</strong> Confirm decisions and figures with attendees before circulating.</p>
+    </div>
+
+    <p class="nores" id="nores">No prompts match your filter. Clear the box to show all 44.</p>
+
+    <!-- WAYS OF WORKING -->
+    <div class="section-divider"><span>Ways of working — beyond single prompts</span></div>
+    <h3 id="ways">Ways of working</h3>
+    <h4>1 · Recurring monthly workflows</h4>
+    <p>Chain saved prompts for the work you do every month: <em>Monthly close</em> → TB review → MIS commentary (G1) → variance (G3) → board narrative (G4). <em>GST routine</em> → reconciliation (C1) → exception review → notice replies (C3). <em>Audit file review</em> → CAE exceptions → review notes (A2) → management letter (A3).</p>
+    <h4>2 · Work with spreadsheets &amp; documents, not just text</h4>
+    <p>Paste CSV/ledger extracts and ask Claude to reason over them. Keep the <strong>authoritative calculations in your own tools</strong> — the CAE for audit analytics, LexComply for applicability, the forex workbook for currency — and use Claude to interpret and write up the results. AI complements the signed work; it does not replace it.</p>
+    <h4>3 · Build a house-style snippet bank</h4>
+    <p>Save your firm's best prompts (engagement letter, MIS, notice reply) with your tone and standard clauses baked in. Over time this becomes a team asset that makes every article's first draft consistent.</p>
+    <div class="note"><strong>Two habits that matter most:</strong> end every high-stakes prompt with the verification instruction above, and <strong>anonymise by default</strong> — mask PAN/GSTIN/Aadhaar and replace names with roles.</div>
+
+    <!-- QUICK REFERENCE -->
+    <div class="section-divider"><span>Quick-reference index</span></div>
+    <h3 id="index">Quick-reference index</h3>
+    <table>
+      <tr><th>When you need to…</th><th>Go to</th></tr>
+      <tr><td>Start a statutory audit</td><td><a href="#audit">A1</a></td></tr>
+      <tr><td>Write up audit exceptions / management letter</td><td><a href="#audit">A2, A3</a></td></tr>
+      <tr><td>Document going concern</td><td><a href="#audit">A4</a></td></tr>
+      <tr><td>Review a tax computation</td><td><a href="#dtax">B1</a></td></tr>
+      <tr><td>Reply to an income-tax notice</td><td><a href="#dtax">B2</a></td></tr>
+      <tr><td>Reconcile 26AS/AIS with books</td><td><a href="#dtax">B3</a></td></tr>
+      <tr><td>Decide TDS section/rate/exposure</td><td><a href="#dtax">B4</a></td></tr>
+      <tr><td>Plan advance tax / capital gains</td><td><a href="#dtax">B5</a></td></tr>
+      <tr><td>Reconcile GST 3B/2B/books</td><td><a href="#gst">C1</a></td></tr>
+      <tr><td>Check ITC eligibility / RCM</td><td><a href="#gst">C2</a></td></tr>
+      <tr><td>Reply to a GST notice</td><td><a href="#gst">C3</a></td></tr>
+      <tr><td>Classify HSN/SAC &amp; rate</td><td><a href="#gst">C4</a></td></tr>
+      <tr><td>Prepare GSTR-9/9C</td><td><a href="#gst">C5</a></td></tr>
+      <tr><td>Draft a resolution / Director's Report</td><td><a href="#roc">D1, D2</a></td></tr>
+      <tr><td>Review a contract / ROC checklist</td><td><a href="#roc">D3, D4</a></td></tr>
+      <tr><td>Labour-law applicability / calendar</td><td><a href="#labour">E1, E2</a></td></tr>
+      <tr><td>Accounting treatment / Schedule III / ratios</td><td><a href="#reporting">F1, F2, F3</a></td></tr>
+      <tr><td>Monthly MIS / cash forecast / variance</td><td><a href="#vcfo">G1, G2, G3</a></td></tr>
+      <tr><td>Board deck / fundraise &amp; cap table</td><td><a href="#vcfo">G4, G5</a></td></tr>
+      <tr><td>Family constitution / succession</td><td><a href="#family">H1, H2</a></td></tr>
+      <tr><td>IPS / portfolio review / philanthropy</td><td><a href="#family">H3, H4, H5</a></td></tr>
+      <tr><td>Due diligence / valuation / SPA review</td><td><a href="#ma">I1, I2, I3</a></td></tr>
+      <tr><td>Foreign remittance / ODI-FDI / forex</td><td><a href="#fema">J1, J2, J3</a></td></tr>
+      <tr><td>Engagement letter / client explainer</td><td><a href="#practice">K1, K2</a></td></tr>
+      <tr><td>SOP / minutes &amp; action points</td><td><a href="#practice">K3, K4</a></td></tr>
+    </table>
+
+  </div>
+
+  <footer>
+    <strong>Sagar Khatri &amp; Associates, Chartered Accountants</strong><br>
+    Claude Prompt Library · India-primary · A productivity aid, not a substitute for professional judgement.<br>
+    Every statutory reference, rate, threshold and date must be independently verified against current law before reliance.
+  </footer>
+
+</div>
+
+<script>
+  function copyPrompt(btn) {
+    var pre = btn.parentElement.querySelector('.cmd-block');
+    var text = pre.innerText.replace(/ /g, ' ');
+    navigator.clipboard.writeText(text).then(function () {
+      var orig = btn.textContent;
+      btn.textContent = 'Copied!';
+      btn.classList.add('done');
+      setTimeout(function () { btn.textContent = orig; btn.classList.remove('done'); }, 1500);
+    }).catch(function () {
+      // Fallback for non-secure contexts
+      var ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta);
+      btn.textContent = 'Copied!'; btn.classList.add('done');
+      setTimeout(function () { btn.textContent = 'Copy'; btn.classList.remove('done'); }, 1500);
+    });
+  }
+
+  function filterCards() {
+    var q = document.getElementById('filter').value.trim().toLowerCase();
+    var cards = document.querySelectorAll('.card');
+    var shown = 0;
+    cards.forEach(function (card) {
+      var hay = (card.getAttribute('data-k') || '') + ' ' + card.textContent.toLowerCase();
+      var match = q === '' || hay.indexOf(q) !== -1;
+      card.style.display = match ? '' : 'none';
+      if (match) shown++;
+    });
+    document.getElementById('nores').style.display = (shown === 0 && q !== '') ? 'block' : 'none';
+  }
+</script>
+</body>
+</html>
