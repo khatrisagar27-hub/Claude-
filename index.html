@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Declaration of Income — Generator</title>
+<style>
+  :root {
+    --ink: #1a2233;
+    --muted: #5b6678;
+    --line: #d8dee9;
+    --bg: #f4f6fa;
+    --card: #ffffff;
+    --accent: #1f4e8c;
+    --accent-soft: #eaf1fb;
+    --ok: #1d7a46;
+    --warn: #b5651d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.45;
+  }
+  header.app {
+    background: var(--accent);
+    color: #fff;
+    padding: 18px 24px;
+  }
+  header.app h1 { margin: 0; font-size: 20px; font-weight: 600; }
+  header.app p { margin: 4px 0 0; font-size: 13px; opacity: .85; }
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 22px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px;
+  }
+  @media (max-width: 920px) { .wrap { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .card h2 {
+    margin: 0 0 4px;
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--accent);
+  }
+  .card .hint { margin: 0 0 14px; font-size: 12.5px; color: var(--muted); }
+  label { display: block; font-size: 12.5px; color: var(--muted); margin: 10px 0 4px; font-weight: 600; }
+  input[type=text], input[type=date], select, textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--ink);
+    background: #fff;
+  }
+  textarea { resize: vertical; min-height: 200px; font-family: "Consolas", "Menlo", monospace; font-size: 13px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .row-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+  button {
+    cursor: pointer;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    padding: 9px 16px;
+    border-radius: 7px;
+    font-size: 13.5px;
+    font-weight: 600;
+  }
+  button.ghost { background: #fff; color: var(--accent); }
+  button.subtle { background: #fff; color: var(--muted); border-color: var(--line); }
+  button:active { transform: translateY(1px); }
+
+  table.calc { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 13.5px; }
+  table.calc th, table.calc td { border-bottom: 1px solid var(--line); padding: 7px 8px; text-align: left; vertical-align: middle; }
+  table.calc th { color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .4px; }
+  table.calc td.amt, table.calc th.amt { text-align: right; white-space: nowrap; }
+  table.calc input { border: 1px solid transparent; padding: 5px 6px; }
+  table.calc input:focus { border-color: var(--line); }
+  table.calc input.amt { text-align: right; }
+  table.calc select { border: 1px solid transparent; padding: 5px 4px; font-size: 12.5px; }
+  table.calc select:focus { border-color: var(--line); }
+  td.del button { background: #fff; border: none; color: #b13030; font-size: 16px; padding: 2px 8px; }
+  tr.subtotal td { background: var(--accent-soft); font-weight: 700; }
+  tr.total td { background: #122a4d; color: #fff; font-weight: 700; }
+  .badge { display:inline-block; font-size:11px; padding:1px 7px; border-radius:10px; background:var(--accent-soft); color:var(--accent); font-weight:600; }
+
+  /* Declaration output */
+  #output { grid-column: 1 / -1; }
+  .doc {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 48px 56px;
+    max-width: 820px;
+    margin: 0 auto;
+    font-family: "Times New Roman", Georgia, serif;
+    color: #111;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+  .doc h3.title { text-align: center; text-transform: uppercase; letter-spacing: 1px; text-decoration: underline; margin: 0 0 26px; font-size: 17px; }
+  .doc p { margin: 0 0 14px; text-align: justify; }
+  .doc table.decl { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  .doc table.decl th, .doc table.decl td { border: 1px solid #444; padding: 7px 10px; }
+  .doc table.decl td.amt, .doc table.decl th.amt { text-align: right; white-space: nowrap; }
+  .doc table.decl tr.grand td { font-weight: 700; background: #eee; }
+  .doc .sign { margin-top: 56px; }
+  .doc .sign .line { border-top: 1px solid #111; width: 230px; padding-top: 4px; }
+  .doc .meta-line { display: flex; justify-content: space-between; }
+  .empty-note { color: var(--muted); text-align:center; padding: 30px; font-style: italic; }
+
+  @media print {
+    body { background: #fff; }
+    header.app, .wrap > .card, .no-print { display: none !important; }
+    #output { padding: 0; }
+    .doc { border: none; padding: 0; max-width: none; }
+  }
+</style>
+</head>
+<body>
+<header class="app">
+  <h1>Declaration of Income — Generator</h1>
+  <p>Paste a computation of income in any format, review the parsed figures, and generate a signed declaration for the assessee.</p>
+</header>
+
+<div class="wrap">
+  <!-- LEFT: Assessee + paste -->
+  <section class="card">
+    <h2>1 · Assessee Details</h2>
+    <p class="hint">These fields populate the declaration letter. Fill what you have; blanks are skipped.</p>
+
+    <div class="grid2">
+      <div>
+        <label>Name of Assessee</label>
+        <input type="text" id="f_name" placeholder="e.g. Rajesh Kumar Sharma" />
+      </div>
+      <div>
+        <label>Father's / Spouse's Name</label>
+        <input type="text" id="f_father" placeholder="e.g. Suresh Sharma" />
+      </div>
+    </div>
+    <div class="grid2">
+      <div>
+        <label>PAN</label>
+        <input type="text" id="f_pan" placeholder="ABCDE1234F" maxlength="10" style="text-transform:uppercase" />
+      </div>
+      <div>
+        <label>Status</label>
+        <select id="f_status">
+          <option>Individual</option>
+          <option>HUF</option>
+          <option>Firm</option>
+          <option>Company</option>
+          <option>AOP / BOI</option>
+        </select>
+      </div>
+    </div>
+    <label>Residential Address</label>
+    <input type="text" id="f_addr" placeholder="House / Street, City, State, PIN" />
+    <div class="grid2">
+      <div>
+        <label>Financial Year</label>
+        <input type="text" id="f_fy" placeholder="2024-25" />
+      </div>
+      <div>
+        <label>Assessment Year</label>
+        <input type="text" id="f_ay" placeholder="2025-26" />
+      </div>
+    </div>
+    <div class="grid2">
+      <div>
+        <label>Place</label>
+        <input type="text" id="f_place" placeholder="e.g. Mumbai" />
+      </div>
+      <div>
+        <label>Date</label>
+        <input type="date" id="f_date" />
+      </div>
+    </div>
+
+    <h2 style="margin-top:22px">2 · Paste Computation of Income</h2>
+    <p class="hint">Any structure works — a table, a list, copied text from a PDF/Excel. Each line with an amount is detected and classified. You can fix everything in the next panel.</p>
+    <textarea id="paste" placeholder="Example (any layout is fine):
+
+Income from Salary .......... 9,50,000
+Income from House Property ... -2,00,000
+Interest from Savings Bank ... 18,400
+Dividend Income ............. 12,000
+Gross Total Income .......... 7,80,400
+Deduction u/s 80C ........... 1,50,000
+Deduction u/s 80D ........... 25,000
+Deduction u/s 80TTA ......... 10,000
+Total Income ................ 5,95,400"></textarea>
+    <div class="row-actions">
+      <button id="btnParse">Parse &amp; Load ▾</button>
+      <button class="ghost" id="btnSample">Load sample</button>
+      <button class="subtle" id="btnClear">Clear</button>
+    </div>
+  </section>
+
+  <!-- RIGHT: Editable computation -->
+  <section class="card">
+    <h2>3 · Review Computation <span class="badge" id="lineCount">0 lines</span></h2>
+    <p class="hint">Confirm each line's head. Income heads are summed to Gross Total Income; deduction lines are subtracted; the rest are informational. Edit, delete, or add rows freely.</p>
+    <table class="calc">
+      <thead>
+        <tr>
+          <th style="width:46%">Particulars</th>
+          <th style="width:30%">Classify as</th>
+          <th class="amt" style="width:20%">Amount (₹)</th>
+          <th style="width:4%"></th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+      <tfoot>
+        <tr class="subtotal"><td colspan="2">Gross Total Income</td><td class="amt" id="t_gti">0</td><td></td></tr>
+        <tr class="subtotal"><td colspan="2">Less: Deductions under Chapter VI-A</td><td class="amt" id="t_ded">0</td><td></td></tr>
+        <tr class="total"><td colspan="2">Total Income (rounded u/s 288A)</td><td class="amt" id="t_ti">0</td><td></td></tr>
+      </tfoot>
+    </table>
+    <div class="row-actions">
+      <button class="ghost" id="btnAddRow">+ Add row</button>
+      <button id="btnGenerate">Generate Declaration ▾</button>
+    </div>
+  </section>
+
+  <!-- OUTPUT -->
+  <section class="card" id="output">
+    <div class="no-print row-actions" style="justify-content:flex-end;margin-bottom:14px">
+      <button class="ghost" id="btnPrint">🖨 Print / Save as PDF</button>
+      <button class="subtle" id="btnCopy">Copy text</button>
+    </div>
+    <div class="doc" id="doc">
+      <p class="empty-note">Fill the details, parse a computation, then click <strong>Generate Declaration</strong>.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+"use strict";
+
+/* ---------- Classification heads ---------- */
+const HEADS = [
+  { key: "salary",   label: "Income from Salary",            type: "income" },
+  { key: "house",    label: "Income from House Property",    type: "income" },
+  { key: "business", label: "Profits & Gains of Business/Profession", type: "income" },
+  { key: "capital",  label: "Capital Gains",                 type: "income" },
+  { key: "other",    label: "Income from Other Sources",     type: "income" },
+  { key: "deduction",label: "Deduction under Chapter VI-A",  type: "deduction" },
+  { key: "info",     label: "Informational (not totalled)",  type: "info" },
+];
+const HEAD_BY_KEY = Object.fromEntries(HEADS.map(h => [h.key, h]));
+
+/* keyword → head, ordered by specificity */
+const RULES = [
+  [/(80\s?[a-z]{1,4})|chapter\s*vi|deduction|deductions/i, "deduction"],
+  [/salary|salaries|perquisite|pension/i, "salary"],
+  [/house\s*property|rent(al)?\s*income|self.?occupied|let.?out/i, "house"],
+  [/business|profession|pgbp|presumptive|44ad|44ada|44ae/i, "business"],
+  [/capital\s*gain|ltcg|stcg|short.?term|long.?term/i, "capital"],
+  [/other\s*sources|interest|dividend|savings\s*bank|fd\b|fixed\s*deposit|family\s*pension|gift/i, "other"],
+];
+
+/* lines that are totals/sub-totals we should NOT treat as income rows */
+const SKIP_LINE = /gross\s*total\s*income|total\s*income|taxable\s*income|net\s*income|tax\s*payable|tax\s*on|cess|surcharge|tds|advance\s*tax|self.?assessment|refund|rebate\s*87a|round/i;
+
+/* ---------- Amount parsing ---------- */
+function parseAmount(raw) {
+  if (!raw) return null;
+  let s = String(raw).replace(/rs\.?|inr|₹|\/-/gi, " ");
+  // pick the LAST number token on the line (handles "Salary .... 9,50,000")
+  const re = /\d[\d,]*\.?\d*/g;
+  let m, last = null;
+  while ((m = re.exec(s)) !== null) last = m;
+  if (!last) return null;
+  let val = parseFloat(last[0].replace(/,/g, ""));
+  if (isNaN(val)) return null;
+  // negative only from context immediately around the chosen amount:
+  const start = last.index, end = start + last[0].length;
+  const before = s.slice(0, start);
+  const after = s.slice(end);
+  const wrappedInParens = /\(\s*$/.test(before) && /^\s*\)/.test(after);
+  const minusPrefixed = /-\s*$/.test(before);
+  const lossWord = /\bloss\b/i.test(s);
+  const neg = wrappedInParens || minusPrefixed || lossWord;
+  val = Math.abs(val);
+  return neg ? -val : val;
+}
+
+function classify(label) {
+  for (const [re, key] of RULES) if (re.test(label)) return key;
+  return "other";
+}
+
+/* ---------- Parse pasted text ---------- */
+function parsePaste(text) {
+  const out = [];
+  const lines = text.split(/\r?\n/);
+  for (let line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const amt = parseAmount(trimmed);
+    if (amt === null) continue;                 // no number → ignore
+    // label = text before the amount, cleaned of dot leaders / colons
+    let label = trimmed.replace(/[.…:]{2,}/g, " ")
+                       .replace(/-?\s*(rs\.?|inr|₹)?\s*[\d,]+\.?\d*\s*\/?-?\s*$/i, "")
+                       .replace(/\s{2,}/g, " ")
+                       .replace(/[:\-–\s]+$/,"")
+                       .trim();
+    if (!label) label = "(unlabelled)";
+    if (SKIP_LINE.test(trimmed) && classify(label) === "other") continue; // skip computed totals
+    out.push({ label, amount: amt, head: classify(label) });
+  }
+  return out;
+}
+
+/* ---------- Indian number formatting ---------- */
+function fmtIN(n) {
+  const neg = n < 0;
+  let x = Math.round(Math.abs(n)).toString();
+  let last3 = x.slice(-3);
+  let rest = x.slice(0, -3);
+  if (rest) last3 = "," + last3;
+  rest = rest.replace(/\B(?=(\d{2})+(?!\d))/g, ",");
+  return (neg ? "-" : "") + rest + last3;
+}
+function roundOff288A(n) {
+  // round total income to nearest multiple of 10
+  return Math.round(n / 10) * 10;
+}
+
+/* ---------- State / rendering ---------- */
+let state = [];   // array of {label, amount, head}
+
+function render() {
+  const tbody = document.getElementById("rows");
+  tbody.innerHTML = "";
+  state.forEach((r, i) => {
+    const tr = document.createElement("tr");
+
+    const tdL = document.createElement("td");
+    const inpL = document.createElement("input");
+    inpL.type = "text"; inpL.value = r.label;
+    inpL.oninput = () => { state[i].label = inpL.value; };
+    tdL.appendChild(inpL); tr.appendChild(tdL);
+
+    const tdH = document.createElement("td");
+    const sel = document.createElement("select");
+    HEADS.forEach(h => {
+      const o = document.createElement("option");
+      o.value = h.key; o.textContent = h.label;
+      if (h.key === r.head) o.selected = true;
+      sel.appendChild(o);
+    });
+    sel.onchange = () => { state[i].head = sel.value; recalc(); };
+    tdH.appendChild(sel); tr.appendChild(tdH);
+
+    const tdA = document.createElement("td");
+    tdA.className = "amt";
+    const inpA = document.createElement("input");
+    inpA.type = "text"; inpA.className = "amt"; inpA.value = fmtIN(r.amount);
+    inpA.onchange = () => {
+      const v = parseAmount(inpA.value);
+      state[i].amount = v === null ? 0 : v;
+      inpA.value = fmtIN(state[i].amount);
+      recalc();
+    };
+    tdA.appendChild(inpA); tr.appendChild(tdA);
+
+    const tdD = document.createElement("td");
+    tdD.className = "del";
+    const btn = document.createElement("button");
+    btn.textContent = "×"; btn.title = "Remove";
+    btn.onclick = () => { state.splice(i, 1); render(); };
+    tdD.appendChild(btn); tr.appendChild(tdD);
+
+    tbody.appendChild(tr);
+  });
+  document.getElementById("lineCount").textContent = state.length + (state.length === 1 ? " line" : " lines");
+  recalc();
+}
+
+function totals() {
+  let gti = 0, ded = 0;
+  for (const r of state) {
+    const h = HEAD_BY_KEY[r.head];
+    if (!h) continue;
+    if (h.type === "income") gti += r.amount;
+    else if (h.type === "deduction") ded += Math.abs(r.amount);
+  }
+  const ti = roundOff288A(Math.max(0, gti - ded));
+  return { gti, ded, ti };
+}
+
+function recalc() {
+  const t = totals();
+  document.getElementById("t_gti").textContent = fmtIN(t.gti);
+  document.getElementById("t_ded").textContent = fmtIN(t.ded);
+  document.getElementById("t_ti").textContent = fmtIN(t.ti);
+}
+
+/* ---------- Number to words (Indian) ---------- */
+function numToWords(num) {
+  num = Math.round(num);
+  if (num === 0) return "Zero";
+  const a = ["","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten","Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen"];
+  const b = ["","","Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"];
+  const two = n => n < 20 ? a[n] : b[Math.floor(n/10)] + (n%10 ? " " + a[n%10] : "");
+  const three = n => {
+    const h = Math.floor(n/100), r = n%100;
+    return (h ? a[h] + " Hundred" + (r ? " " : "") : "") + (r ? two(r) : "");
+  };
+  let out = "";
+  const crore = Math.floor(num/10000000); num %= 10000000;
+  const lakh = Math.floor(num/100000); num %= 100000;
+  const thousand = Math.floor(num/1000); num %= 1000;
+  const hundred = num;
+  if (crore) out += three(crore) + " Crore ";
+  if (lakh) out += two(lakh) + " Lakh ";
+  if (thousand) out += two(thousand) + " Thousand ";
+  if (hundred) out += three(hundred);
+  return out.trim();
+}
+
+/* ---------- Generate declaration ---------- */
+function fyToAy(fy) {
+  // "2024-25" -> "2025-26"
+  const m = fy && fy.match(/(\d{4})\s*[-/]\s*(\d{2,4})/);
+  if (!m) return "";
+  const start = parseInt(m[1], 10) + 1;
+  const end = (start + 1) % 100;
+  return start + "-" + String(end).padStart(2, "0");
+}
+
+function generate() {
+  const g = id => (document.getElementById(id).value || "").trim();
+  const name = g("f_name"), father = g("f_father"), pan = g("f_pan").toUpperCase();
+  const status = g("f_status"), addr = g("f_addr");
+  let fy = g("f_fy"), ay = g("f_ay");
+  if (fy && !ay) ay = fyToAy(fy);
+  const place = g("f_place");
+  let dateStr = g("f_date");
+  if (dateStr) {
+    const d = new Date(dateStr + "T00:00:00");
+    dateStr = d.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
+  }
+
+  const t = totals();
+  const incomeRows = state.filter(r => HEAD_BY_KEY[r.head] && HEAD_BY_KEY[r.head].type === "income");
+  const dedRows = state.filter(r => HEAD_BY_KEY[r.head] && HEAD_BY_KEY[r.head].type === "deduction");
+
+  const relWord = (status === "Individual") ? "son/daughter/wife of" : "of";
+  const pronoun = (status === "Individual") ? "I" : "We";
+  const possessive = (status === "Individual") ? "my" : "our";
+
+  const esc = s => (s || "").replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+
+  let html = "";
+  html += `<h3 class="title">Declaration of Income</h3>`;
+
+  // intro paragraph
+  let intro = `${pronoun}, <strong>${esc(name) || "______________________"}</strong>`;
+  if (father) intro += ` ${relWord} <strong>${esc(father)}</strong>`;
+  if (addr) intro += `, resident of ${esc(addr)}`;
+  if (pan) intro += `, holding Permanent Account Number (PAN) <strong>${esc(pan)}</strong>`;
+  intro += `, do hereby solemnly declare that ${possessive} total income`;
+  if (ay) intro += ` for the Assessment Year <strong>${esc(ay)}</strong>`;
+  if (fy) intro += ` (relevant to Financial Year ${esc(fy)})`;
+  intro += `, computed in accordance with the provisions of the Income-tax Act, 1961, is as under:`;
+  html += `<p>${intro}</p>`;
+
+  // computation table
+  html += `<table class="decl"><thead><tr><th>Particulars</th><th class="amt">Amount (₹)</th></tr></thead><tbody>`;
+  if (incomeRows.length) {
+    for (const r of incomeRows) {
+      html += `<tr><td>${esc(r.label)}</td><td class="amt">${fmtIN(r.amount)}</td></tr>`;
+    }
+  } else {
+    html += `<tr><td>Income</td><td class="amt">${fmtIN(t.gti)}</td></tr>`;
+  }
+  html += `<tr><td><strong>Gross Total Income</strong></td><td class="amt"><strong>${fmtIN(t.gti)}</strong></td></tr>`;
+  if (dedRows.length) {
+    html += `<tr><td colspan="2"><em>Less: Deductions under Chapter VI-A</em></td></tr>`;
+    for (const r of dedRows) {
+      html += `<tr><td>&nbsp;&nbsp;&nbsp;${esc(r.label)}</td><td class="amt">${fmtIN(Math.abs(r.amount))}</td></tr>`;
+    }
+    html += `<tr><td>Total Deductions</td><td class="amt">${fmtIN(t.ded)}</td></tr>`;
+  } else if (t.ded) {
+    html += `<tr><td>Less: Deductions under Chapter VI-A</td><td class="amt">${fmtIN(t.ded)}</td></tr>`;
+  }
+  html += `<tr class="grand"><td>Total Income</td><td class="amt">${fmtIN(t.ti)}</td></tr>`;
+  html += `</tbody></table>`;
+
+  html += `<p>${pronoun} further declare that the total income of <strong>₹ ${fmtIN(t.ti)}/-</strong> (Rupees ${numToWords(t.ti)} Only) stated above is true and correct to the best of ${possessive} knowledge and belief, that nothing has been concealed therefrom, and that the same has been computed on the basis of the books of account and records maintained by ${possessive === "my" ? "me" : "us"}.</p>`;
+  html += `<p>This declaration is made for the purpose of placing on record the income of the assessee for the said period and may be relied upon by any authority/institution to whom it is furnished.</p>`;
+
+  // signature block
+  html += `<div class="sign"><div class="meta-line">`;
+  html += `<div>Place: ${esc(place) || "_____________"}<br/>Date: ${esc(dateStr) || "_____________"}</div>`;
+  html += `<div style="text-align:center"><div class="line">Signature of the Assessee</div>`;
+  if (name) html += `<div style="margin-top:6px">(${esc(name)})</div>`;
+  if (pan) html += `<div>PAN: ${esc(pan)}</div>`;
+  html += `</div></div></div>`;
+
+  document.getElementById("doc").innerHTML = html;
+  document.getElementById("output").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+/* ---------- Sample ---------- */
+const SAMPLE = `Computation of Total Income — A.Y. 2025-26
+
+Income from Salary .................... 9,50,000
+Income from House Property (let out) ... -1,80,000
+Profits from Business (44AD) .......... 2,40,000
+Long Term Capital Gain ................ 75,000
+Interest from Savings Bank ............ 18,400
+Dividend Income ....................... 12,000
+Gross Total Income .................... 11,15,400
+Deduction u/s 80C ..................... 1,50,000
+Deduction u/s 80D ..................... 25,000
+Deduction u/s 80TTA ................... 10,000
+Total Income .......................... 9,30,400`;
+
+/* ---------- Wire up ---------- */
+document.getElementById("btnParse").onclick = () => {
+  const txt = document.getElementById("paste").value;
+  const parsed = parsePaste(txt);
+  if (!parsed.length) { alert("No amounts detected. Make sure each income line includes a number."); return; }
+  state = parsed;
+  render();
+  // try to auto-fill AY from pasted text
+  const ayMatch = txt.match(/a\.?y\.?\s*[:\-]?\s*(\d{4}\s*[-/]\s*\d{2,4})/i);
+  if (ayMatch && !document.getElementById("f_ay").value) document.getElementById("f_ay").value = ayMatch[1].replace(/\s/g, "");
+  const fyMatch = txt.match(/f\.?y\.?\s*[:\-]?\s*(\d{4}\s*[-/]\s*\d{2,4})/i);
+  if (fyMatch && !document.getElementById("f_fy").value) document.getElementById("f_fy").value = fyMatch[1].replace(/\s/g, "");
+};
+document.getElementById("btnSample").onclick = () => {
+  document.getElementById("paste").value = SAMPLE;
+  document.getElementById("f_name").value = document.getElementById("f_name").value || "Rajesh Kumar Sharma";
+  document.getElementById("f_father").value = document.getElementById("f_father").value || "Suresh Sharma";
+  document.getElementById("f_pan").value = document.getElementById("f_pan").value || "ABCDE1234F";
+  document.getElementById("f_addr").value = document.getElementById("f_addr").value || "12, Green Park, Andheri (W), Mumbai, Maharashtra - 400058";
+  document.getElementById("f_fy").value = document.getElementById("f_fy").value || "2024-25";
+  document.getElementById("f_ay").value = document.getElementById("f_ay").value || "2025-26";
+  document.getElementById("f_place").value = document.getElementById("f_place").value || "Mumbai";
+  document.getElementById("btnParse").click();
+};
+document.getElementById("btnClear").onclick = () => {
+  document.getElementById("paste").value = "";
+  state = []; render();
+  document.getElementById("doc").innerHTML = '<p class="empty-note">Fill the details, parse a computation, then click <strong>Generate Declaration</strong>.</p>';
+};
+document.getElementById("btnAddRow").onclick = () => {
+  state.push({ label: "", amount: 0, head: "other" });
+  render();
+};
+document.getElementById("btnGenerate").onclick = generate;
+document.getElementById("btnPrint").onclick = () => window.print();
+document.getElementById("btnCopy").onclick = () => {
+  const txt = document.getElementById("doc").innerText;
+  navigator.clipboard.writeText(txt).then(
+    () => { const b = document.getElementById("btnCopy"); b.textContent = "Copied ✓"; setTimeout(() => b.textContent = "Copy text", 1500); },
+    () => alert("Copy failed — select the text manually.")
+  );
+};
+
+// default date = today
+(function () {
+  const d = new Date();
+  document.getElementById("f_date").value = d.toISOString().slice(0, 10);
+  render();
+})();
+</script>
+</body>
+</html>
