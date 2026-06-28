@@ -17,6 +17,10 @@ from app.models.transaction import (
     PurchaseInvoice,
     SalesInvoice,
 )
+from app.models.user import User
+from app.utils.security import get_password_hash
+
+TENANT_ID = uuid.UUID("cccccccc-cccc-4ccc-8ccc-cccccccccccc")
 
 # Fixed company ids shared by helpers so tests can scope queries to one tenant.
 # NOTE: these deliberately contain hex letters. SQLite gives its UUID/CHAR
@@ -107,6 +111,21 @@ def make_inventory_movement(company_id: uuid.UUID = COMPANY_ID, **overrides) -> 
     )
     defaults.update(overrides)
     return InventoryMovement(**defaults)
+
+
+def make_user(company_id: uuid.UUID = COMPANY_ID, password: str = "S3cret-pass", **overrides) -> User:
+    defaults = dict(
+        id=uuid.uuid4(),
+        tenant_id=TENANT_ID,
+        company_id=company_id,
+        email=f"user-{uuid.uuid4().hex[:8]}@example.com",
+        password_hash=get_password_hash(password),
+        full_name="Test User",
+        role="auditor",
+        is_active=True,
+    )
+    defaults.update(overrides)
+    return User(**defaults)
 
 
 def make_audit_exception(company_id: uuid.UUID = COMPANY_ID, **overrides) -> AuditException:
