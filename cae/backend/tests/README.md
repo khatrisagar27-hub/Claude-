@@ -20,6 +20,8 @@ pytest
 | `test_security.py` | Password hashing (salt, round-trip, rejection) and JWT create/verify (type, expiry, bad signature). |
 | `test_rbac.py` | `get_current_user` (valid/expired/garbage/no-sub/unknown/inactive, refresh-as-access rejection) and role enforcement. |
 | `rules/` | SQL audit rules run against in-memory DuckDB. `schema.py` builds the table shapes; `test_registry.py` checks the registry and **executes every registered rule against an empty schema** (SQL-validity net); `test_rules.py` asserts representative rules across all six modules (sales/purchase/journal/inventory/treasury/payroll). |
+| `test_excel_importer.py` | ExcelImporter: column mapping + aliases, CSV/XLSX dispatch, unknown-type rejection, batch resilience to bad rows, per-type mappers. |
+| `test_tally_connector.py` | TallyConnector: XML voucher parsing, debit/credit split, thousands separators, multi-voucher counting, date fallback. |
 | `engines/test_wc_engine.py` | Working-capital metrics: DSO/DPO/DIO, CCC, stress-score clamping, divide-by-zero guards. |
 | `engines/test_risk_engine.py` | Composite risk scoring, band boundaries, 100-cap, tenant isolation. |
 | `engines/test_fraud_engine.py` | Benford deviation, duplicate invoices, round-amount concentration, ML anomaly, persistence. |
@@ -28,11 +30,15 @@ pytest
 ## Notes
 
 * Covered so far: the pure-logic engines (Priority 1), the DuckDB rules engine
-  (Priority 2), and auth/RBAC (Priority 3). Data ingestion and API/route tests
-  are intended follow-ups.
+  (Priority 2), auth/RBAC (Priority 3), and data ingestion (Priority 4).
+  API/route integration tests are the main intended follow-up.
 * The rules smoke test is a regression net: `INV-005` previously raised a DuckDB
   `BinderException` (`CURRENT_DATE` in a grouped query) and failed on every run;
   it was rewritten to group in a subquery and now has a behavioural guard.
+* `TallyConnector` previously built `JournalEntry` with non-existent fields
+  (`je_no`/`je_date`/`period`/`je_type`/`source_system`) and omitted the required
+  `total_credit`, so every voucher raised and nothing imported. Fixed to the real
+  columns; `test_tally_connector.py` guards it.
 * `test_gst_engine.py` is a regression guard: the engine previously queried
   non-existent ORM columns (`taxable_value`, `cgst`, `is_cancelled`) and raised
   `AttributeError` at runtime. It now uses the real columns (`taxable_amount`,

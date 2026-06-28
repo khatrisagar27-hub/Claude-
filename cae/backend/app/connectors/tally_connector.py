@@ -36,21 +36,24 @@ class TallyConnector:
         je_date = datetime.strptime(date_str, "%Y%m%d") if date_str else datetime.utcnow()
 
         total_debit = Decimal("0")
+        total_credit = Decimal("0")
         for line in v.findall(".//ALLLEDGERENTRIES.LIST"):
             amt_text = line.findtext("AMOUNT", "0").replace(",", "")
             amt = Decimal(amt_text) if amt_text else Decimal("0")
             if amt > 0:
                 total_debit += amt
+            elif amt < 0:
+                total_credit += -amt
 
         je = JournalEntry(
             id=uuid.uuid4(),
             company_id=self.company_id,
-            je_no=v.findtext("VOUCHERNUMBER", str(uuid.uuid4())[:8]),
-            je_date=je_date,
-            period=je_date.strftime("%Y-%m"),
-            je_type=v.findtext("VOUCHERTYPE", "manual").lower(),
+            voucher_number=v.findtext("VOUCHERNUMBER", str(uuid.uuid4())[:8]),
+            entry_date=je_date.date(),
+            voucher_type=v.findtext("VOUCHERTYPE", "manual").lower(),
             narration=v.findtext("NARRATION"),
             total_debit=total_debit,
-            source_system="tally",
+            total_credit=total_credit,
+            erp_source="tally",
         )
         self.db.add(je)
