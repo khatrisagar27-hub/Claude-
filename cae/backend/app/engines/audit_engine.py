@@ -17,7 +17,10 @@ from app.database import SessionLocal
 class AuditEngine:
     def __init__(self, db: Session, company_id: str):
         self.db = db
-        self.company_id = company_id
+        # company_id is interpolated into the DuckDB load queries, so validate it
+        # is a real UUID up front. This both normalises the value and prevents any
+        # SQL injection through a crafted company_id.
+        self.company_id = str(uuid.UUID(str(company_id)))
         self.conn = duckdb.connect(":memory:")
         self._data_loaded = False
 
