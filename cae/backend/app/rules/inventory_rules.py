@@ -55,14 +55,19 @@ def inv_002(conn, company_id, rule):
 def inv_005(conn, company_id, rule):
     """Slow Moving Stock — >180 days no movement."""
     rows = conn.execute("""
-        SELECT item_code, warehouse_from, MAX(movement_date) as last_movement,
-               DATEDIFF('day', MAX(movement_date), CURRENT_DATE) as days_idle,
-               SUM(total_value) as inventory_value
-        FROM inventory_movements
-        WHERE company_id = ?
-        GROUP BY item_code, warehouse_from
-        HAVING DATEDIFF('day', MAX(movement_date), CURRENT_DATE) > 180
-           AND SUM(total_value) > 0
+        SELECT item_code, warehouse_from, last_movement,
+               DATEDIFF('day', last_movement, CURRENT_DATE) as days_idle,
+               inventory_value
+        FROM (
+            SELECT item_code, warehouse_from,
+                   MAX(movement_date) as last_movement,
+                   SUM(total_value) as inventory_value
+            FROM inventory_movements
+            WHERE company_id = ?
+            GROUP BY item_code, warehouse_from
+        ) t
+        WHERE last_movement < CURRENT_DATE - INTERVAL '180' DAY
+          AND inventory_value > 0
         LIMIT 30
     """, [company_id]).fetchall()
     return [
