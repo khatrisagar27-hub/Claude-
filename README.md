@@ -43,9 +43,12 @@ Open `index.html` in any modern browser. Then:
 - Review the figures in panel 3 — edit, re-classify or add rows as needed.
 - Click **Generate Declaration**, then **Print / Save as PDF**.
 
-> PDF reading uses the pdf.js library bundled locally in `./vendor`, so it works
-> fully offline. Scanned/image-only PDFs have no selectable text — paste the
-> figures in that case.
+> PDF reading uses Mozilla's pdf.js (v3.11.174, Apache-2.0), embedded directly
+> inside `index.html` as base64. There are **no external files and no internet
+> needed** — open or share the single HTML file anywhere. On `file://` pages the
+> library runs on the main thread (a harmless "fake worker" console note);
+> parsing a few-page computation is instant. Scanned/image-only PDFs have no
+> selectable text — paste the figures in that case.
 
 ## Notes on the parsing
 
