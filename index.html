@@ -566,24 +566,31 @@ function isKnownLabelLine(l) {
 }
 function isSectionLine(l) {
   const t = l.trim();
-  // section headers are multi-word ALL-CAPS (e.g. "PERSONAL INFO", "INCOME FROM SALARY");
-  // a single token like a surname continuation ("PATEL") is not a section.
-  return t.length > 3 && /\s/.test(t) && /^[A-Z][A-Z &().\-/]+$/.test(t) && !/\d/.test(t);
+  // Section headers are multi-word ALL-CAPS that contain a structural keyword
+  // (e.g. "PERSONAL INFO", "BANK INFORMATION", "INCOME FROM SALARY").
+  // An all-caps data value like a name ("RAMESH KUMAR") must NOT be treated as
+  // a section, or it would be skipped when it sits on its own line.
+  if (t.length <= 3 || /\d/.test(t) || !/\s/.test(t)) return false;
+  if (!/^[A-Z][A-Z &().\-/]+$/.test(t)) return false;
+  return /\b(INFO|INFORMATION|INCOME|DEDUCTION|DEDUCTIONS|TAX|CALCULATION|ANNEXURE|ANNEXURES|SUMMARY|DETAILS|GAINS|PROFITS|SALARY|SOURCES|PROPERTY|REFUND|GROSS|TOTAL|CHAPTER|BANK|FILING|SET OFF|PERSONAL|SCHEDULE|STATEMENT|PARTICULARS|DEDUCTED|SOURCE)\b/.test(t);
 }
 
-// capture a label's value, appending wrapped continuation lines (names/address)
+// Capture a label's value. Handles three layouts seen across computation PDFs:
+//   "Label  value"                         (value on the same line)
+//   "Label"  then  "value"                 (value wraps to the next line)
+//   "Label  value-part-1"  then  "part-2"  (value spans multiple lines)
 function grabMulti(lines, re) {
   for (let i = 0; i < lines.length; i++) {
     const m = lines[i].match(re);
     if (!m) continue;
-    let val = m[1].trim();
-    for (let j = i + 1; j < lines.length && j - i <= 3; j++) {
+    let val = (m[1] || "").trim();          // may be empty when the line is label-only
+    for (let j = i + 1; j < lines.length && j - i <= 4; j++) {
       const nxt = lines[j].trim();
       if (!nxt || isKnownLabelLine(nxt) || isSectionLine(nxt)) break;
-      val += " " + nxt;
-      if (/\b\d{6}\b/.test(nxt)) break;   // pincode → end of address
+      val = val ? val + " " + nxt : nxt;
+      if (/\b\d{6}\b/.test(nxt)) break;      // pincode → end of address
     }
-    return val.replace(/\s+/g, " ").trim();
+    if (val) return val.replace(/\s+/g, " ").trim();
   }
   return "";
 }
@@ -607,8 +614,8 @@ function extractFields(text) {
           (text.match(/\b([A-Z]{5}\d{4}[A-Z])\b/) || [])[1] || "";
   const stat = (text.match(/\bStatus\s+(Individual|HUF|Firm|Company|AOP|BOI[^\n]*)/i) || [])[1];
   f.status = stat ? stat.trim() : "";
-  f.father = grabMulti(lines, /^Father'?s? Name\s+(.+)$/i);
-  f.address = grabMulti(lines, /^Residential Address\s+(.+)$/i);
+  f.father = grabMulti(lines, /^Father'?s?(?: |\/)?(?:Spouse'?s?)? Name\b\s*:?\s*(.*)$/i);
+  f.address = grabMulti(lines, /^(?:Residential Address|Address|Residence)\b\s*:?\s*(.*)$/i);
   f.ay = ((text.match(/A\.?\s*Y\.?\s*[:\-]?\s*(\d{4}\s*-\s*\d{2,4})/i) || [])[1] || "").replace(/\s/g, "");
   f.fy = ((text.match(/F\.?\s*Y\.?\s*[:\-]?\s*(\d{4}\s*-\s*\d{2,4})/i) || [])[1] || "").replace(/\s/g, "");
   f.place = cityFromAddress(f.address);
