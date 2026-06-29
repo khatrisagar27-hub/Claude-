@@ -26,7 +26,15 @@ No install, no build, no server, no data leaves the browser. Just open
    80C/80D/80TTA…).
 3. **Review & edit** — fix any label, re-classify a head, correct an amount,
    add or delete rows. Gross Total Income, total deductions and Total Income
-   (rounded off under **Sec. 288A**) recompute live.
+   (rounded off under **Sec. 288A**) recompute live. Handles all five heads
+   including **Capital Gains** (STCG/LTCG of every type) and negative heads
+   (e.g. house-property loss).
+   - **Cross-check safeguard:** when a computation is imported, the tool reads
+     the Total Income the document itself states and compares it to the figure
+     computed from the captured heads. A green *"✓ matches PDF total"* badge
+     confirms they agree; an amber *"⚠ PDF total: ₹…"* badge (and status
+     message) flags any mismatch so a wrong figure can never slip through
+     silently — you review/adjust before generating.
 4. **Generates the declaration letter** with the assessee's particulars, the
    computation table, amount in words, the customary true-and-correct
    declaration clause, and a signature block.

@@ -121,11 +121,17 @@
   .doc .meta-line { display: flex; justify-content: space-between; }
   .empty-note { color: var(--muted); text-align:center; padding: 30px; font-style: italic; }
 
+  @page { size: A4 portrait; margin: 16mm; }
   @media print {
     body { background: #fff; }
-    header.app, .wrap > .card, .no-print { display: none !important; }
-    #output { padding: 0; }
-    .doc { border: none; padding: 0; max-width: none; }
+    /* hide the input/review cards and the app header, but NOT the declaration */
+    header.app, .no-print, .wrap > .card:not(#output) { display: none !important; }
+    .wrap { display: block; padding: 0; margin: 0; gap: 0; }
+    #output { display: block !important; padding: 0; border: none; }
+    .doc { border: none; padding: 0; margin: 0; max-width: none; font-size: 13.5pt; }
+    .doc table.decl { page-break-inside: auto; }
+    .doc table.decl tr { page-break-inside: avoid; }
+    .doc .sign { page-break-inside: avoid; }
   }
 </style>
 </head>
@@ -215,7 +221,7 @@ Total Income ................ 5,95,400"></textarea>
 
   <!-- RIGHT: Editable computation -->
   <section class="card">
-    <h2>3 · Review Computation <span class="badge" id="lineCount">0 lines</span></h2>
+    <h2>3 · Review Computation <span class="badge" id="lineCount">0 lines</span> <span class="badge" id="reconBadge" style="display:none"></span></h2>
     <p class="hint">Confirm each line's head. Income heads are summed to Gross Total Income; deduction lines are subtracted; the rest are informational. Edit, delete, or add rows freely.</p>
     <table class="calc">
       <thead>
@@ -345,7 +351,8 @@ function roundOff288A(n) {
 }
 
 /* ---------- State / rendering ---------- */
-let state = [];   // array of {label, amount, head}
+let state = [];        // array of {label, amount, head}
+let pdfTotals = null;  // authoritative totals read from a structured computation (for cross-check)
 
 function render() {
   const tbody = document.getElementById("rows");
@@ -412,6 +419,26 @@ function recalc() {
   document.getElementById("t_gti").textContent = fmtIN(t.gti);
   document.getElementById("t_ded").textContent = fmtIN(t.ded);
   document.getElementById("t_ti").textContent = fmtIN(t.ti);
+  // cross-check against the figure stated in an imported computation
+  const recon = document.getElementById("reconBadge");
+  if (recon) {
+    const stated = pdfTotals && (pdfTotals.totalIncome != null ? pdfTotals.totalIncome
+                 : pdfTotals.netTaxable != null ? pdfTotals.netTaxable : null);
+    if (stated == null) {
+      recon.style.display = "none";
+    } else {
+      recon.style.display = "";
+      if (Math.abs(stated - t.ti) <= 1) {
+        recon.textContent = "✓ matches PDF total";
+        recon.style.background = "#e3f3e9"; recon.style.color = "var(--ok)";
+        recon.title = "Computed Total Income matches the figure in the uploaded computation.";
+      } else {
+        recon.textContent = "⚠ PDF total: ₹" + fmtIN(stated);
+        recon.style.background = "#fbeee0"; recon.style.color = "var(--warn)";
+        recon.title = "The uploaded computation states a different Total Income — review the rows.";
+      }
+    }
+  }
 }
 
 /* ---------- Number to words (Indian) ---------- */
@@ -591,11 +618,11 @@ function extractFields(text) {
 
 const HEAD_PATTERNS = [
   [/^INCOME FROM SALARY\b/i,                                   "salary",    "Income from Salary"],
-  [/^INCOME FROM HOUSE PROPERTY\b/i,                           "house",     "Income from House Property"],
-  [/^(PROFITS AND GAINS OF BUSINESS|INCOME FROM BUSINESS|PROFITS & GAINS)/i, "business", "Profits & Gains of Business/Profession"],
-  [/^(CAPITAL GAINS|INCOME FROM CAPITAL GAINS)\b/i,            "capital",   "Capital Gains"],
-  [/^INCOME FROM OTHER SOURCES\b/i,                            "other",     "Income from Other Sources"],
-  [/^(TOTAL )?DEDUCTIONS UNDER CHAPTER VI-?\s?A\b/i,           "deduction", "Deductions under Chapter VI-A"],
+  [/^(INCOME FROM HOUSE PROPERTY|HOUSE PROPERTY)\b/i,          "house",     "Income from House Property"],
+  [/^(PROFITS AND GAINS OF BUSINESS|PROFITS & GAINS|INCOME FROM BUSINESS|BUSINESS (AND|&) PROFESSION)/i, "business", "Profits & Gains of Business/Profession"],
+  [/^(INCOME FROM CAPITAL GAINS|CAPITAL GAINS)\b/i,           "capital",   "Capital Gains"],
+  [/^(INCOME FROM OTHER SOURCES|OTHER SOURCES)\b/i,           "other",     "Income from Other Sources"],
+  [/^(TOTAL )?DEDUCTIONS UNDER CHAPTER VI-?\s?A\b/i,          "deduction", "Deductions under Chapter VI-A"],
 ];
 
 // a line that is nothing but an amount (the right-aligned head total often
@@ -627,8 +654,29 @@ function extractHeadRows(text) {
   return rows;
 }
 
+// Read the authoritative totals the computation itself states, for cross-checking.
+function extractAuthoritative(text) {
+  const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  const amtFor = (re) => {
+    for (let i = 0; i < lines.length; i++) {
+      if (!re.test(lines[i])) continue;
+      let a = parseAmount(lines[i]);
+      if (a === null && i + 1 < lines.length && lineIsLoneAmount(lines[i + 1])) a = parseAmount(lines[i + 1]);
+      if (a !== null) return a;
+    }
+    return null;
+  };
+  const rounded = amtFor(/Total Income Rounded.*288\s?A/i);
+  return {
+    gti: amtFor(/^GROSS TOTAL INCOME\b/i),
+    deductions: amtFor(/^(TOTAL )?DEDUCTIONS UNDER CHAPTER VI-?\s?A\b/i),
+    totalIncome: rounded != null ? rounded : amtFor(/^TOTAL INCOME\b/i),
+    netTaxable: amtFor(/Net Taxable Income/i),
+  };
+}
+
 function isStructuredComputation(t) {
-  return /computation of income|gross total income|chapter vi-?\s?a|total income rounded|income from salary|income from other sources/i.test(t);
+  return /computation of income|gross total income|chapter vi-?\s?a|total income rounded|income from salary|income from other sources|income from capital gains/i.test(t);
 }
 
 // Fill the form + table from extracted text. overwrite=true replaces existing values.
@@ -654,8 +702,18 @@ function applyExtraction(text, overwrite) {
     }
   }
   const rows = extractHeadRows(text);
-  if (rows.length) { state = rows; render(); }
-  return { fields: f, rows };
+  pdfTotals = extractAuthoritative(text);
+  if (rows.length) { state = rows; }
+  render();   // render() → recalc() refreshes the reconciliation badge
+  const t = totals();
+  const stated = pdfTotals.totalIncome != null ? pdfTotals.totalIncome : pdfTotals.netTaxable;
+  let warning = "";
+  if (stated != null && Math.abs(stated - t.ti) > 1) {
+    warning = "Heads-of-income captured don't add up to the Total Income stated in the PDF " +
+      "(computed ₹" + fmtIN(t.ti) + " vs PDF ₹" + fmtIN(stated) + "). " +
+      "Please check/adjust the rows in panel 3 before generating.";
+  }
+  return { fields: f, rows, warning, stated };
 }
 
 /* ---------- PDF reading (pdf.js embedded in this file) ----------
@@ -751,9 +809,12 @@ document.getElementById("fileInput").onchange = async (e) => {
     document.getElementById("paste").value = text;
     const res = applyExtraction(text, true);
     const f = res.fields;
-    if (res.rows.length) {
+    if (res.warning) {
+      setStatus("⚠ " + res.warning, "warn");
+    } else if (res.rows.length) {
       setStatus("Extracted " + res.rows.length + " income/deduction head" + (res.rows.length === 1 ? "" : "s") +
         (f.name ? " for " + f.name : "") + (f.ay ? " (A.Y. " + f.ay + ")" : "") +
+        (res.stated != null ? ", Total Income ₹" + fmtIN(res.stated) + " ✓" : "") +
         ". Review the figures in panel 3, then Generate. Raw text is loaded below for verification.", "ok");
     } else {
       setStatus("Loaded the text and assessee details, but couldn't auto-detect income heads — check the raw text below and add rows manually.", "warn");
@@ -774,9 +835,12 @@ document.getElementById("btnParse").onclick = () => {
       const parsed = parsePaste(txt);
       if (parsed.length) { state = parsed; render(); }
     }
-    setStatus("Parsed pasted computation" + (res.fields.name ? " for " + res.fields.name : "") + ".", "ok");
+    if (res.warning) setStatus("⚠ " + res.warning, "warn");
+    else setStatus("Parsed pasted computation" + (res.fields.name ? " for " + res.fields.name : "") +
+      (res.stated != null ? ", Total Income ₹" + fmtIN(res.stated) + " ✓" : "") + ".", "ok");
     return;
   }
+  pdfTotals = null;                               // generic paste: no authoritative figure to check against
   const parsed = parsePaste(txt);
   if (!parsed.length) { alert("No amounts detected. Make sure each income line includes a number."); return; }
   state = parsed;
@@ -799,7 +863,7 @@ document.getElementById("btnSample").onclick = () => {
 };
 document.getElementById("btnClear").onclick = () => {
   document.getElementById("paste").value = "";
-  state = []; render();
+  state = []; pdfTotals = null; render();
   setStatus("", "");
   document.getElementById("doc").innerHTML = '<p class="empty-note">Fill the details, parse a computation, then click <strong>Generate Declaration</strong>.</p>';
 };
