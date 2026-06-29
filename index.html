@@ -598,14 +598,25 @@ const HEAD_PATTERNS = [
   [/^(TOTAL )?DEDUCTIONS UNDER CHAPTER VI-?\s?A\b/i,           "deduction", "Deductions under Chapter VI-A"],
 ];
 
+// a line that is nothing but an amount (the right-aligned head total often
+// renders on its own line, e.g. "INCOME FROM OTHER SOURCES" then "24,864")
+function lineIsLoneAmount(l) {
+  const s = l.replace(/rs\.?|inr|₹|\/-|[()]/gi, "").trim();
+  return /^-?[\d,]+\.?\d*$/.test(s) && /\d/.test(s);
+}
+
 function extractHeadRows(text) {
   const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
   const rows = [];
   const seen = new Set();
-  for (const l of lines) {
+  for (let i = 0; i < lines.length; i++) {
     for (const [re, key, label] of HEAD_PATTERNS) {
-      if (!re.test(l) || seen.has(key)) continue;
-      const amt = parseAmount(l);
+      if (!re.test(lines[i]) || seen.has(key)) continue;
+      let amt = parseAmount(lines[i]);
+      // head total may sit on the very next line instead of the title line
+      if (amt === null && i + 1 < lines.length && lineIsLoneAmount(lines[i + 1])) {
+        amt = parseAmount(lines[i + 1]);
+      }
       if (amt === null) break;
       seen.add(key);
       if (amt === 0) break;                          // skip nil heads
@@ -647,23 +658,21 @@ function applyExtraction(text, overwrite) {
   return { fields: f, rows };
 }
 
-/* ---------- PDF reading (pdf.js, lazy-loaded) ---------- */
-const PDFJS_VER = "3.11.174";
+/* ---------- PDF reading (pdf.js, bundled locally in ./vendor) ---------- */
 let pdfjsPromise = null;
 function loadPdfJs() {
   if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
   if (pdfjsPromise) return pdfjsPromise;
   pdfjsPromise = new Promise((resolve, reject) => {
     const s = document.createElement("script");
-    s.src = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VER}/pdf.min.js`;
+    s.src = "vendor/pdf.min.js";
     s.onload = () => {
       try {
-        window.pdfjsLib.GlobalWorkerOptions.workerSrc =
-          `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VER}/pdf.worker.min.js`;
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = "vendor/pdf.worker.min.js";
         resolve(window.pdfjsLib);
       } catch (e) { reject(e); }
     };
-    s.onerror = () => reject(new Error("Could not load the PDF library (no internet?). Please paste the computation text instead."));
+    s.onerror = () => reject(new Error("Could not load the PDF library from ./vendor. Please paste the computation text instead."));
     document.head.appendChild(s);
   });
   return pdfjsPromise;

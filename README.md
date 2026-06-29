@@ -15,7 +15,8 @@ No install, no build, no server, no data leaves the browser. Just open
    with every head of income and the Chapter VI-A deductions. The raw extracted
    text is also loaded into the box so you can verify it. Tested against
    Express-ITR / Winman-style computations; layout changes are tolerated via
-   label matching, with a generic parser as fallback.
+   label matching, with a generic parser as fallback. (Head totals are read
+   whether they sit on the head's own line or wrap to the next line.)
    *(Alternatively)* **Paste a computation of income in any format** — a table,
    a bullet list, text copied from a PDF/Excel, dot-leader lines
    (`Salary ...... 9,50,000`), etc. Each line that contains an amount is detected.
@@ -42,9 +43,9 @@ Open `index.html` in any modern browser. Then:
 - Review the figures in panel 3 — edit, re-classify or add rows as needed.
 - Click **Generate Declaration**, then **Print / Save as PDF**.
 
-> PDF reading uses the pdf.js library loaded from a CDN, so the first upload
-> needs an internet connection. Scanned/image-only PDFs have no selectable
-> text — paste the figures in that case.
+> PDF reading uses the pdf.js library bundled locally in `./vendor`, so it works
+> fully offline. Scanned/image-only PDFs have no selectable text — paste the
+> figures in that case.
 
 ## Notes on the parsing
 
