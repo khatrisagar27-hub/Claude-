@@ -9,9 +9,16 @@ No install, no build, no server, no data leaves the browser. Just open
 
 ## What it does
 
-1. **Paste a computation of income in any format** — a table, a bullet list,
-   text copied from a PDF/Excel, dot-leader lines (`Salary ...... 9,50,000`),
-   etc. Each line that contains an amount is detected.
+1. **Upload the computation PDF** (the **Upload Computation** button) and the
+   tool reads it *in the browser* (via pdf.js) and auto-extracts the assessee's
+   identity — Name, PAN, Father's Name, Status, Address, A.Y./F.Y. — together
+   with every head of income and the Chapter VI-A deductions. The raw extracted
+   text is also loaded into the box so you can verify it. Tested against
+   Express-ITR / Winman-style computations; layout changes are tolerated via
+   label matching, with a generic parser as fallback.
+   *(Alternatively)* **Paste a computation of income in any format** — a table,
+   a bullet list, text copied from a PDF/Excel, dot-leader lines
+   (`Salary ...... 9,50,000`), etc. Each line that contains an amount is detected.
 2. **Auto-classifies** every line into the five heads of income, Chapter VI-A
    deductions, or informational rows, using keyword rules
    (salary, house property, business/PGBP, capital gains, other sources,
@@ -28,12 +35,16 @@ No install, no build, no server, no data leaves the browser. Just open
 
 Open `index.html` in any modern browser. Then:
 
-- Fill the **Assessee Details** (name, father's/spouse's name, PAN, status,
-  address, FY/AY, place, date).
-- Paste the computation and click **Parse & Load** (or click **Load sample**
-  to see a worked example).
-- Review the figures in panel 3.
+- Click **Upload Computation (PDF)** and pick the computation file — assessee
+  details and income heads fill in automatically. (Or fill the **Assessee
+  Details** by hand and paste the computation, then **Parse pasted text**;
+  **Load sample** shows a worked example.)
+- Review the figures in panel 3 — edit, re-classify or add rows as needed.
 - Click **Generate Declaration**, then **Print / Save as PDF**.
+
+> PDF reading uses the pdf.js library loaded from a CDN, so the first upload
+> needs an internet connection. Scanned/image-only PDFs have no selectable
+> text — paste the figures in that case.
 
 ## Notes on the parsing
 

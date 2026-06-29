@@ -190,8 +190,8 @@
       </div>
     </div>
 
-    <h2 style="margin-top:22px">2 · Paste Computation of Income</h2>
-    <p class="hint">Any structure works — a table, a list, copied text from a PDF/Excel. Each line with an amount is detected and classified. You can fix everything in the next panel.</p>
+    <h2 style="margin-top:22px">2 · Computation of Income</h2>
+    <p class="hint"><strong>Upload the computation PDF</strong> and the assessee details + all income heads are extracted automatically. Or paste text in any structure. You can fix everything in the next panel.</p>
     <textarea id="paste" placeholder="Example (any layout is fine):
 
 Income from Salary .......... 9,50,000
@@ -204,10 +204,13 @@ Deduction u/s 80D ........... 25,000
 Deduction u/s 80TTA ......... 10,000
 Total Income ................ 5,95,400"></textarea>
     <div class="row-actions">
-      <button id="btnParse">Parse &amp; Load ▾</button>
+      <button id="btnUpload">⬆ Upload Computation (PDF)</button>
+      <button class="ghost" id="btnParse">Parse pasted text</button>
       <button class="ghost" id="btnSample">Load sample</button>
       <button class="subtle" id="btnClear">Clear</button>
     </div>
+    <input type="file" id="fileInput" accept="application/pdf,.pdf" style="display:none" />
+    <p class="hint" id="uploadStatus" style="margin-top:10px;min-height:18px"></p>
   </section>
 
   <!-- RIGHT: Editable computation -->
@@ -518,6 +521,176 @@ function generate() {
   document.getElementById("output").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+/* ====================================================================
+   Structured computation extraction (e.g. Express ITR / Winman / similar)
+   Pulls assessee identity + head-wise income from the document text.
+   Falls back to the generic line parser when the layout is unknown.
+   ==================================================================== */
+
+const KNOWN_LABELS = ["name","pan","aadhaar","status","residential status","date of birth",
+  "father's name","fathers name","residential address","mobile","email","bank name",
+  "account number","account type","ifsc","a.y","f.y","scheme","form type","filing",
+  "date of filing","acknowledgement","net taxable","tax liability","gross total",
+  "total income","deductions under","income from","profits and gains","capital gains"];
+
+function isKnownLabelLine(l) {
+  const t = l.trim().toLowerCase();
+  return KNOWN_LABELS.some(k => t.startsWith(k));
+}
+function isSectionLine(l) {
+  const t = l.trim();
+  // section headers are multi-word ALL-CAPS (e.g. "PERSONAL INFO", "INCOME FROM SALARY");
+  // a single token like a surname continuation ("PATEL") is not a section.
+  return t.length > 3 && /\s/.test(t) && /^[A-Z][A-Z &().\-/]+$/.test(t) && !/\d/.test(t);
+}
+
+// capture a label's value, appending wrapped continuation lines (names/address)
+function grabMulti(lines, re) {
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(re);
+    if (!m) continue;
+    let val = m[1].trim();
+    for (let j = i + 1; j < lines.length && j - i <= 3; j++) {
+      const nxt = lines[j].trim();
+      if (!nxt || isKnownLabelLine(nxt) || isSectionLine(nxt)) break;
+      val += " " + nxt;
+      if (/\b\d{6}\b/.test(nxt)) break;   // pincode → end of address
+    }
+    return val.replace(/\s+/g, " ").trim();
+  }
+  return "";
+}
+
+function cityFromAddress(addr) {
+  if (!addr) return "";
+  let m = addr.match(/,\s*([A-Za-z][A-Za-z .]+?)\s*,\s*[A-Za-z][A-Za-z ]*\s*-?\s*\d{6}/);
+  if (m) return m[1].trim();
+  m = addr.match(/,\s*([A-Za-z][A-Za-z .]+?)\s*-?\s*\d{6}/);
+  return m ? m[1].trim() : "";
+}
+
+function extractFields(text) {
+  const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  const f = {};
+  for (const l of lines) {                         // name = first standalone "Name ..."
+    const m = l.match(/^Name\s+([A-Za-z][A-Za-z .'-]+)$/);
+    if (m) { f.name = m[1].trim(); break; }
+  }
+  f.pan = (text.match(/\bPAN\s+([A-Z]{5}\d{4}[A-Z])\b/) || [])[1] ||
+          (text.match(/\b([A-Z]{5}\d{4}[A-Z])\b/) || [])[1] || "";
+  const stat = (text.match(/\bStatus\s+(Individual|HUF|Firm|Company|AOP|BOI[^\n]*)/i) || [])[1];
+  f.status = stat ? stat.trim() : "";
+  f.father = grabMulti(lines, /^Father'?s? Name\s+(.+)$/i);
+  f.address = grabMulti(lines, /^Residential Address\s+(.+)$/i);
+  f.ay = ((text.match(/A\.?\s*Y\.?\s*[:\-]?\s*(\d{4}\s*-\s*\d{2,4})/i) || [])[1] || "").replace(/\s/g, "");
+  f.fy = ((text.match(/F\.?\s*Y\.?\s*[:\-]?\s*(\d{4}\s*-\s*\d{2,4})/i) || [])[1] || "").replace(/\s/g, "");
+  f.place = cityFromAddress(f.address);
+  f.scheme = (text.match(/Scheme Opted\s+(New|Old)/i) || [])[1] || "";
+  return f;
+}
+
+const HEAD_PATTERNS = [
+  [/^INCOME FROM SALARY\b/i,                                   "salary",    "Income from Salary"],
+  [/^INCOME FROM HOUSE PROPERTY\b/i,                           "house",     "Income from House Property"],
+  [/^(PROFITS AND GAINS OF BUSINESS|INCOME FROM BUSINESS|PROFITS & GAINS)/i, "business", "Profits & Gains of Business/Profession"],
+  [/^(CAPITAL GAINS|INCOME FROM CAPITAL GAINS)\b/i,            "capital",   "Capital Gains"],
+  [/^INCOME FROM OTHER SOURCES\b/i,                            "other",     "Income from Other Sources"],
+  [/^(TOTAL )?DEDUCTIONS UNDER CHAPTER VI-?\s?A\b/i,           "deduction", "Deductions under Chapter VI-A"],
+];
+
+function extractHeadRows(text) {
+  const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  const rows = [];
+  const seen = new Set();
+  for (const l of lines) {
+    for (const [re, key, label] of HEAD_PATTERNS) {
+      if (!re.test(l) || seen.has(key)) continue;
+      const amt = parseAmount(l);
+      if (amt === null) break;
+      seen.add(key);
+      if (amt === 0) break;                          // skip nil heads
+      rows.push({ label, amount: key === "deduction" ? Math.abs(amt) : amt, head: key });
+      break;
+    }
+  }
+  return rows;
+}
+
+function isStructuredComputation(t) {
+  return /computation of income|gross total income|chapter vi-?\s?a|total income rounded|income from salary|income from other sources/i.test(t);
+}
+
+// Fill the form + table from extracted text. overwrite=true replaces existing values.
+function applyExtraction(text, overwrite) {
+  const f = extractFields(text);
+  const put = (id, val) => {
+    if (!val) return;
+    const el = document.getElementById(id);
+    if (overwrite || !el.value) el.value = val;
+  };
+  put("f_name", f.name);
+  put("f_father", f.father);
+  put("f_pan", (f.pan || "").toUpperCase());
+  put("f_addr", f.address);
+  put("f_place", f.place);
+  put("f_fy", f.fy);
+  put("f_ay", f.ay);
+  if (f.status) {
+    const sel = document.getElementById("f_status");
+    for (const o of sel.options) {
+      if (o.value.toLowerCase() === f.status.toLowerCase() ||
+          f.status.toLowerCase().startsWith(o.value.toLowerCase())) { sel.value = o.value; break; }
+    }
+  }
+  const rows = extractHeadRows(text);
+  if (rows.length) { state = rows; render(); }
+  return { fields: f, rows };
+}
+
+/* ---------- PDF reading (pdf.js, lazy-loaded) ---------- */
+const PDFJS_VER = "3.11.174";
+let pdfjsPromise = null;
+function loadPdfJs() {
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  if (pdfjsPromise) return pdfjsPromise;
+  pdfjsPromise = new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VER}/pdf.min.js`;
+    s.onload = () => {
+      try {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+          `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VER}/pdf.worker.min.js`;
+        resolve(window.pdfjsLib);
+      } catch (e) { reject(e); }
+    };
+    s.onerror = () => reject(new Error("Could not load the PDF library (no internet?). Please paste the computation text instead."));
+    document.head.appendChild(s);
+  });
+  return pdfjsPromise;
+}
+
+async function extractPdfText(buf) {
+  const lib = await loadPdfJs();
+  const pdf = await lib.getDocument({ data: buf }).promise;
+  const out = [];
+  for (let p = 1; p <= pdf.numPages; p++) {
+    const page = await pdf.getPage(p);
+    const tc = await page.getTextContent();
+    let parts = [], lastY = null;
+    for (const it of tc.items) {
+      const y = it.transform[5];
+      if (lastY !== null && Math.abs(y - lastY) > 3) {
+        out.push(parts.join(" ").replace(/\s+/g, " ").trim());
+        parts = [];
+      }
+      parts.push(it.str || "");
+      lastY = y;
+    }
+    if (parts.length) out.push(parts.join(" ").replace(/\s+/g, " ").trim());
+  }
+  return out.filter(Boolean).join("\n");
+}
+
 /* ---------- Sample ---------- */
 const SAMPLE = `Computation of Total Income — A.Y. 2025-26
 
@@ -534,13 +707,54 @@ Deduction u/s 80TTA ................... 10,000
 Total Income .......................... 9,30,400`;
 
 /* ---------- Wire up ---------- */
+const uploadStatus = document.getElementById("uploadStatus");
+function setStatus(msg, kind) {
+  uploadStatus.textContent = msg;
+  uploadStatus.style.color = kind === "ok" ? "var(--ok)" : kind === "warn" ? "var(--warn)" : "";
+}
+
+document.getElementById("btnUpload").onclick = () => document.getElementById("fileInput").click();
+document.getElementById("fileInput").onchange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  setStatus('Reading "' + file.name + '" …', "");
+  try {
+    const buf = await file.arrayBuffer();
+    const text = await extractPdfText(buf);
+    if (!text.trim()) throw new Error("No selectable text found in this PDF (it may be a scanned image).");
+    document.getElementById("paste").value = text;
+    const res = applyExtraction(text, true);
+    const f = res.fields;
+    if (res.rows.length) {
+      setStatus("Extracted " + res.rows.length + " income/deduction head" + (res.rows.length === 1 ? "" : "s") +
+        (f.name ? " for " + f.name : "") + (f.ay ? " (A.Y. " + f.ay + ")" : "") +
+        ". Review the figures in panel 3, then Generate. Raw text is loaded below for verification.", "ok");
+    } else {
+      setStatus("Loaded the text and assessee details, but couldn't auto-detect income heads — check the raw text below and add rows manually.", "warn");
+    }
+  } catch (err) {
+    setStatus(String(err && err.message ? err.message : err), "warn");
+  } finally {
+    e.target.value = "";
+  }
+};
+
 document.getElementById("btnParse").onclick = () => {
   const txt = document.getElementById("paste").value;
+  if (!txt.trim()) { alert("Paste a computation, or use “Upload Computation (PDF)” first."); return; }
+  if (isStructuredComputation(txt)) {
+    const res = applyExtraction(txt, true);
+    if (!res.rows.length) {                       // structured but heads not found → generic fallback
+      const parsed = parsePaste(txt);
+      if (parsed.length) { state = parsed; render(); }
+    }
+    setStatus("Parsed pasted computation" + (res.fields.name ? " for " + res.fields.name : "") + ".", "ok");
+    return;
+  }
   const parsed = parsePaste(txt);
   if (!parsed.length) { alert("No amounts detected. Make sure each income line includes a number."); return; }
   state = parsed;
   render();
-  // try to auto-fill AY from pasted text
   const ayMatch = txt.match(/a\.?y\.?\s*[:\-]?\s*(\d{4}\s*[-/]\s*\d{2,4})/i);
   if (ayMatch && !document.getElementById("f_ay").value) document.getElementById("f_ay").value = ayMatch[1].replace(/\s/g, "");
   const fyMatch = txt.match(/f\.?y\.?\s*[:\-]?\s*(\d{4}\s*[-/]\s*\d{2,4})/i);
@@ -560,6 +774,7 @@ document.getElementById("btnSample").onclick = () => {
 document.getElementById("btnClear").onclick = () => {
   document.getElementById("paste").value = "";
   state = []; render();
+  setStatus("", "");
   document.getElementById("doc").innerHTML = '<p class="empty-note">Fill the details, parse a computation, then click <strong>Generate Declaration</strong>.</p>';
 };
 document.getElementById("btnAddRow").onclick = () => {
