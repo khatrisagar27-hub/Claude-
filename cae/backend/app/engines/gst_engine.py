@@ -26,13 +26,13 @@ class GSTEngine:
                 SalesInvoice.company_id == self.company_id,
                 SalesInvoice.invoice_date >= datetime(year, month, 1),
                 SalesInvoice.invoice_date < self._next_month(year, month),
-                SalesInvoice.is_cancelled == False,
+                SalesInvoice.status != "cancelled",
             )
             .all()
         )
 
-        books_turnover = sum(float(s.taxable_value or 0) for s in sales)
-        books_itc_cgst = sum(float(s.cgst or 0) for s in sales)
+        books_turnover = sum(float(s.taxable_amount or 0) for s in sales)
+        books_output_cgst = sum(float(s.cgst_amount or 0) for s in sales)
 
         purchases = (
             self.db.query(PurchaseInvoice)
@@ -44,7 +44,10 @@ class GSTEngine:
             )
             .all()
         )
-        books_itc = sum(float(p.cgst or 0) + float(p.sgst or 0) + float(p.igst or 0) for p in purchases)
+        books_itc = sum(
+            float(p.cgst_amount or 0) + float(p.sgst_amount or 0) + float(p.igst_amount or 0)
+            for p in purchases
+        )
 
         gstr1_turnover = float(gstr2b_data.get("turnover", books_turnover))
         gstr2b_itc = float(gstr2b_data.get("itc_available", 0))

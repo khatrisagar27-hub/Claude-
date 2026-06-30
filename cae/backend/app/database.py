@@ -13,15 +13,22 @@ from app.config import settings
 # ---------------------------------------------------------------------------
 # Engine
 # ---------------------------------------------------------------------------
-engine = create_engine(
-    settings.DATABASE_URL,
-    pool_pre_ping=True,          # Detect stale connections before checkout
-    pool_size=10,                # Default pool size
-    max_overflow=20,             # Extra connections beyond pool_size
-    pool_timeout=30,             # Seconds to wait for a connection
-    pool_recycle=1800,           # Recycle connections after 30 minutes
-    echo=settings.is_development,  # Log SQL in dev only
-)
+# Connection-pool tuning only applies to server-backed databases (e.g. Postgres).
+# SQLite uses a SingletonThreadPool that rejects pool_size/max_overflow/pool_timeout,
+# so those options are omitted when running against SQLite (e.g. in tests).
+_engine_kwargs: dict = {
+    "pool_pre_ping": True,           # Detect stale connections before checkout
+    "echo": settings.is_development,  # Log SQL in dev only
+}
+if not settings.DATABASE_URL.startswith("sqlite"):
+    _engine_kwargs.update(
+        pool_size=10,                # Default pool size
+        max_overflow=20,             # Extra connections beyond pool_size
+        pool_timeout=30,             # Seconds to wait for a connection
+        pool_recycle=1800,           # Recycle connections after 30 minutes
+    )
+
+engine = create_engine(settings.DATABASE_URL, **_engine_kwargs)
 
 # ---------------------------------------------------------------------------
 # Session factory

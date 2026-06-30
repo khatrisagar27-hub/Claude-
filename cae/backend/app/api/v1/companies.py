@@ -26,8 +26,8 @@ class CompanyCreate(BaseModel):
 
 
 class CompanyOut(BaseModel):
-    id: str
-    tenant_id: str
+    id: uuid.UUID
+    tenant_id: uuid.UUID
     name: str
     gstin: Optional[str]
     pan: Optional[str]
