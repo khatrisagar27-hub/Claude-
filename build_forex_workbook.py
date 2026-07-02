@@ -44,6 +44,7 @@ GREEN_BG  = "E2EFDA"
 RED_BG    = "FCE4E4"
 
 FMT_AMT   = '#,##0.00'
+FMT_EXP   = '#,##0.00;(#,##0.00)'   # neutral amount (expense/cash), never gain-loss coloured
 FMT_FC    = '#,##0.00'
 FMT_RATE  = '0.0000'
 FMT_DATE  = 'dd-mmm-yyyy'
@@ -148,6 +149,13 @@ readme_blocks = [
         "Unrealised (per invoice, on the still-open foreign-currency balance at the closing rate):",
         "      Unrealised Gain/(Loss) = FC Outstanding × (Closing Rate − Invoice Rate) × sign",
         "A POSITIVE figure is a GAIN; a figure in (brackets)/red is a LOSS to the company.",
+    ]),
+    ("FOREIGN BANK CHARGES", TEAL, [
+        "When a bank deducts a fee on a foreign remittance (e.g. the party transfers USD 10,000 but only USD 9,900 reaches you, USD 100 taken by the bank):",
+        "•  Enter the FULL amount transferred in 'FC Amount (Gross)'  →  this settles the invoice and drives the forex gain/(loss).",
+        "•  Enter the fee in 'Foreign Bank Charges (FC)'  →  it is booked as a SEPARATE expense, never mixed into forex gain/(loss).",
+        "•  'Net Bank Movement' then shows what actually hit your bank (receipts = gross − charges; payments = gross + charges).",
+        "•  The Dashboard totals foreign bank charges separately so your forex figure stays clean.",
     ]),
     ("CONVENTIONS", SLATE, [
         "•  Rate = units of base currency per 1 unit of foreign currency (e.g. INR per 1 USD).",
@@ -310,56 +318,66 @@ for col in ["M", "N", "O"]:
 ws = wb.create_sheet("Receipts & Payments")
 ws.sheet_view.showGridLines = False
 banner(ws, "RECEIPTS & PAYMENTS  (Settlements)",
-        "Every money movement in foreign currency — receipts settle sales, payments settle purchases, incl. advances", 12, TEAL)
+        "Every money movement in foreign currency — receipts settle sales, payments settle purchases, incl. advances & bank charges", 16, TEAL)
 
 stl_columns = [
     "Settlement Ref", "Settlement Type", "Party Name", "Currency", "Settlement Date",
-    "FC Amount", "Settlement Rate",                         # input A-G
-    "Settlement Value (Base)", "FC Allocated", "FC Unallocated", "Allocation Status",
+    "FC Amount (Gross)", "Settlement Rate", "Foreign Bank Charges (FC)",   # input A-H
+    "Net Bank Movement (FC)", "Settlement Value (Base)", "Bank Charges (Base)",
+    "Net Bank Movement (Base)", "FC Allocated", "FC Unallocated", "Allocation Status",
     "Narration",
 ]
+# base row: ref, type, party, currency, date, gross FC, rate, bank charges FC
 stl_data = [
-    ["REC-001", "Receipt", "Alpha Corp (USA)",   "USD", datetime.date(2025,12,20), 10000, 81.50],
-    ["REC-002", "Receipt", "Alpha Corp (USA)",   "USD", datetime.date(2026,2,15),  12000, 83.00],
-    ["REC-003", "Receipt", "Alpha Corp (USA)",   "USD", datetime.date(2026,3,20),   8000, 83.40],
-    ["REC-004", "Receipt", "Beta Ltd (USA)",     "USD", datetime.date(2026,3,10),  20000, 83.00],
-    ["REC-005", "Receipt", "Gamma Trading (UK)", "GBP", datetime.date(2026,3,25),   2000, 104.50],
-    ["PAY-001", "Payment", "Euro Supplies GmbH", "EUR", datetime.date(2026,2,10),   8000, 89.50],
-    ["PAY-002", "Payment", "Euro Supplies GmbH", "EUR", datetime.date(2026,3,15),  12000, 90.50],
-    ["PAY-003", "Payment", "Euro Supplies GmbH", "EUR", datetime.date(2025,12,30),  5000, 88.50],
+    ["REC-001", "Receipt", "Alpha Corp (USA)",   "USD", datetime.date(2025,12,20), 10000, 81.50,   0],
+    ["REC-002", "Receipt", "Alpha Corp (USA)",   "USD", datetime.date(2026,2,15),  12000, 83.00,  20],
+    ["REC-003", "Receipt", "Alpha Corp (USA)",   "USD", datetime.date(2026,3,20),   8000, 83.40,   0],
+    ["REC-004", "Receipt", "Beta Ltd (USA)",     "USD", datetime.date(2026,3,10),  20000, 83.00, 100],
+    ["REC-005", "Receipt", "Gamma Trading (UK)", "GBP", datetime.date(2026,3,25),   2000, 104.50,  15],
+    ["PAY-001", "Payment", "Euro Supplies GmbH", "EUR", datetime.date(2026,2,10),   8000, 89.50,   0],
+    ["PAY-002", "Payment", "Euro Supplies GmbH", "EUR", datetime.date(2026,3,15),  12000, 90.50,  40],
+    ["PAY-003", "Payment", "Euro Supplies GmbH", "EUR", datetime.date(2025,12,30),  5000, 88.50,   0],
 ]
 narration = {
     "REC-001": "Part advance received before invoice INV-S-001",
-    "REC-002": "2nd receipt against INV-S-001",
+    "REC-002": "2nd receipt against INV-S-001 (bank charge USD 20 deducted)",
     "REC-003": "Final receipt against INV-S-001 (settled over 3 dates)",
-    "REC-004": "Single receipt settling two invoices INV-S-002 & INV-S-003",
+    "REC-004": "Party transferred USD 20,000; bank deducted USD 100 foreign charges; net received USD 19,900. Settles INV-S-002 & INV-S-003",
     "REC-005": "Part receipt against INV-S-004 (balance stays open)",
     "PAY-001": "Part payment against INV-P-001",
-    "PAY-002": "Balance payment against INV-P-001 (settled over 2 dates)",
+    "PAY-002": "Balance payment against INV-P-001; bank charged USD 40 extra (settled over 2 dates)",
     "PAY-003": "Advance paid before invoice INV-P-002",
 }
 stl_rows = []
 for base in stl_data:
     ref = base[0]
     stl_rows.append(base + [
-        "=[@[FC Amount]]*[@[Settlement Rate]]",
+        '=IF([@[Settlement Type]]="Receipt",[@[FC Amount (Gross)]]-[@[Foreign Bank Charges (FC)]],[@[FC Amount (Gross)]]+[@[Foreign Bank Charges (FC)]])',
+        "=[@[FC Amount (Gross)]]*[@[Settlement Rate]]",
+        "=[@[Foreign Bank Charges (FC)]]*[@[Settlement Rate]]",
+        "=[@[Net Bank Movement (FC)]]*[@[Settlement Rate]]",
         "=SUMIFS(tblAllocations[FC Allocated],tblAllocations[Settlement Ref],[@[Settlement Ref]])",
-        "=[@[FC Amount]]-[@[FC Allocated]]",
+        "=[@[FC Amount (Gross)]]-[@[FC Allocated]]",
         '=IF(ROUND([@[FC Unallocated]],2)=0,"Fully Allocated",IF([@[FC Allocated]]=0,"Unallocated","Partly Allocated"))',
         narration[ref],
     ])
 last = write_table(ws, 4, stl_columns, stl_rows, "tblSettlements",
                    style="TableStyleMedium6", header_fill=TEAL)
-for j in range(8, 12):
+ws.cell(row=4, column=8).fill = fill(GOLD)        # bank charges input -> accent
+for j in range(9, 16):                            # I..O computed -> slate
     ws.cell(row=4, column=j).fill = fill(SLATE)
 r0, r1 = 5, last
 fmt_col(ws, "E", FMT_DATE, r0, r1)
-fmt_col(ws, "F", FMT_FC, r0, r1)
-fmt_col(ws, "G", FMT_RATE, r0, r1)
-fmt_col(ws, "H", FMT_AMT, r0, r1)
-fmt_col(ws, "I", FMT_FC, r0, r1)
-fmt_col(ws, "J", FMT_FC, r0, r1)
-stl_widths = [14,15,22,9,15,13,13,18,13,14,15,40]
+fmt_col(ws, "F", FMT_FC, r0, r1)     # gross FC
+fmt_col(ws, "G", FMT_RATE, r0, r1)   # rate
+fmt_col(ws, "H", FMT_FC, r0, r1)     # bank charges FC
+fmt_col(ws, "I", FMT_FC, r0, r1)     # net movement FC
+fmt_col(ws, "J", FMT_AMT, r0, r1)    # settlement value base
+fmt_col(ws, "K", FMT_AMT, r0, r1)    # bank charges base
+fmt_col(ws, "L", FMT_AMT, r0, r1)    # net movement base
+fmt_col(ws, "M", FMT_FC, r0, r1)     # fc allocated
+fmt_col(ws, "N", FMT_FC, r0, r1)     # fc unallocated
+stl_widths = [14,15,20,9,14,15,13,16,17,17,16,18,13,14,15,44]
 for j, w in enumerate(stl_widths, start=1):
     ws.column_dimensions[get_column_letter(j)].width = w
 ws.freeze_panes = "B5"
@@ -525,6 +543,14 @@ r += 1
 r = kpi_block(ws, r, "TOTAL FOREX IMPACT TO P&L", NAVY, [
     ("Net Forex Gain/(Loss) (Realised + Unrealised)",
      "=SUM(tblAllocations[Forex Gain/(Loss)])+SUM(tblInvoices[Unrealised Gain/(Loss)])", FMT_AMT, True),
+])
+r += 1
+# Foreign bank charges (separate expense, NOT part of forex gain/loss)
+r = kpi_block(ws, r, "FOREIGN BANK CHARGES  (separate expense — not forex)", TEAL, [
+    ("Total Foreign Bank Charges (FC)", "=SUM(tblSettlements[Foreign Bank Charges (FC)])", FMT_EXP, False),
+    ("Total Foreign Bank Charges (Base)", "=SUM(tblSettlements[Bank Charges (Base)])", FMT_EXP, False),
+    ("Net Cash Received — receipts (Base)", '=SUMIFS(tblSettlements[Net Bank Movement (Base)],tblSettlements[Settlement Type],"Receipt")', FMT_EXP, False),
+    ("Net Cash Paid — payments (Base)", '=SUMIFS(tblSettlements[Net Bank Movement (Base)],tblSettlements[Settlement Type],"Payment")', FMT_EXP, False),
 ])
 r += 1
 # Counters
