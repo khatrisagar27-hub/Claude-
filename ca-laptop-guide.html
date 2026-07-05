@@ -1,0 +1,445 @@
+<style>
+  :root {
+    --ground: #F4F6F4;
+    --surface: #FFFFFF;
+    --surface-2: #EEF2EF;
+    --ink: #17211D;
+    --ink-soft: #47554E;
+    --ink-faint: #6C7A72;
+    --border: #D9E1DC;
+    --border-strong: #C3CEC8;
+    --accent: #0F6B5C;
+    --accent-soft: #E2F0EC;
+    --deal: #B06612;
+    --deal-soft: #FBEBD6;
+    --good: #2F8F5B;
+    --shadow: 0 1px 2px rgba(23,33,29,.04), 0 8px 24px rgba(23,33,29,.06);
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #0D1411;
+      --surface: #141E1A;
+      --surface-2: #1B2723;
+      --ink: #E7EEEA;
+      --ink-soft: #AEBDB6;
+      --ink-faint: #7E8E86;
+      --border: #26332E;
+      --border-strong: #33443D;
+      --accent: #3FCBB0;
+      --accent-soft: #123029;
+      --deal: #E6A94A;
+      --deal-soft: #33260F;
+      --good: #4FB97E;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0D1411; --surface: #141E1A; --surface-2: #1B2723;
+    --ink: #E7EEEA; --ink-soft: #AEBDB6; --ink-faint: #7E8E86;
+    --border: #26332E; --border-strong: #33443D;
+    --accent: #3FCBB0; --accent-soft: #123029;
+    --deal: #E6A94A; --deal-soft: #33260F; --good: #4FB97E;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+  }
+  :root[data-theme="light"] {
+    --ground: #F4F6F4; --surface: #FFFFFF; --surface-2: #EEF2EF;
+    --ink: #17211D; --ink-soft: #47554E; --ink-faint: #6C7A72;
+    --border: #D9E1DC; --border-strong: #C3CEC8;
+    --accent: #0F6B5C; --accent-soft: #E2F0EC;
+    --deal: #B06612; --deal-soft: #FBEBD6; --good: #2F8F5B;
+    --shadow: 0 1px 2px rgba(23,33,29,.04), 0 8px 24px rgba(23,33,29,.06);
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  .page {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    padding: clamp(20px, 4vw, 56px) clamp(16px, 4vw, 40px) 72px;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+
+  /* Header */
+  .eyebrow {
+    font-size: 12px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--accent); font-weight: 700; margin: 0 0 14px;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(30px, 5vw, 48px);
+    line-height: 1.08;
+    letter-spacing: -.01em;
+    text-wrap: balance;
+    margin: 0 0 16px;
+  }
+  .lede {
+    font-size: clamp(16px, 2.2vw, 18px);
+    color: var(--ink-soft);
+    max-width: 60ch;
+    margin: 0 0 28px;
+  }
+
+  .dealstrip {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px;
+    background: var(--deal-soft);
+    border: 1px solid color-mix(in srgb, var(--deal) 35%, transparent);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 40px;
+    font-size: 14.5px;
+  }
+  .dealstrip .live {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-weight: 700; color: var(--deal); text-transform: uppercase;
+    letter-spacing: .06em; font-size: 12.5px;
+  }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--deal);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--deal) 60%, transparent);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--deal) 55%, transparent); }
+    70% { box-shadow: 0 0 0 8px transparent; }
+    100% { box-shadow: 0 0 0 0 transparent; }
+  }
+  @media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
+  .dealstrip .txt { color: var(--ink-soft); }
+  .dealstrip .txt b { color: var(--ink); font-weight: 600; }
+
+  /* Section headings */
+  .sec-head { margin: 48px 0 20px; }
+  .sec-head h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(21px, 3vw, 27px); margin: 0 0 6px; letter-spacing: -.01em;
+  }
+  .sec-head p { margin: 0; color: var(--ink-faint); font-size: 14.5px; }
+
+  /* Recommendation cards */
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  @media (max-width: 760px) { .cards { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 22px; box-shadow: var(--shadow);
+    display: flex; flex-direction: column;
+  }
+  .card .tag {
+    align-self: flex-start;
+    font-size: 11.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+    color: var(--accent); background: var(--accent-soft);
+    padding: 4px 10px; border-radius: 999px; margin-bottom: 14px;
+  }
+  .card h3 { font-family: var(--serif); font-size: 19px; margin: 0 0 2px; font-weight: 600; }
+  .card .spec { font-size: 13px; color: var(--ink-faint); margin: 0 0 14px; }
+  .card .why { font-size: 14px; color: var(--ink-soft); margin: 0 0 18px; flex: 1; }
+  .card .price {
+    font-family: var(--mono); font-size: 21px; font-weight: 600;
+    font-variant-numeric: tabular-nums; letter-spacing: -.02em;
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .card .price small { font-family: var(--sans); font-size: 12px; font-weight: 400; color: var(--ink-faint); }
+
+  /* Table */
+  .tablewrap {
+    overflow-x: auto; border: 1px solid var(--border); border-radius: 16px;
+    background: var(--surface); box-shadow: var(--shadow);
+    -webkit-overflow-scrolling: touch;
+  }
+  table { border-collapse: collapse; width: 100%; min-width: 960px; font-size: 13.5px; }
+  thead th {
+    position: sticky; top: 0;
+    background: var(--surface-2);
+    text-align: left; font-weight: 600; color: var(--ink-soft);
+    font-size: 11.5px; letter-spacing: .05em; text-transform: uppercase;
+    padding: 13px 16px; border-bottom: 1px solid var(--border-strong);
+    white-space: nowrap;
+  }
+  tbody td { padding: 15px 16px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: color-mix(in srgb, var(--accent) 4%, transparent); }
+  .tier-row td {
+    background: color-mix(in srgb, var(--accent) 6%, transparent);
+    font-family: var(--serif); font-weight: 600; font-size: 14px; color: var(--accent);
+    padding: 10px 16px; letter-spacing: .01em;
+  }
+  .model { font-weight: 600; color: var(--ink); white-space: nowrap; }
+  .model small { display: block; font-weight: 400; color: var(--ink-faint); font-size: 12px; white-space: normal; margin-top: 2px; }
+  .cell-sub { color: var(--ink-soft); }
+  .price-cell { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; }
+  .price-cell small { display: block; font-family: var(--sans); font-weight: 400; font-size: 11px; color: var(--ink-faint); }
+
+  .badge {
+    display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .03em;
+    padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+  }
+  .badge.deal { color: var(--deal); background: var(--deal-soft); }
+  .badge.win { color: var(--accent); background: var(--accent-soft); }
+  .badge.mac { color: var(--ink-soft); background: var(--surface-2); }
+  .badge.arm { color: var(--ink-soft); background: var(--surface-2); }
+
+  .fit { display: inline-flex; gap: 2px; }
+  .fit i { width: 7px; height: 14px; border-radius: 2px; background: var(--border-strong); display: inline-block; }
+  .fit i.on { background: var(--accent); }
+
+  .npu-yes { color: var(--good); font-weight: 600; }
+  .npu-no { color: var(--ink-faint); }
+
+  /* Choose grid */
+  .choose { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  @media (max-width: 700px) { .choose { grid-template-columns: 1fr; } }
+  .qbox { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; }
+  .qbox h4 { margin: 0 0 8px; font-size: 15px; font-family: var(--serif); font-weight: 600; }
+  .qbox p { margin: 0; font-size: 14px; color: var(--ink-soft); }
+  .qbox .pick { color: var(--accent); font-weight: 600; }
+
+  /* Notes */
+  .notes {
+    margin-top: 40px; border-top: 1px solid var(--border); padding-top: 24px;
+    font-size: 13px; color: var(--ink-faint);
+  }
+  .notes h4 { color: var(--ink-soft); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; margin: 0 0 10px; }
+  .notes ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 7px; }
+  .notes a { color: var(--accent); }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 18px; margin: 16px 2px 0; font-size: 12.5px; color: var(--ink-faint); align-items: center; }
+  .legend .fit { transform: translateY(2px); }
+</style>
+
+<div class="page">
+  <div class="wrap">
+
+    <p class="eyebrow">Laptop Buyer's Guide · Chartered Accountant Practice · 2026</p>
+    <h1>The right laptop for CA practice, AI tools &amp; daily routine</h1>
+    <p class="lede">Ranked for what a practicing CA actually does — Tally &amp; heavy Excel, GST / Income-Tax / MCA portals with DSC, and cloud AI tools — not benchmark bragging rights. Prices are indicative India street prices; confirm the final figure on the product page.</p>
+
+    <div class="dealstrip">
+      <span class="live"><span class="dot"></span>Amazon Prime Day — Live</span>
+      <span class="txt">Runs <b>4–6 July 2026</b>. Up to <b>35–50% off</b> laptops, plus <b>No-Cost EMI</b>, <b>~₹2,500 instant bank discount</b> &amp; <b>up to ₹25,000 exchange</b>. Net price = sticker − bank offer − exchange.</span>
+    </div>
+
+    <!-- TOP PICKS -->
+    <div class="sec-head">
+      <h2>Three picks that cover most CAs</h2>
+      <p>If you don't want to read the whole table, start here.</p>
+    </div>
+    <div class="cards">
+      <div class="card">
+        <span class="tag">Best value · buy now</span>
+        <h3>Dell 15 (Copilot+ AI)</h3>
+        <p class="spec">Core Ultra 5 225U · 16GB · 512GB SSD · 15.6″ FHD · 40+ TOPS NPU · Win 11</p>
+        <p class="why">Hits every CA requirement — Windows for DSC &amp; portals, 16GB for Tally + Excel + tabs, fast SSD — and happens to be an AI PC, all on a live Prime Day discount.</p>
+        <div class="price">₹72,000 <small>approx · Prime Day</small></div>
+      </div>
+      <div class="card">
+        <span class="tag">Best for a firm</span>
+        <h3>Lenovo ThinkPad E14 Gen 7</h3>
+        <p class="spec">Core Ultra 7 255H · 16GB · 512GB SSD · 14″ WUXGA · NPU · fingerprint + TPM · Win 11 Pro</p>
+        <p class="why">Business keyboard, hardware security for client data, and durability for fieldwork. The Ryzen 5 config sells for far less if you want the same build cheaper.</p>
+        <div class="price">₹1,06,990 <small>Ryzen config ~₹70k</small></div>
+      </div>
+      <div class="card">
+        <span class="tag">Best on a budget</span>
+        <h3>Refurbished business-class</h3>
+        <p class="spec">HP EliteBook 840 / Dell Latitude 7490 · i5 · 16GB · 512GB SSD · 14″ FHD · Win 11</p>
+        <p class="why">Military-grade build and great keyboards at a third of the price. A genuinely smart first machine for a solo practice or a reliable second laptop.</p>
+        <div class="price">₹20–30,000 <small>refurbished</small></div>
+      </div>
+    </div>
+
+    <!-- FULL TABLE -->
+    <div class="sec-head">
+      <h2>Full comparison</h2>
+      <p>Grouped by price tier. Scroll sideways on the table to see every column.</p>
+    </div>
+
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Model</th>
+            <th>Processor</th>
+            <th>RAM / Storage</th>
+            <th>Display</th>
+            <th>AI NPU</th>
+            <th>OS</th>
+            <th>CA fit</th>
+            <th>Approx. price (₹)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="tier-row"><td colspan="8">Value &amp; budget — where most CAs should look</td></tr>
+
+          <tr>
+            <td><span class="model">Dell 15 (Copilot+) <small>DC15250 · the Prime Day standout</small></span></td>
+            <td class="cell-sub">Core Ultra 5 225U</td>
+            <td class="cell-sub">16GB · 512GB SSD</td>
+            <td class="cell-sub">15.6″ FHD</td>
+            <td><span class="npu-yes">Yes · 40+ TOPS</span></td>
+            <td><span class="badge win">Windows</span></td>
+            <td><span class="fit"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></td>
+            <td class="price-cell">72,000 <small><span class="badge deal">Prime Day</span></small></td>
+          </tr>
+          <tr>
+            <td><span class="model">HP Pavilion Plus 14 <small>bright OLED, light</small></span></td>
+            <td class="cell-sub">Core i5-1335U (13th Gen)</td>
+            <td class="cell-sub">16GB · 512GB SSD</td>
+            <td class="cell-sub">14″ 2.2K OLED</td>
+            <td class="npu-no">Older gen — none</td>
+            <td><span class="badge win">Windows</span></td>
+            <td><span class="fit"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></td>
+            <td class="price-cell">69,990 <small>from</small></td>
+          </tr>
+          <tr>
+            <td><span class="model">Acer Aspire 15 <small>cheap &amp; capable</small></span></td>
+            <td class="cell-sub">Core 5 120U</td>
+            <td class="cell-sub">16GB · 512GB SSD</td>
+            <td class="cell-sub">15.6″ FHD</td>
+            <td class="npu-no">Minimal</td>
+            <td><span class="badge win">Windows</span></td>
+            <td><span class="fit"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></td>
+            <td class="price-cell">45,000 <small>approx</small></td>
+          </tr>
+          <tr>
+            <td><span class="model">Refurb EliteBook / Latitude <small>value champion</small></span></td>
+            <td class="cell-sub">Core i5 (8th–10th Gen)</td>
+            <td class="cell-sub">16GB · 512GB SSD</td>
+            <td class="cell-sub">14″ FHD</td>
+            <td class="npu-no">None</td>
+            <td><span class="badge win">Windows</span></td>
+            <td><span class="fit"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></td>
+            <td class="price-cell">20–30,000 <small>refurbished</small></td>
+          </tr>
+
+          <tr class="tier-row"><td colspan="8">Business &amp; premium — buy-it-for-5-years territory</td></tr>
+
+          <tr>
+            <td><span class="model">Lenovo ThinkPad E14 Gen 7 <small>security + build</small></span></td>
+            <td class="cell-sub">Core Ultra 7 255H</td>
+            <td class="cell-sub">16GB · 512GB SSD</td>
+            <td class="cell-sub">14″ WUXGA</td>
+            <td><span class="npu-yes">Yes · AI PC</span></td>
+            <td><span class="badge win">Win 11 Pro</span></td>
+            <td><span class="fit"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></td>
+            <td class="price-cell">1,06,990 <small>Ryzen 5 ~₹70k</small></td>
+          </tr>
+          <tr>
+            <td><span class="model">ASUS Zenbook 14 OLED <small>best screen per rupee</small></span></td>
+            <td class="cell-sub">Core Ultra 5</td>
+            <td class="cell-sub">16GB · 512GB–1TB</td>
+            <td class="cell-sub">14″ 3K OLED</td>
+            <td><span class="npu-yes">Yes · AI PC</span></td>
+            <td><span class="badge win">Windows</span></td>
+            <td><span class="fit"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></td>
+            <td class="price-cell">1,09,990 <small>approx</small></td>
+          </tr>
+          <tr>
+            <td><span class="model">Dell Inspiron 14 Plus <small>pick the Intel config</small></span></td>
+            <td class="cell-sub">Core Ultra 7 <span style="color:var(--ink-faint)">/ Snapdragon X</span></td>
+            <td class="cell-sub">16GB · 1TB SSD</td>
+            <td class="cell-sub">14″ 2.5K</td>
+            <td><span class="npu-yes">Yes · 40+ TOPS</span></td>
+            <td><span class="badge win">Windows</span> <span class="badge arm">ARM variant</span></td>
+            <td><span class="fit"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></td>
+            <td class="price-cell">1,15,990 <small>Snapdragon cfg</small></td>
+          </tr>
+          <tr>
+            <td><span class="model">Microsoft Surface Laptop 7 <small>deepest Copilot</small></span></td>
+            <td class="cell-sub">Snapdragon X / Core Ultra</td>
+            <td class="cell-sub">16GB · 512GB SSD</td>
+            <td class="cell-sub">13.8″ / 15″ touch</td>
+            <td><span class="npu-yes">Yes · 45+ TOPS</span></td>
+            <td><span class="badge win">Windows</span> <span class="badge arm">ARM variant</span></td>
+            <td><span class="fit"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></td>
+            <td class="price-cell">1,20,000+ <small>approx</small></td>
+          </tr>
+          <tr>
+            <td><span class="model">Dell XPS 14 <small>premium flagship</small></span></td>
+            <td class="cell-sub">Core Ultra Series 3</td>
+            <td class="cell-sub">16GB · 512GB SSD</td>
+            <td class="cell-sub">14.5″ OLED</td>
+            <td><span class="npu-yes">Yes · AI PC</span></td>
+            <td><span class="badge win">Windows</span></td>
+            <td><span class="fit"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></td>
+            <td class="price-cell">2,05,990 <small>from</small></td>
+          </tr>
+          <tr>
+            <td><span class="model">ASUS ProArt P16 <small>overkill for CA</small></span></td>
+            <td class="cell-sub">Ryzen AI 9 HX 370 + RTX</td>
+            <td class="cell-sub">32GB · 1TB SSD</td>
+            <td class="cell-sub">16″ 4K OLED</td>
+            <td><span class="npu-yes">Yes · 50 TOPS</span></td>
+            <td><span class="badge win">Windows</span></td>
+            <td><span class="fit"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span></td>
+            <td class="price-cell">2,40,000+ <small>approx</small></td>
+          </tr>
+          <tr>
+            <td><span class="model">Apple MacBook Pro 14 <small>verify your DSC flow first</small></span></td>
+            <td class="cell-sub">Apple M4 / M5</td>
+            <td class="cell-sub">16GB · 512GB–1TB</td>
+            <td class="cell-sub">14.2″ Liquid Retina XDR</td>
+            <td><span class="npu-yes">Neural Engine</span></td>
+            <td><span class="badge mac">macOS</span></td>
+            <td><span class="fit"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span></td>
+            <td class="price-cell">1,69,900+ <small>M5 ~₹1,83,490</small></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="legend">
+      <span>CA fit <span class="fit"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span> = ideal for practice</span>
+      <span><span class="badge win">Windows</span> best for DSC / GST / MCA portals</span>
+      <span><span class="badge arm">ARM variant</span> some legacy utilities emulate — prefer Intel/AMD</span>
+      <span><span class="badge deal">Prime Day</span> live discount now</span>
+    </div>
+
+    <!-- HOW TO CHOOSE -->
+    <div class="sec-head">
+      <h2>How to choose in one minute</h2>
+      <p>Answer the question that fits you.</p>
+    </div>
+    <div class="choose">
+      <div class="qbox">
+        <h4>“I want the best value and I'll buy this week.”</h4>
+        <p><span class="pick">Dell 15 Copilot+</span> — Windows, 16GB, AI-PC NPU, on a Prime Day discount. Runs every cloud AI tool without paying an AI-PC premium.</p>
+      </div>
+      <div class="qbox">
+        <h4>“It's for my firm and staff will use it hard.”</h4>
+        <p><span class="pick">ThinkPad E14 Gen 7</span> — keyboard, fingerprint + TPM security for client data, and the durability to survive audit fieldwork.</p>
+      </div>
+      <div class="qbox">
+        <h4>“I'm just starting out / need a second machine.”</h4>
+        <p><span class="pick">Refurbished EliteBook or Latitude</span> — business-class build and 16GB RAM for ₹20–30k. Handles Tally, Excel and 20 tabs fine.</p>
+      </div>
+      <div class="qbox">
+        <h4>“Money's no object, I want it to last.”</h4>
+        <p><span class="pick">Dell XPS 14</span> or <span class="pick">Zenbook 14 OLED</span> — stunning displays and headroom. Skip the RTX ProArt; a CA never uses the GPU.</p>
+      </div>
+    </div>
+
+    <!-- NOTES -->
+    <div class="notes">
+      <h4>Reading the fine print</h4>
+      <ul>
+        <li><b>The AI apps you'll use are cloud-based</b> (Vidur AI, Suvit, ChatGPT/Claude, Copilot web, Vyapar TaxOne) — they run on the servers, so any 16GB laptop runs them fine. A 40+ TOPS NPU only helps on-device AI; it's future-proofing, not a requirement.</li>
+        <li><b>Windows over macOS for a practicing CA.</b> DSC utilities (emSigner), the GST portal, MCA21 and TRACES are Windows-first. A MacBook is excellent hardware but you'll fight Java/DSC/portal quirks — pick it only if you already live in that ecosystem or keep a Windows machine for filings.</li>
+        <li><b>Prefer x86 (Intel/AMD) over ARM (Snapdragon).</b> ARM Copilot+ PCs have superb battery life, but some older DSC drivers and accounting plugins run through emulation and occasionally misbehave.</li>
+        <li><b>Prices are indicative</b> India street/Prime Day figures as of 5 July 2026 and change hourly. Confirm the “after all offers” number on the product page, and note the Great Indian Festival (Oct) often matches or beats Prime Day lows if you can wait.</li>
+      </ul>
+      <h4 style="margin-top:22px">Sources</h4>
+      <ul>
+        <li><a href="https://www.amazon.in/Laptops/b?ie=UTF8&node=1375424031">Amazon.in — Prime Day 2026 laptops</a> · <a href="https://www.aboutamazon.in/news/retail/prime-day-2026-india-deals">About Amazon India — Prime Day deals</a></li>
+        <li><a href="https://www.smartprix.com/laptops/lenovo-thinkpad-e14-21sx008fig-laptop-intel-ppd1cu0dk4a6">Smartprix — ThinkPad E14 Core Ultra 7</a> · <a href="https://www.bajajfinserv.in/hp-pavilion-plus-14-price-in-india">HP Pavilion Plus 14 price</a> · <a href="https://www.smartprix.com/laptops/dell-inspiron-14-plus-ai-laptop-snapdragon-ppd10dwh1srw">Dell Inspiron 14 Plus</a> · <a href="https://www.cashkr.com/articles/dell-xps-14-and-xps-16-price-in-india">Dell XPS 14/16 India price</a></li>
+        <li><a href="https://www.acecloudhosting.com/blog/best-laptop-for-cpas-and-accountants/">Ace Cloud Hosting — best laptops for accountants</a> · <a href="https://www.digitalapplied.com/blog/ai-pc-npu-copilot-plus-local-ai-2026-buyers-guide">Digital Applied — AI PCs &amp; NPUs 2026</a> · <a href="https://blog.camonk.com/best-ai-tools-for-ca-practice-india/">CA Monk — AI tools for CA practice</a></li>
+      </ul>
+    </div>
+
+  </div>
+</div>
