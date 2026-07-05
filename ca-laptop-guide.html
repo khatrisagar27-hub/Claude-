@@ -199,6 +199,24 @@
   .qbox p { margin: 0; font-size: 14px; color: var(--ink-soft); }
   .qbox .pick { color: var(--accent); font-weight: 600; }
 
+  /* Where to buy */
+  .buylist { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  @media (max-width: 720px) { .buylist { grid-template-columns: 1fr; } }
+  .buyrow {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 13px 16px;
+  }
+  .buyrow .name { font-weight: 600; font-size: 14px; flex: 1 1 100%; }
+  .buyrow a {
+    font-size: 13px; color: var(--accent); text-decoration: none; font-weight: 500;
+    border-bottom: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+    padding-bottom: 1px;
+  }
+  .buyrow a:hover { border-bottom-color: var(--accent); }
+  .buyrow .sep { color: var(--ink-faint); font-size: 12px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
   /* Notes */
   .notes {
     margin-top: 40px; border-top: 1px solid var(--border); padding-top: 24px;
@@ -233,7 +251,7 @@
       <div class="card">
         <span class="tag">Best value · buy now</span>
         <h3>Dell 15 (Copilot+ AI)</h3>
-        <p class="spec">Core Ultra 5 225U · 16GB · 512GB SSD · 15.6″ FHD · 40+ TOPS NPU · Win 11</p>
+        <p class="spec">Core Ultra 5 225H · 16GB · 512GB SSD · 15.6″ FHD · 40+ TOPS NPU · Win 11</p>
         <p class="why">Hits every CA requirement — Windows for DSC &amp; portals, 16GB for Tally + Excel + tabs, fast SSD — and happens to be an AI PC, all on a live Prime Day discount.</p>
         <div class="price">₹72,000 <small>approx · Prime Day</small></div>
       </div>
@@ -277,8 +295,8 @@
           <tr class="tier-row"><td colspan="8">Value &amp; budget — where most CAs should look</td></tr>
 
           <tr>
-            <td><span class="model">Dell 15 (Copilot+) <small>DC15250 · the Prime Day standout</small></span></td>
-            <td class="cell-sub">Core Ultra 5 225U</td>
+            <td><span class="model">Dell 15 AI (Copilot+) <small>match the Core Ultra listing, not the 13th-Gen DC15250</small></span></td>
+            <td class="cell-sub">Core Ultra 5 225H</td>
             <td class="cell-sub">16GB · 512GB SSD</td>
             <td class="cell-sub">15.6″ FHD</td>
             <td><span class="npu-yes">Yes · 40+ TOPS</span></td>
@@ -421,6 +439,84 @@
       <div class="qbox">
         <h4>“Money's no object, I want it to last.”</h4>
         <p><span class="pick">Dell XPS 14</span> or <span class="pick">Zenbook 14 OLED</span> — stunning displays and headroom. Skip the RTX ProArt; a CA never uses the GPU.</p>
+      </div>
+    </div>
+
+    <!-- WHERE TO BUY -->
+    <div class="sec-head">
+      <h2>Where to buy</h2>
+      <p>Direct product / official-store links. Confirm the exact CPU and after-offer price on the listing before paying.</p>
+    </div>
+    <div class="buylist">
+      <div class="buyrow">
+        <span class="name">Dell 15 AI (Copilot+) · Core Ultra 5 225H</span>
+        <a href="https://www.amazon.in/Dell-Anti-Glare-Graphics-Dedicated-Keyboard/dp/B0GWHGS8P5">Amazon.in ↗</a>
+        <span class="sep">·</span>
+        <a href="https://www.dell.com/en-in/shop/laptop-notebook-computers/dell-15-laptop/spd/dell-dc15250-laptop/">Dell India ↗</a>
+      </div>
+      <div class="buyrow">
+        <span class="name">HP Pavilion Plus 14</span>
+        <a href="https://www.hp.com/in-en/shop/pavilion-plus-14-convertible-laptop">HP Store India ↗</a>
+        <span class="sep">·</span>
+        <a href="https://www.amazon.in/s?k=HP+Pavilion+Plus+14">Amazon.in ↗</a>
+      </div>
+      <div class="buyrow">
+        <span class="name">Acer Aspire 15 · Core 5 120U</span>
+        <a href="https://www.amazon.in/s?k=Acer+Aspire+15+Core+5+120U+16GB">Amazon.in ↗</a>
+        <span class="sep">·</span>
+        <a href="https://store.acer.com/en-in">Acer Store India ↗</a>
+      </div>
+      <div class="buyrow">
+        <span class="name">Refurbished EliteBook / Latitude</span>
+        <a href="https://www.amazon.in/s?k=refurbished+HP+EliteBook+840+i5+16GB">Amazon Renewed ↗</a>
+        <span class="sep">·</span>
+        <a href="https://www.ezyrefurb.com/">EzyRefurb ↗</a>
+      </div>
+      <div class="buyrow">
+        <span class="name">Lenovo ThinkPad E14 Gen 7</span>
+        <a href="https://www.lenovo.com/in/en/p/laptops/thinkpad/thinkpade/thinkpad-e14-gen-7-14-inch-intel-laptop/21u2s00p00">Lenovo India ↗</a>
+        <span class="sep">·</span>
+        <a href="https://www.amazon.in/s?k=Lenovo+ThinkPad+E14+Gen+7">Amazon.in ↗</a>
+      </div>
+      <div class="buyrow">
+        <span class="name">ASUS Zenbook 14 OLED · Core Ultra</span>
+        <a href="https://www.amazon.in/ASUS-Zenbook-screen-Windows-UX3405CA-PZ162WS/dp/B0DSHTHR67">Amazon.in ↗</a>
+        <span class="sep">·</span>
+        <a href="https://in.store.asus.com/light-weight-laptop-asus-zenbook-14-oled-ux3405ma-pz552ws.html">ASUS Store ↗</a>
+      </div>
+      <div class="buyrow">
+        <span class="name">Dell Inspiron 14 Plus <span class="sep">(pick the Intel config)</span></span>
+        <a href="https://www.dell.com/en-in/shop/laptop-notebook-computers/inspiron-14-plus-laptop/spd/inspiron-14-7440-laptop">Dell India ↗</a>
+        <span class="sep">·</span>
+        <a href="https://www.amazon.in/s?k=Dell+Inspiron+14+Plus+Core+Ultra">Amazon.in ↗</a>
+      </div>
+      <div class="buyrow">
+        <span class="name">Microsoft Surface Laptop 7</span>
+        <a href="https://www.amazon.in/Microsoft-New-Surface-Laptop-7th/dp/B0D926BQL8">Amazon.in ↗</a>
+        <span class="sep">·</span>
+        <a href="https://www.microsoft.com/en-in/surface/devices/surface-laptop-7th-edition">Microsoft India ↗</a>
+      </div>
+      <div class="buyrow">
+        <span class="name">Dell XPS 14</span>
+        <a href="https://www.dell.com/en-in/shop/dell-laptops/xps-14-laptop-2026/spd/xps-da14260-laptop">Dell India ↗</a>
+        <span class="sep">·</span>
+        <a href="https://www.amazon.in/s?k=Dell+XPS+14+Core+Ultra">Amazon.in ↗</a>
+      </div>
+      <div class="buyrow">
+        <span class="name">ASUS ProArt P16 · Ryzen AI 9 HX 370</span>
+        <a href="https://www.asus.com/in/laptops/for-creators/proart/proart-p16-h7606/">ASUS India ↗</a>
+        <span class="sep">·</span>
+        <a href="https://www.amazon.in/s?k=ASUS+ProArt+P16+HX+370">Amazon.in ↗</a>
+      </div>
+      <div class="buyrow">
+        <span class="name">Apple MacBook Pro 14 · M4</span>
+        <a href="https://www.apple.com/in/shop/buy-mac/macbook-pro/14-inch">Apple India ↗</a>
+        <span class="sep">·</span>
+        <a href="https://www.amazon.in/Apple-2024-MacBook-Laptop-10%E2%80%91core/dp/B0DLHXVCXJ">Amazon.in ↗</a>
+      </div>
+      <div class="buyrow">
+        <span class="name">All Prime Day laptop deals</span>
+        <a href="https://www.amazon.in/Laptops/b?ie=UTF8&node=1375424031">Amazon.in — Laptops ↗</a>
       </div>
     </div>
 
