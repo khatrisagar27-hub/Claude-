@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { AlertTriangle, TrendingUp, FileText, CheckCircle, Activity, Shield } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import apiClient from '../api/client';
@@ -135,7 +136,7 @@ export default function Dashboard() {
           <h2 className="text-sm font-semibold text-gray-300 mb-4 uppercase tracking-wider">Top Exceptions</h2>
           <div className="space-y-3">
             {topExceptions.slice(0, 6).map(exc => (
-              <div key={exc.id} className="flex items-start gap-2">
+              <Link key={exc.id} to={`/exceptions/${exc.id}`} className="flex items-start gap-2 hover:bg-navy-700/40 -mx-2 px-2 py-1 rounded transition-colors">
                 <SeverityBadge severity={exc.severity} />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-gray-300 truncate">{exc.title}</p>
@@ -146,7 +147,7 @@ export default function Dashboard() {
                     )}
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>

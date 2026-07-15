@@ -30,20 +30,17 @@ export interface Company {
 export interface AuditException {
   id: string;
   company_id: string;
-  rule_id: string;
-  detected_at: string;
-  business_area: string;
+  rule_id: string | null;
+  detected_on: string;
+  category: string;
   title: string;
-  description: string;
+  description: string | null;
   severity: 'critical' | 'high' | 'medium' | 'low';
-  risk_category: string;
-  financial_impact?: number;
-  likelihood_score?: number;
-  impact_score?: number;
-  evidence_json?: Record<string, unknown>;
-  ai_explanation?: string;
-  status: 'open' | 'acknowledged' | 'query_raised' | 'escalated' | 'resolved' | 'closed';
-  is_false_positive: boolean;
+  risk_impact: string | null;
+  financial_impact?: number | null;
+  supporting_data?: any | null;
+  ai_analysis?: string | null;
+  status: string;
 }
 
 export interface ManagementQuery {
