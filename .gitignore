@@ -1,0 +1,68 @@
+# ---- Python (cae/backend) ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+eggs/
+*.egg-info/
+*.egg
+.installed.cfg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Test & coverage artefacts
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.tox/
+.mypy_cache/
+.ruff_cache/
+
+# ---- Node / frontend (cae/frontend) ----
+node_modules/
+cae/frontend/dist/
+.vite/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.eslintcache
+
+# ---- Secrets & local config ----
+# .env.example IS committed as the template; real .env files never are.
+.env
+.env.*
+!.env.example
+
+# ---- Runtime data ----
+# CAE writes ingested files here; they are client data, not source.
+cae/backend/uploads/
+uploads/
+*.log
+
+# ---- Excel lock / recovery files ----
+# The workbooks themselves (LexComply_India.xlsm,
+# Foreign_Gain_Loss_Workbook.xlsx) are committed deliverables — only
+# Excel's temporary artefacts are ignored.
+~$*
+*.xlk
+
+# ---- Editors & OS ----
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
