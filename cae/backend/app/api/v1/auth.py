@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.user import User
-from app.schemas.auth import LoginRequest, TokenResponse, RefreshRequest, UserOut
-from app.utils.security import verify_password, create_access_token, create_refresh_token, verify_token
+from app.schemas.auth import LoginRequest, TokenResponse, RefreshRequest, UserOut, ChangePasswordRequest
+from app.utils.security import verify_password, create_access_token, create_refresh_token, verify_token, get_password_hash
 from app.utils.rbac import get_current_user
 from app.config import settings
 
@@ -52,6 +52,21 @@ def refresh(payload: RefreshRequest, db: Session = Depends(get_db)):
 def logout(current_user: User = Depends(get_current_user)):
     # JWT is stateless; client discards tokens
     return {"message": "Logged out"}
+
+
+@router.post("/change-password")
+def change_password(
+    payload: ChangePasswordRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if not verify_password(payload.current_password, current_user.password_hash):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Current password is incorrect")
+    if len(payload.new_password) < 8:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New password must be at least 8 characters")
+    current_user.password_hash = get_password_hash(payload.new_password)
+    db.commit()
+    return {"message": "Password changed successfully"}
 
 
 @router.get("/me", response_model=UserOut)
