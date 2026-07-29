@@ -1,15 +1,19 @@
 # Open-source audit & compliance tooling for Indian practice
 
-Two tools for Indian chartered accountants and finance teams, built and used in
-live practice:
+[![CI](https://github.com/khatrisagar27-hub/Claude-/actions/workflows/ci.yml/badge.svg)](https://github.com/khatrisagar27-hub/Claude-/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+Tools for Indian chartered accountants and finance teams, built and used in live
+practice:
 
 | Project | What it is |
 |---|---|
 | **[Continuous Audit Engine (CAE)](#continuous-audit-engine-cae)** (`cae/`) | Self-hosted continuous-auditing platform: ingest accounting data, run exception rules, score risk and fraud indicators, reconcile GSTR-2B, generate ICAI-format working papers |
 | **[LexComply India](#lexcomply-india)** (repo root) | Applicability engine for 69 Indian statutes — answers "which laws apply to this company, and what must it file when" |
+| **[Forex Gain/(Loss) workbook](#forex-gainloss-workbook)** (`build_forex_workbook.py`) | Formula-driven Excel workbook for exchange gain/loss on sales and purchases, handling part settlement and many-to-many invoice/receipt allocation |
 
-> **Status: pre-release.** Both tools are in active development and have not had
-> a tagged release. Interfaces will change. Neither tool is a substitute for
+> **Status: pre-release.** Everything here is in active development and has not
+> had a tagged release. Interfaces will change. Neither tool is a substitute for
 > professional judgment — every figure, exception and due date it produces is
 > intended for review and sign-off by a qualified professional. See
 > [Design principle](#design-principle) below.
@@ -75,10 +79,30 @@ make audit         # runs the first audit pass over the seed data
 Other targets: `make migrate`, `make logs`, `make shell-backend`,
 `make shell-db`, `make down`, `make clean` (drops volumes).
 
+### Tests
+
+The backend suite runs against in-memory SQLite — no Docker, Postgres or Redis
+required:
+
+```bash
+cd cae/backend
+pip install -r requirements-dev.txt
+pytest --cov=app --cov-report=term-missing
+```
+
+Coverage spans the engines (audit, risk, fraud, GST, working capital), the DuckDB
+rules engine (every registered rule is executed for SQL validity), auth and RBAC,
+the Excel importer and Tally connector, and the API endpoints. Layout is
+documented in [`cae/backend/tests/README.md`](cae/backend/tests/README.md). CI
+runs the same suite on every push and pull request
+([`.github/workflows/ci.yml`](.github/workflows/ci.yml)). The frontend has lint
+and type-check only (`npm run lint`, `npx tsc --noEmit`).
+
 ### Configuration
 
-Compose ships working defaults for local use. Override via environment or a
-`cae/backend/.env` (see `cae/backend/app/config.py` for the full list):
+Compose ships working defaults for local use. Copy [`.env.example`](.env.example)
+and override via environment or `cae/backend/.env` (see
+`cae/backend/app/config.py` for the full list):
 
 | Variable | Purpose |
 |---|---|
@@ -142,6 +166,22 @@ Produces `LexComply_India.xlsm`. Import `LexComply.bas` via the VBA editor
 
 ---
 
+## Forex Gain/(Loss) workbook
+
+```bash
+python build_forex_workbook.py
+```
+
+Generates `Foreign_Gain_Loss_Workbook.xlsx` — an Excel model for exchange
+gain/(loss) on foreign-currency sales and purchases. Input sheets are typed by
+the user; an **Allocation sheet** resolves the many-to-many reality of forex
+settlement (one invoice settled by several receipts across dates, part advances
+received before the invoice, one receipt against several invoices), and
+everything downstream is live Excel formulas over structured tables rather than
+hardcoded values — so a reviewer can trace any figure back to its inputs.
+
+---
+
 ## Design principle
 
 **Deterministic code computes; the model explains.**
@@ -170,7 +210,9 @@ cae/                        Continuous Audit Engine
     engines/                audit, risk, fraud, gst, working-capital, ai
     rules/                  sales, purchase, journal, payroll, treasury, inventory
     models/ schemas/        SQLAlchemy models, pydantic schemas
+    utils/                  security (hashing, JWT), rbac, export helpers
     workers/                Celery tasks
+  backend/tests/            pytest suite (engines, rules, api, auth) — see its README
   frontend/src/pages/       React pages (Dashboard, Exceptions, GST, Rules,
                             RiskHeatmap, FraudAnalytics, Reports, ...)
   scripts/                  seed_data.py, run_first_audit.py
@@ -178,15 +220,18 @@ cae/                        Continuous Audit Engine
   nginx/ monitoring/        reverse proxy, Prometheus config
   docker-compose.yml Makefile
 
+.github/workflows/ci.yml                     Backend pytest suite on push + PR
+.env.example                                 Deployment env template
 index.html app.js laws.js excel-export.js    LexComply web app
 lexcomply.html                               LexComply, single file
 build_excel.py LexComply.bas                 LexComply Excel workbook + VBA
+build_forex_workbook.py                      Forex gain/(loss) workbook generator
 CAE_User_Guide.html                          CAE end-user guide
 ```
 
 ## Roadmap
 
-- CAE 1.0: test coverage, auth hardening, migration correctness, production
+- CAE 1.0: wider test coverage, auth hardening, migration correctness, production
   compose profile
 - Live Tally Prime reads via MCP instead of static exports
 - Broader GST coverage beyond GSTR-2B reconciliation

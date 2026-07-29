@@ -32,6 +32,9 @@ All CAE commands run from `cae/` via the Makefile:
 | Shell into backend / psql | `make shell-backend` / `make shell-db` |
 | Stop / wipe volumes | `make down` / `make clean` |
 
+Backend tests (from `cae/backend/`, no Docker needed): `pytest` — see
+[Tests](#tests).
+
 Frontend (from `cae/frontend/`): `npm run dev`, `npm run build`,
 `npm run lint` (eslint over `src`). Type-check via `npx tsc --noEmit`.
 
@@ -43,11 +46,33 @@ regenerate the workbook.
 
 ## Tests
 
-**There are none.** No pytest, no vitest, no CI. Do not claim a change is
-"tested" — verify by exercising the running stack (`make up`, then hit the
-endpoint or the UI) and say that's what you did. If you add tests, put backend
-tests under `cae/backend/tests/`, add pytest to `requirements.txt`, and record
-the command in the table above.
+Backend has a pytest suite; **run it before reporting a backend change done.**
+
+```bash
+cd cae/backend
+pip install -r requirements-dev.txt
+pytest                              # or: pytest --cov=app --cov-report=term-missing
+```
+
+The suite runs entirely against **in-memory SQLite** — no Postgres, no Redis, no
+Docker. `tests/conftest.py` carries the Postgres→SQLite shims that make that
+work (JSONB compiled as JSON, `gen_random_uuid()` defaults stripped,
+string-tolerant UUID binds). If you add a model using a Postgres-specific type,
+expect to extend those shims. Config lives in `pytest.ini` (`testpaths = tests`,
+`asyncio_mode = auto`); layout is documented in
+[`cae/backend/tests/README.md`](cae/backend/tests/README.md) — `engines/`,
+`rules/`, `api/`, plus `test_security.py`, `test_rbac.py`,
+`test_excel_importer.py`, `test_tally_connector.py`, and shared row builders in
+`factories.py`.
+
+Note `rules/test_registry.py` **executes every registered rule against an empty
+schema** — so a new rule with invalid DuckDB SQL fails there, and a new rule that
+queries a table `rules/schema.py` doesn't define will too. Add the table shape
+there when you add the rule.
+
+CI (`.github/workflows/ci.yml`) runs the same pytest suite with coverage on every
+push and PR. **Frontend has no tests** — `npm run lint` and `npx tsc --noEmit`
+are the only checks there, so verify UI work against the running stack.
 
 ## Architecture
 
@@ -98,8 +123,18 @@ heatmap, trend), `fraud_engine` (fraud indicators — these use **`score`**, not
 
 ### Connectors
 
-`app/connectors/` — `tally_connector.py` (Tally Prime), `excel_importer.py`
-(Excel/CSV upload with auto-detect ingestion).
+`app/connectors/` — `tally_connector.py` (Tally Prime XML voucher parsing),
+`excel_importer.py` (Excel/CSV upload with auto-detect ingestion and column
+aliasing).
+
+### Auth & shared utils
+
+`app/utils/security.py` — password hashing and JWT create/verify.
+`app/utils/rbac.py` — `get_current_user` plus role enforcement; access tokens and
+refresh tokens are distinct types and a refresh token must not be accepted as an
+access token. `app/utils/export.py` — export helpers. `app/database.py` — session
+and engine setup. All four are covered by tests; change them with the suite
+running.
 
 ### Frontend
 
@@ -159,8 +194,13 @@ default `SECRET_KEY`, Postgres and Redis published on host ports, and a seed
 login with a known password documented in `docs/api.md`. That is a known,
 accepted state for local dev — but **never add a new hardcoded secret**, and if
 a task touches deployment, raise hardening rather than copying the pattern.
-`ANTHROPIC_API_KEY` is optional; blank must keep the AI features cleanly
-disabled rather than erroring.
+`.env.example` at the repo root is the template for a real deployment — keep it
+in sync when you add a setting to `config.py`. `ANTHROPIC_API_KEY` is optional;
+blank must keep the AI features cleanly disabled rather than erroring.
+
+`AuditEngine` validates `company_id` as a UUID specifically as a SQL-injection
+guard — rule SQL is string-built for DuckDB, so that check is load-bearing. There
+is a test asserting it; don't loosen it.
 
 ## Conventions
 
@@ -183,8 +223,8 @@ disabled rather than erroring.
 - Read this file and the relevant module before assuming structure.
 - Don't add features, refactors or error handling beyond the task.
 - Prefer editing existing files over creating new ones.
-- Verify UI/API changes against the running stack before reporting done; say
-  plainly what you verified and what you didn't.
+- Run `pytest` for backend changes, and verify UI changes against the running
+  stack. Say plainly what you verified and what you didn't.
 - Feature branches: `<type>/<short-description>`. No direct pushes to `main`
   without a PR unless told otherwise. Don't amend pushed commits.
 - Confirm before destructive actions — `make clean` drops volumes, and force
