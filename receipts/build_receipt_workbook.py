@@ -337,16 +337,24 @@ summary_values = {
 }
 
 
+# openpyxl already emits an empty <v/> placeholder after each <f>. A cell may
+# carry only one <v>, so that placeholder is replaced - appending a second one
+# produces a file Excel refuses to open.
+_FORMULA_CELL = re.compile(
+    r'(<c r="([A-Z]+\d+)"[^>]*>\s*<f>[^<]*</f>)\s*(?:<v\s*/>|<v>[^<]*</v>)?'
+)
+
+
 def _inject(xml: str, values: dict) -> str:
     def repl(match):
-        ref = match.group(1)
+        head, ref = match.group(1), match.group(2)
         if ref not in values:
             return match.group(0)
         val = values[ref]
         val = int(val) if float(val).is_integer() else val
-        return f"{match.group(0)}<v>{val}</v>"
+        return f"{head}<v>{val}</v>"
 
-    return re.sub(r'<c r="([A-Z]+\d+)"[^>]*>\s*<f>[^<]*</f>', repl, xml)
+    return _FORMULA_CELL.sub(repl, xml)
 
 
 tmp = OUT + ".tmp"
