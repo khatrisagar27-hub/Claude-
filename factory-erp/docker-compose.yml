@@ -1,0 +1,50 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: factory
+      POSTGRES_PASSWORD: factory
+      POSTGRES_DB: factory_erp
+    ports:
+      - "5433:5432" # separate host port from cae/'s Postgres (5432)
+    volumes:
+      - factory_erp_db_data:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg2://factory:factory@db:5432/factory_erp
+      SECRET_KEY: dev-only-change-me
+    depends_on:
+      - db
+    ports:
+      - "8001:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "8081:80" # separate host port from cae/'s nginx (8080)
+    depends_on:
+      - backend
+      - frontend
+
+volumes:
+  factory_erp_db_data:

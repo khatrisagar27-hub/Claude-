@@ -6,16 +6,27 @@ to *change* the code.
 
 ## What's in here
 
-Two unrelated projects share this repo:
+Three unrelated projects share this repo:
 
 1. **`cae/` — Continuous Audit Engine.** FastAPI + Postgres + Redis/Celery +
    React, Docker Compose. The substantial project; assume a task is about this
-   one unless LexComply is named.
+   one unless LexComply or factory-erp is named.
 2. **Repo root — LexComply India.** Dependency-free static web app
    (`index.html` + `laws.js` + `app.js` + `excel-export.js`) plus an Excel
    workbook generator (`build_excel.py` → `LexComply_India.xlsm`, with
    `LexComply.bas` imported by hand). No build step, no package manager, no
    framework. Don't introduce one.
+3. **`factory-erp/` — Factory ERP (stock, machines, production).**
+   FastAPI + Postgres + React/Vite, own Docker Compose stack, own ports
+   (offset from `cae/`'s so both can run together — see
+   `factory-erp/README.md`). Independent product for a manufacturing client's
+   ops team; shares no database, containers, or code with `cae/`. Deterministic
+   backend analytics (OEE, downtime Pareto, stock ageing/reorder/valuation,
+   production yield/rejection) live in `factory-erp/backend/app/analytics/`,
+   each with its own pytest module under `factory-erp/backend/tests/` run the
+   same in-memory-SQLite way as `cae/backend`'s suite. Full design/module
+   notes and current build status are in `factory-erp/README.md` — read that
+   before assuming what's implemented there.
 
 ## Build & run commands
 
