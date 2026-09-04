@@ -11,6 +11,15 @@ repo root. It does not share their database, code, or containers. It's a
 separate product for a client's ops/production team; a CA practice would use
 it (or its data exports) as a source system, not as an audit tool itself.
 
+## Two editions
+
+- **`backend/` + `frontend/`** (below): FastAPI + Postgres + React, this
+  README's main subject — real concurrent multi-user access, roles, an API.
+- **`excel/`**: a macro-free Excel workbook covering the same data model and
+  the same analytics formulas, for a team that would rather open a file than
+  run Docker. Not a lesser copy — a genuine tradeoff (no true concurrent
+  writes, no API) documented in `excel/README.md`. Pick per client.
+
 ## Why these three modules together
 
 Stock, machines, and production are one feedback loop in any factory:

@@ -29,7 +29,7 @@ NOTE_FONT = Font(name=FONT_NAME, italic=True, size=9, color="6B7280")
 THIN = Side(style="thin", color="D1D5DB")
 BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
 
-MAX_ROW = 500  # formula ranges go this far; extend if you outgrow it
+MAX_ROW = 60  # formula ranges go this far; extend (fill down the last row) if you outgrow it
 
 wb = Workbook()
 wb.remove(wb.active)
@@ -355,15 +355,19 @@ for i, h in enumerate(headers, start=1):
     ws.cell(row=1, column=i, value=h)
 style_header(ws, 1, len(headers))
 
-MV = "StockMovements!$E$2:$E$500"
-MV_SKU = "StockMovements!$B$2:$B$500"
-MV_TYPE = "StockMovements!$D$2:$D$500"
-MV_DATE = "StockMovements!$A$2:$A$500"
+MV = f"StockMovements!$E$2:$E${MAX_ROW}"
+MV_SKU = f"StockMovements!$B$2:$B${MAX_ROW}"
+MV_TYPE = f"StockMovements!$D$2:$D${MAX_ROW}"
+MV_DATE = f"StockMovements!$A$2:$A${MAX_ROW}"
 
 for r in range(2, MAX_ROW + 1):
-    ws.cell(row=r, column=1, value=f"=Products!A{r}").font = FORMULA_FONT
-    ws.cell(row=r, column=2, value=f"=Products!B{r}").font = FORMULA_FONT
-    ws.cell(row=r, column=3, value=f"=Products!C{r}").font = FORMULA_FONT
+    # Wrapped (not a bare `=Products!A{r}`) so a genuinely blank master row
+    # propagates as the text "" rather than the 0 a bare reference to an
+    # empty cell would return — every `IF(A{r}="",...)` guard below depends
+    # on that to actually detect an unused row instead of falling through.
+    ws.cell(row=r, column=1, value=f'=IF(Products!A{r}="","",Products!A{r})').font = FORMULA_FONT
+    ws.cell(row=r, column=2, value=f'=IF(Products!A{r}="","",Products!B{r})').font = FORMULA_FONT
+    ws.cell(row=r, column=3, value=f'=IF(Products!A{r}="","",Products!C{r})').font = FORMULA_FONT
     onhand = (
         f"=IF(A{r}=\"\",\"\","
         f"SUMIFS({MV},{MV_SKU},A{r},{MV_TYPE},\"receipt\")"
@@ -420,16 +424,18 @@ for i, h in enumerate(headers, start=1):
     ws.cell(row=1, column=i, value=h)
 style_header(ws, 1, len(headers))
 
-WO_PLANMIN = "WorkOrders!$M$2:$M$500"
-WO_MACHINE = "WorkOrders!$C$2:$C$500"
-WO_PRODUCED = "WorkOrders!$E$2:$E$500"
-WO_REJECTED = "WorkOrders!$F$2:$F$500"
-DT_MIN = "Downtime!$G$2:$G$500"
-DT_MACHINE = "Downtime!$A$2:$A$500"
+WO_PLANMIN = f"WorkOrders!$M$2:$M${MAX_ROW}"
+WO_MACHINE = f"WorkOrders!$C$2:$C${MAX_ROW}"
+WO_PRODUCED = f"WorkOrders!$E$2:$E${MAX_ROW}"
+WO_REJECTED = f"WorkOrders!$F$2:$F${MAX_ROW}"
+DT_MIN = f"Downtime!$G$2:$G${MAX_ROW}"
+DT_MACHINE = f"Downtime!$A$2:$A${MAX_ROW}"
 
 for r in range(2, MAX_ROW + 1):
-    ws.cell(row=r, column=1, value=f"=Machines!A{r}").font = FORMULA_FONT
-    ws.cell(row=r, column=2, value=f"=Machines!B{r}").font = FORMULA_FONT
+    # See the Analytics_Stock note above: wrapped so a blank master row
+    # propagates as "" (text) rather than the 0 a bare reference returns.
+    ws.cell(row=r, column=1, value=f'=IF(Machines!A{r}="","",Machines!A{r})').font = FORMULA_FONT
+    ws.cell(row=r, column=2, value=f'=IF(Machines!A{r}="","",Machines!B{r})').font = FORMULA_FONT
     ws.cell(row=r, column=3, value=f'=IF(A{r}="","",Machines!D{r})').font = FORMULA_FONT
     ws.cell(row=r, column=4, value=f"=SUMIFS({WO_PLANMIN},{WO_MACHINE},A{r})").font = FORMULA_FONT
     ws.cell(row=r, column=5, value=f"=SUMIFS({WO_PRODUCED},{WO_MACHINE},A{r})").font = FORMULA_FONT
@@ -467,8 +473,8 @@ for i, h in enumerate(headers, start=1):
     ws.cell(row=1, column=i, value=h)
 style_header(ws, 1, len(headers))
 categories = ["breakdown", "changeover", "no_material", "power", "planned_maintenance", "other"]
-DT_MIN_ALL = "Downtime!$G$2:$G$500"
-DT_REASON = "Downtime!$E$2:$E$500"
+DT_MIN_ALL = f"Downtime!$G$2:$G${MAX_ROW}"
+DT_REASON = f"Downtime!$E$2:$E${MAX_ROW}"
 for i, cat in enumerate(categories, start=2):
     ws.cell(row=i, column=1, value=cat).font = FORMULA_FONT
     ws.cell(row=i, column=2, value=f'=SUMIFS({DT_MIN_ALL},{DT_REASON},A{i})').font = FORMULA_FONT
@@ -486,13 +492,13 @@ ws = wb.create_sheet("Analytics_Production")
 ws["A1"] = "Production summary"
 ws["A1"].font = SECTION_FONT
 labels_formulas = [
-    ("Total planned qty", "=SUM(WorkOrders!$D$2:$D$500)", None),
-    ("Total produced qty", "=SUM(WorkOrders!$E$2:$E$500)", None),
-    ("Total rejected qty", "=SUM(WorkOrders!$F$2:$F$500)", None),
+    ("Total planned qty", f"=SUM(WorkOrders!$D$2:$D${MAX_ROW})", None),
+    ("Total produced qty", f"=SUM(WorkOrders!$E$2:$E${MAX_ROW})", None),
+    ("Total rejected qty", f"=SUM(WorkOrders!$F$2:$F${MAX_ROW})", None),
     ("Good qty", "=B3-B4", None),
     ("Rejection rate", "=IF(B3=0,0,B4/B3)", "0.00%"),
-    ("Completed work orders", '=COUNTIFS(WorkOrders!$K$2:$K$500,"completed")', None),
-    ("Completed on/before planned end", "=SUM(WorkOrders!$N$2:$N$500)", None),
+    ("Completed work orders", f'=COUNTIFS(WorkOrders!$K$2:$K${MAX_ROW},"completed")', None),
+    ("Completed on/before planned end", f"=SUM(WorkOrders!$N$2:$N${MAX_ROW})", None),
     ("Schedule adherence", "=IF(B7=0,0,B8/B7)", "0.0%"),
 ]
 for i, (label, formula, fmt) in enumerate(labels_formulas, start=2):
@@ -515,13 +521,15 @@ headers = [
 for i, h in enumerate(headers, start=1):
     ws.cell(row=1, column=i, value=h)
 style_header(ws, 1, len(headers))
-BOM_PARENT = "BOM!$A$2:$A$500"
-BOM_LINECOST = "BOM!$E$2:$E$500"
-SM_WO = "StockMovements!$H$2:$H$500"
-SM_TYPE = "StockMovements!$D$2:$D$500"
-SM_VALUE = "StockMovements!$I$2:$I$500"
+BOM_PARENT = f"BOM!$A$2:$A${MAX_ROW}"
+BOM_LINECOST = f"BOM!$E$2:$E${MAX_ROW}"
+SM_WO = f"StockMovements!$H$2:$H${MAX_ROW}"
+SM_TYPE = f"StockMovements!$D$2:$D${MAX_ROW}"
+SM_VALUE = f"StockMovements!$I$2:$I${MAX_ROW}"
 for r in range(2, MAX_ROW + 1):
-    ws.cell(row=r, column=1, value=f"=WorkOrders!A{r}").font = FORMULA_FONT
+    # See the Analytics_Stock note above: wrapped so a blank master row
+    # propagates as "" (text) rather than the 0 a bare reference returns.
+    ws.cell(row=r, column=1, value=f'=IF(WorkOrders!A{r}="","",WorkOrders!A{r})').font = FORMULA_FONT
     ws.cell(row=r, column=2, value=f'=IF(A{r}="","",WorkOrders!B{r})').font = FORMULA_FONT
     ws.cell(
         row=r, column=3,
@@ -561,8 +569,8 @@ ws["B2"].font = TITLE_FONT
 kpis = [
     ("Average OEE", '=IFERROR(AVERAGEIF(Analytics_OEE!$M$2:$M$11,"<>"),"")', "0.0%"),
     ("Total produced qty", "=Analytics_Production!B3", "#,##0"),
-    ("Rejection rate", "=Analytics_Production!B5", "0.00%"),
-    ("Reorder alerts", '=COUNTIFS(Analytics_Stock!$H$2:$H$500,"REORDER")', "0"),
+    ("Rejection rate", "=Analytics_Production!B6", "0.00%"),
+    ("Reorder alerts", f'=COUNTIFS(Analytics_Stock!$H$2:$H${MAX_ROW},"REORDER")', "0"),
 ]
 for i, (label, formula, fmt) in enumerate(kpis):
     col = 2 + i * 2
