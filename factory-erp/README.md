@@ -20,6 +20,12 @@ it (or its data exports) as a source system, not as an audit tool itself.
   run Docker. Not a lesser copy — a genuine tradeoff (no true concurrent
   writes, no API) documented in `excel/README.md`. Pick per client.
 
+Both editions currently cover Stock, Machines, and Production at execution
+level (this README's original scope). Sales order intake, planning (PPC),
+procurement, quality, and dispatch are a roadmap, not yet built — `docs/`
+carries the planning documents (BRD, data model, control matrix) for the
+module being scoped next, written before its code. See `docs/README.md`.
+
 ## Why these three modules together
 
 Stock, machines, and production are one feedback loop in any factory:
