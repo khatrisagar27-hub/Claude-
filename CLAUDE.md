@@ -19,60 +19,22 @@ Two unrelated projects share this repo:
 
 ## Build & run commands
 
-All CAE commands run from `cae/` via the Makefile:
+CAE: all commands run from `cae/` via the Makefile — read `cae/Makefile` for the
+target list. Two things it doesn't tell you: the backend also runs
+`alembic upgrade head` on boot, and **port 8080 (nginx) is the one to use** —
+3000 and 8000 are the frontend and API sitting behind it.
 
-| Task | Command |
-|---|---|
-| Build images | `make build` |
-| Start stack | `make up` |
-| Apply migrations | `make migrate` (the backend also runs `alembic upgrade head` on boot) |
-| Load demo data | `make seed` |
-| Run first audit pass | `make audit` |
-| Tail backend + worker logs | `make logs` |
-| Shell into backend / psql | `make shell-backend` / `make shell-db` |
-| Stop / wipe volumes | `make down` / `make clean` |
+Backend tests (from `cae/backend/`, no Docker needed): `pytest` — details in
+[`cae/backend/CLAUDE.md`](cae/backend/CLAUDE.md). CI runs the same suite with
+coverage on every push and PR.
 
-Backend tests (from `cae/backend/`, no Docker needed): `pytest` — see
-[Tests](#tests).
-
-Frontend (from `cae/frontend/`): `npm run dev`, `npm run build`,
-`npm run lint` (eslint over `src`). Type-check via `npx tsc --noEmit`.
-
-Ports: nginx 8080 (use this) · frontend 3000 · API 8000 (`/api/docs`) ·
-Grafana 3001 · Prometheus 9090 · Postgres 5432 · Redis 6379.
+Frontend (from `cae/frontend/`): npm scripts as declared in `package.json`;
+type-check via `npx tsc --noEmit`. **Frontend has no tests** — lint and
+type-check are the only checks there, so verify UI work against the running
+stack.
 
 LexComply: open `index.html` directly in a browser; `python build_excel.py` to
 regenerate the workbook.
-
-## Tests
-
-Backend has a pytest suite; **run it before reporting a backend change done.**
-
-```bash
-cd cae/backend
-pip install -r requirements-dev.txt
-pytest                              # or: pytest --cov=app --cov-report=term-missing
-```
-
-The suite runs entirely against **in-memory SQLite** — no Postgres, no Redis, no
-Docker. `tests/conftest.py` carries the Postgres→SQLite shims that make that
-work (JSONB compiled as JSON, `gen_random_uuid()` defaults stripped,
-string-tolerant UUID binds). If you add a model using a Postgres-specific type,
-expect to extend those shims. Config lives in `pytest.ini` (`testpaths = tests`,
-`asyncio_mode = auto`); layout is documented in
-[`cae/backend/tests/README.md`](cae/backend/tests/README.md) — `engines/`,
-`rules/`, `api/`, plus `test_security.py`, `test_rbac.py`,
-`test_excel_importer.py`, `test_tally_connector.py`, and shared row builders in
-`factories.py`.
-
-Note `rules/test_registry.py` **executes every registered rule against an empty
-schema** — so a new rule with invalid DuckDB SQL fails there, and a new rule that
-queries a table `rules/schema.py` doesn't define will too. Add the table shape
-there when you add the rule.
-
-CI (`.github/workflows/ci.yml`) runs the same pytest suite with coverage on every
-push and PR. **Frontend has no tests** — `npm run lint` and `npx tsc --noEmit`
-are the only checks there, so verify UI work against the running stack.
 
 ## Architecture
 
@@ -80,10 +42,8 @@ are the only checks there, so verify UI work against the running stack.
 
 `nginx` (8080) → React SPA (`frontend`) and `/api/*` → FastAPI (`backend`).
 `app/main.py` mounts `app/api/v1/router.py` under `/api/v1`; that router
-aggregates one module per domain (`auth`, `companies`, `ingestion`, `rules`,
-`exceptions`, `queries`, `remediation`, `risk`, `gst`, `dashboard`, `reports`,
-`working_capital`). Adding a domain means: new module in `app/api/v1/`, then
-register it in `router.py`.
+aggregates one module per domain. Adding a domain means: new module in
+`app/api/v1/`, then register it in `router.py`.
 
 ### The audit engine — Postgres for state, DuckDB for analysis
 
@@ -101,46 +61,12 @@ Consequences to respect:
 - Every rule run reloads the company's data. Keep that in mind before adding
   per-rule loads.
 
-### Rule registry
-
-`app/rules/__init__.py` is a decorator registry: `@register("SAL-001")` maps a
-rule code to a callable, and the module's tail imports every rule module to
-trigger registration. Rule packs are `sales_rules`, `purchase_rules`,
-`inventory_rules`, `journal_rules`, `payroll_rules`, `treasury_rules`.
-
-A rule is `fn(conn, company_id, rule)` returning a **list of exception dicts**
-with keys `title`, `description`, `severity`, `financial_impact`, `evidence`.
-To add one: write the function in the right pack with the next code in sequence,
-decorate it, and ensure a corresponding `AuditRule` row exists (rules are
-enabled/disabled from the DB, not from code).
-
-### Engines
-
-`app/engines/` — `audit_engine` (orchestrates rules), `risk_engine` (scores,
-heatmap, trend), `fraud_engine` (fraud indicators — these use **`score`**, not
-`severity`), `gst_engine` (GSTR-2B reconciliation, ITC at risk), `wc_engine`
-(working capital), `ai_engine` (narrative explanations only).
-
-### Connectors
-
-`app/connectors/` — `tally_connector.py` (Tally Prime XML voucher parsing),
-`excel_importer.py` (Excel/CSV upload with auto-detect ingestion and column
-aliasing).
-
 ### Auth & shared utils
 
-`app/utils/security.py` — password hashing and JWT create/verify.
-`app/utils/rbac.py` — `get_current_user` plus role enforcement; access tokens and
-refresh tokens are distinct types and a refresh token must not be accepted as an
-access token. `app/utils/export.py` — export helpers. `app/database.py` — session
-and engine setup. All four are covered by tests; change them with the suite
-running.
-
-### Frontend
-
-React 18 + Vite + TypeScript + Tailwind, `@tremor/react` and `recharts` for
-charts, `zustand` for auth state (`src/store/authStore.ts`), axios wrapper in
-`src/api/client.ts`. One page per route in `src/pages/`.
+`app/utils/rbac.py` — access tokens and refresh tokens are distinct types, and a
+refresh token must not be accepted as an access token. `app/utils/security.py`,
+`app/utils/rbac.py`, `app/utils/export.py` and `app/database.py` are all covered
+by tests; change them with the suite running.
 
 ## Non-negotiable design rule
 
