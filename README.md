@@ -217,6 +217,8 @@ cae/                        Continuous Audit Engine
                             RiskHeatmap, FraudAnalytics, Reports, ...)
   scripts/                  seed_data.py, run_first_audit.py
   docs/api.md               API reference
+  docs/tally_mcp_audit_prompt.md  Master prompt for a full-scope audit
+                            off live Tally MCP pulls
   nginx/ monitoring/        reverse proxy, Prometheus config
   docker-compose.yml Makefile
 
