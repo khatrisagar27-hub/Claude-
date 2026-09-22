@@ -28,6 +28,7 @@ All CAE commands run from `cae/` via the Makefile:
 | Apply migrations | `make migrate` (the backend also runs `alembic upgrade head` on boot) |
 | Load demo data | `make seed` |
 | Run first audit pass | `make audit` |
+| Volume test (Postgres) | `make stress` — seeds ~2 lakh rows with planted anomalies into a separate company, runs every rule twice, fails on any count mismatch |
 | Tail backend + worker logs | `make logs` |
 | Shell into backend / psql | `make shell-backend` / `make shell-db` |
 | Stop / wipe volumes | `make down` / `make clean` |
@@ -68,7 +69,16 @@ expect to extend those shims. Config lives in `pytest.ini` (`testpaths = tests`,
 Note `rules/test_registry.py` **executes every registered rule against an empty
 schema** — so a new rule with invalid DuckDB SQL fails there, and a new rule that
 queries a table `rules/schema.py` doesn't define will too. Add the table shape
-there when you add the rule.
+there when you add the rule. `rules/test_rule_fixes.py` pins the defects the
+volume test found; add a case there when you fix a rule.
+
+**SQLite cannot catch Postgres/DuckDB type problems** (TIMESTAMPTZ, JSONB dicts,
+weekday numbering). For any rule or loader change, also run the volume test
+against Postgres: `make stress`, or outside Docker
+`python scripts/stress_seed.py && python scripts/stress_check.py` from `cae/`
+with `DATABASE_URL` pointing at a migrated database. When you add a rule, plant
+its anomaly in `stress_seed.py` and set `EXP[...]`; the check fails on any rule
+without an expected count.
 
 CI (`.github/workflows/ci.yml`) runs the same pytest suite with coverage on every
 push and PR. **Frontend has no tests** — `npm run lint` and `npx tsc --noEmit`
@@ -94,6 +104,10 @@ DuckDB table. Rules then run as plain analytical SQL against DuckDB.
 
 Consequences to respect:
 
+- `_register()` normalises frames before DuckDB sees them: JSONB dicts become
+  JSON text and TIMESTAMPTZ becomes IST wall-clock `TIMESTAMP`. Load new tables
+  through it.
+
 - Rule SQL is **DuckDB dialect** with `?` positional params — not SQLAlchemy,
   not Postgres.
 - A rule can only query tables `_load_data_to_duckdb()` actually loads. Needing
@@ -109,7 +123,25 @@ trigger registration. Rule packs are `sales_rules`, `purchase_rules`,
 `inventory_rules`, `journal_rules`, `payroll_rules`, `treasury_rules`.
 
 A rule is `fn(conn, company_id, rule)` returning a **list of exception dicts**
-with keys `title`, `description`, `severity`, `financial_impact`, `evidence`.
+with keys `title`, `description`, `severity`, `financial_impact`, `evidence`,
+`key`. `key` is the stable identity of the finding (record id, or the group
+values) — the engine dedups on it, so never put amounts or day counts that
+change between runs into it. `rule` may be `None` in tests.
+
+Rule SQL rules learned the hard way:
+- **No `LIMIT`.** Truncation hid findings silently and made reruns raise a
+  different subset each time.
+- Weekends: `ISODOW(d) IN (6, 7)`. DuckDB's `DAYOFWEEK` is Sunday=0.
+- Stock: go through `_STOCK_LEDGER` in `inventory_rules.py`; receipts land in
+  `warehouse_to`, issues leave `warehouse_from`.
+- Financial year is April–March (`YEAR(d - INTERVAL '3' MONTH)`), not calendar.
+- JSON fields: `json_extract_string(raw_data, '$.x')` — `->>` binds looser than
+  `IS NOT NULL`.
+- A rule enabled in the DB with no registered code now **fails** its execution
+  rather than reporting "0 exceptions".
+- Rates that change by notification (e.g. the RBI Bank Rate behind PUR-031's
+  s.16 MSMED interest) come from `AuditRule.parameters`, never a code default.
+  If the parameter is missing, the rule reports the delay without the figure.
 To add one: write the function in the right pack with the next code in sequence,
 decorate it, and ensure a corresponding `AuditRule` row exists (rules are
 enabled/disabled from the DB, not from code).

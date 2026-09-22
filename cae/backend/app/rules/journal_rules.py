@@ -11,7 +11,6 @@ def je_001(conn, company_id, rule):
         WHERE company_id = ? AND voucher_type = 'journal'
           AND (narration IS NULL OR narration = '')
           AND total_debit > 100000
-        LIMIT 30
     """, [company_id]).fetchall()
     return [
         {
@@ -20,6 +19,7 @@ def je_001(conn, company_id, rule):
             "severity": "high",
             "financial_impact": float(r[2]),
             "evidence": {"voucher_number": r[1], "amount": float(r[2]), "date": str(r[3])},
+            "key": f"je_id={r[0]}",
         }
         for r in rows
     ]
@@ -35,7 +35,6 @@ def je_002(conn, company_id, rule):
           AND posted_at IS NOT NULL
           AND DATEDIFF('day', entry_date, CAST(posted_at AS DATE)) > 10
           AND total_debit > 100000
-        LIMIT 20
     """, [company_id]).fetchall()
     return [
         {
@@ -44,6 +43,7 @@ def je_002(conn, company_id, rule):
             "severity": "critical",
             "financial_impact": float(r[4]),
             "evidence": {"voucher_number": r[1], "entry_date": str(r[2]), "posted_at": str(r[3]), "amount": float(r[4])},
+            "key": f"je_id={r[0]}",
         }
         for r in rows
     ]
@@ -58,7 +58,6 @@ def je_003(conn, company_id, rule):
         WHERE company_id = ? AND voucher_type = 'journal'
           AND total_debit > 1000000
         ORDER BY total_debit DESC
-        LIMIT 20
     """, [company_id]).fetchall()
     return [
         {
@@ -67,6 +66,7 @@ def je_003(conn, company_id, rule):
             "severity": "high",
             "financial_impact": float(r[2]),
             "evidence": {"voucher_number": r[1], "amount": float(r[2]), "date": str(r[3]), "posted_by": str(r[4])},
+            "key": f"je_id={r[0]}",
         }
         for r in rows
     ]
@@ -85,7 +85,6 @@ def je_005(conn, company_id, rule):
           AND (jel.account_code LIKE 'SUSP%' OR jel.account_name LIKE '%Suspense%')
           AND DATEDIFF('day', je.entry_date, CURRENT_DATE) > 30
           AND (jel.debit_amount + jel.credit_amount) > 50000
-        LIMIT 20
     """, [company_id]).fetchall()
     return [
         {
@@ -94,6 +93,7 @@ def je_005(conn, company_id, rule):
             "severity": "high",
             "financial_impact": float(r[3]),
             "evidence": {"voucher_number": r[1], "date": str(r[2]), "amount": float(r[3]), "days_open": r[4]},
+            "key": f"line_id={r[0]}",
         }
         for r in rows
     ]
@@ -107,7 +107,6 @@ def je_006(conn, company_id, rule):
         FROM journal_entries
         WHERE company_id = ? AND is_reversed = true
           AND reversal_of_id IS NULL
-        LIMIT 20
     """, [company_id]).fetchall()
     return [
         {
@@ -116,6 +115,7 @@ def je_006(conn, company_id, rule):
             "severity": "critical",
             "financial_impact": float(r[2]),
             "evidence": {"voucher_number": r[1], "amount": float(r[2]), "date": str(r[3])},
+            "key": f"je_id={r[0]}",
         }
         for r in rows
     ]
@@ -133,7 +133,6 @@ def je_009(conn, company_id, rule):
         WHERE je.company_id = ?
         GROUP BY je.id, je.voucher_number, je.total_debit
         HAVING ABS(SUM(jel.debit_amount) - SUM(jel.credit_amount)) > 1
-        LIMIT 20
     """, [company_id]).fetchall()
     return [
         {
@@ -142,6 +141,7 @@ def je_009(conn, company_id, rule):
             "severity": "critical",
             "financial_impact": abs(float(r[3]) - float(r[4])),
             "evidence": {"voucher_number": r[1], "debits": float(r[3]), "credits": float(r[4])},
+            "key": f"je_id={r[0]}",
         }
         for r in rows
     ]
@@ -149,7 +149,7 @@ def je_009(conn, company_id, rule):
 
 @register("JE-011")
 def je_011(conn, company_id, rule):
-    """JE Posted by Same User Repeatedly (SoD proxy — single approver)."""
+    """High-Volume Large JE Posting by a Single User (concentration, not a SoD test)."""
     rows = conn.execute("""
         SELECT posted_by_user_id, COUNT(*) as cnt, SUM(total_debit) as total_value
         FROM journal_entries
@@ -159,7 +159,6 @@ def je_011(conn, company_id, rule):
           AND total_debit > 500000
         GROUP BY posted_by_user_id
         HAVING COUNT(*) > 10
-        LIMIT 10
     """, [company_id]).fetchall()
     return [
         {
@@ -168,6 +167,7 @@ def je_011(conn, company_id, rule):
             "severity": "critical",
             "financial_impact": float(r[2]),
             "evidence": {"user_id": str(r[0]), "count": r[1], "total": float(r[2])},
+            "key": f"user_id={r[0]}",
         }
         for r in rows
     ]
@@ -175,24 +175,25 @@ def je_011(conn, company_id, rule):
 
 @register("JE-015")
 def je_015(conn, company_id, rule):
-    """Prior Period JE — entry_date in previous year but posted now."""
+    """Prior Period JE — entry dated in an earlier financial year than it was posted."""
     rows = conn.execute("""
         SELECT id, voucher_number, entry_date, posted_at, total_debit
         FROM journal_entries
         WHERE company_id = ?
           AND is_posted = true
           AND posted_at IS NOT NULL
-          AND YEAR(entry_date) < YEAR(CAST(posted_at AS DATE))
+          -- Indian financial year (April-March), not calendar year.
+          AND YEAR(entry_date - INTERVAL '3' MONTH) < YEAR(CAST(posted_at AS DATE) - INTERVAL '3' MONTH)
           AND total_debit > 100000
-        LIMIT 20
     """, [company_id]).fetchall()
     return [
         {
             "title": f"Prior Period JE: {r[1]}",
-            "description": f"JE {r[1]} (₹{float(r[4]):,.0f}) dated {r[2]} was posted in a later year ({r[3]}). Prior period entry may distort current financials.",
+            "description": f"JE {r[1]} (₹{float(r[4]):,.0f}) dated {r[2]} was posted in a later financial year ({r[3]}). Prior period entry may distort current financials.",
             "severity": "high",
             "financial_impact": float(r[4]),
             "evidence": {"voucher_number": r[1], "entry_date": str(r[2]), "posted_at": str(r[3]), "amount": float(r[4])},
+            "key": f"je_id={r[0]}",
         }
         for r in rows
     ]

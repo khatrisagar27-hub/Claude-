@@ -9,6 +9,40 @@ if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
 
+def parse_gstr2b(data: dict) -> dict:
+    """Extract ITC available (and optional return figures) from an uploaded GSTR-2B.
+
+    Accepts either the portal's GSTR-2B JSON (``data.docdata`` with ``b2b`` invoices,
+    ``cdnr`` notes and ``impg`` imports; entries with ``itcavl = "N"`` excluded, credit
+    notes deducted) or a summary ``{"itc_available": ..., "turnover": ..., "itc_claimed": ...}``.
+    Raises ValueError when neither shape is present, so a wrong file can never be
+    read as "zero ITC available". Amendment sections (b2ba, cdnra) are not applied.
+    """
+    if not isinstance(data, dict):
+        raise ValueError("GSTR-2B upload must be a JSON object")
+    inner = data["data"] if isinstance(data.get("data"), dict) else data
+    doc = inner.get("docdata")
+    out = {"turnover": data.get("turnover"), "itc_claimed": data.get("itc_claimed")}
+
+    if doc is not None:
+        def tax(x):
+            return sum(float(x.get(k) or 0) for k in ("igst", "cgst", "sgst", "cess"))
+        itc = 0.0
+        for sup in doc.get("b2b", []):
+            itc += sum(tax(inv) for inv in sup.get("inv", []) if inv.get("itcavl", "Y") != "N")
+        for sup in doc.get("cdnr", []):
+            for nt in sup.get("nt", []):
+                if nt.get("itcavl", "Y") != "N":
+                    itc += -tax(nt) if nt.get("typ") == "C" else tax(nt)
+        itc += sum(tax(b) for b in doc.get("impg", []))
+        out["itc_available"] = round(itc, 2)
+        return out
+    if "itc_available" in data:
+        out["itc_available"] = float(data["itc_available"])
+        return out
+    raise ValueError("Unrecognised GSTR-2B file: expected portal JSON (data.docdata) or an itc_available figure")
+
+
 class GSTEngine:
     def __init__(self, db: "Session", company_id: str):
         self.db = db
@@ -49,14 +83,20 @@ class GSTEngine:
             for p in purchases
         )
 
-        gstr1_turnover = float(gstr2b_data.get("turnover", books_turnover))
-        gstr2b_itc = float(gstr2b_data.get("itc_available", 0))
-        gstr3b_itc = float(gstr2b_data.get("itc_claimed", books_itc))
+        parsed = parse_gstr2b(gstr2b_data)
+        gstr2b_itc = parsed["itc_available"]
+        # Return figures not supplied stay unknown rather than defaulting to books,
+        # which would report a false "no variance".
+        gstr1_turnover = float(parsed["turnover"]) if parsed["turnover"] is not None else None
+        gstr3b_itc = float(parsed["itc_claimed"]) if parsed["itc_claimed"] is not None else None
 
-        variance_turnover = abs(gstr1_turnover - books_turnover)
+        variance_turnover = abs(gstr1_turnover - books_turnover) if gstr1_turnover is not None else None
         variance_itc = abs(books_itc - gstr2b_itc)
 
-        risk_amount = variance_turnover * 0.18 + variance_itc
+        # ITC at risk = ITC in books not reflected in GSTR-2B (s.16(2)(aa) CGST Act).
+        # A turnover gap is reported as a variance only: the tax on it depends on the
+        # rates of the supplies involved, which this reconciliation does not know.
+        risk_amount = round(max(books_itc - gstr2b_itc, 0.0), 2)
 
         existing = (
             self.db.query(GSTReconciliation)

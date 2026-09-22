@@ -9,7 +9,7 @@ from datetime import date, datetime
 
 import pytest
 
-from app.engines.gst_engine import GSTEngine
+from app.engines.gst_engine import GSTEngine, parse_gstr2b
 from app.models.risk import GSTReconciliation
 from tests.factories import COMPANY_ID, make_purchase_invoice, make_sales_invoice
 
@@ -59,7 +59,8 @@ def test_itc_variance_and_risk_amount(db):
     assert result["risk_amount"] == pytest.approx(6000.0)
 
 
-def test_turnover_variance_contributes_18pct_to_risk(db):
+def test_turnover_variance_is_reported_but_not_converted_to_tax(db):
+    """The tax on a turnover gap depends on supply rates the engine does not know."""
     _seed_march_books(db)
 
     result = GSTEngine(db, str(COMPANY_ID)).reconcile(
@@ -69,8 +70,39 @@ def test_turnover_variance_contributes_18pct_to_risk(db):
 
     assert result["variance_turnover"] == 50000
     assert result["variance_itc"] == 0
-    # risk = 50,000 * 0.18 + 0
-    assert result["risk_amount"] == pytest.approx(9000.0)
+    assert result["risk_amount"] == 0
+
+
+def test_itc_at_risk_only_when_books_exceed_2b(db):
+    _seed_march_books(db)
+
+    result = GSTEngine(db, str(COMPANY_ID)).reconcile("2024-03", {"itc_available": 40000})
+
+    assert result["variance_itc"] == 4000
+    assert result["risk_amount"] == 0              # 2B shows more ITC than books
+    assert result["gstr1_turnover"] is None        # not supplied -> unknown, not books
+    assert result["variance_turnover"] is None
+
+
+def test_portal_gstr2b_json_is_parsed():
+    portal = {"data": {"gstin": "27AABCB1234M1Z5", "rtnprd": "032024", "docdata": {
+        "b2b": [{"ctin": "27AAACX0000X1Z1", "inv": [
+            {"inum": "A1", "cgst": 9000, "sgst": 9000, "igst": 0, "cess": 0, "itcavl": "Y"},
+            {"inum": "A2", "igst": 5000, "itcavl": "N"},          # ineligible, excluded
+        ]}],
+        "cdnr": [{"ctin": "27AAACX0000X1Z1", "nt": [
+            {"ntnum": "CN1", "typ": "C", "igst": 1000, "itcavl": "Y"},   # credit note reduces
+        ]}],
+        "impg": [{"refdt": "01-03-2024", "igst": 2000, "cess": 0}],
+    }}}
+
+    assert parse_gstr2b(portal)["itc_available"] == 19000   # 18,000 - 1,000 + 2,000
+
+
+@pytest.mark.parametrize("bad", [{}, {"foo": 1}, [], {"data": {"gstin": "X"}}])
+def test_unrecognised_gstr2b_is_rejected_not_read_as_zero(bad):
+    with pytest.raises(ValueError):
+        parse_gstr2b(bad)
 
 
 def test_reconcile_persists_and_upserts(db):

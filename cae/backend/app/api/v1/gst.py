@@ -2,7 +2,7 @@
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -37,19 +37,16 @@ async def upload_gstr2b(
 ):
     contents = await file.read()
 
+    import json
+    from app.engines.gst_engine import GSTEngine, parse_gstr2b
     try:
-        import json
         gstr2b_data = json.loads(contents)
-    except Exception:
-        gstr2b_data = {}
+        parse_gstr2b(gstr2b_data)
+    except ValueError as e:  # JSONDecodeError is a ValueError
+        raise HTTPException(status_code=400, detail=f"Could not read GSTR-2B file: {e}")
 
-    try:
-        from app.engines.gst_engine import GSTEngine
-        engine = GSTEngine(db, str(company_id))
-        result = engine.reconcile(period, gstr2b_data)
-        return {"message": "GSTR-2B uploaded and reconciliation triggered", "period": period, "result": result}
-    except Exception as e:
-        return {"message": "GSTR-2B stored, reconciliation pending", "period": period, "error": str(e)}
+    result = GSTEngine(db, str(company_id)).reconcile(period, gstr2b_data)
+    return {"message": "GSTR-2B uploaded and reconciliation completed", "period": period, "result": result}
 
 
 @router.get("/itc-risk")

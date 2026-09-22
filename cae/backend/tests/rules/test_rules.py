@@ -184,7 +184,7 @@ def test_tre_001_flags_large_cash_payment(duck):
     results = run(duck, "TRE-001")
 
     assert len(results) == 1
-    assert results[0]["evidence"]["amount"] == 25000
+    assert results[0]["evidence"]["total"] == 25000
 
 
 def test_tre_005_flags_multiple_payments_same_party_same_day(duck):

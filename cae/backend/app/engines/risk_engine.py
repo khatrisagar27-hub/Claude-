@@ -1,6 +1,8 @@
 """Risk scoring engine.
 
-Formula: risk_score = likelihood * impact * materiality_factor * frequency_factor * (1 + control_weakness)
+Formula: raw = likelihood * impact * materiality_factor * frequency_factor * (1 + control_weakness)
+The raw product ranges up to 5 * 5 * 2 * 3 * 2 = 300; it is scaled to 0-100 so
+areas stay distinguishable instead of all saturating at the cap.
 Bands: 0-20=Low, 21-50=Moderate, 51-80=High, 81+=Critical
 """
 from __future__ import annotations
@@ -15,9 +17,11 @@ if TYPE_CHECKING:
 
 
 BUSINESS_AREAS = [
-    "revenue", "expenditure", "inventory", "bank_reconciliation",
+    "revenue", "expenditure", "inventory", "bank_reconciliation", "general_ledger",
     "payroll", "gst", "related_party", "statutory",
 ]
+
+RAW_SCORE_MAX = 5 * 5 * 2.0 * 3.0 * 2.0
 
 
 def _risk_band(score: float) -> str:
@@ -100,8 +104,8 @@ class RiskEngine:
             critical_count = sum(1 for e in excs if e.severity == "critical")
             control_weakness = min(1.0, critical_count / max(len(excs), 1))
 
-            composite = avg_severity * max_severity * materiality * frequency * (1 + control_weakness)
-            composite = min(100.0, composite)
+            raw = avg_severity * max_severity * materiality * frequency * (1 + control_weakness)
+            composite = round(min(100.0, raw / RAW_SCORE_MAX * 100), 2)
 
             result[area] = {
                 "likelihood": avg_severity,

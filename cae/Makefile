@@ -1,4 +1,4 @@
-.PHONY: up down build migrate seed audit logs clean
+.PHONY: up down build migrate seed audit stress logs clean
 
 up:
 	docker compose up -d
@@ -17,6 +17,10 @@ seed:
 
 audit:
 	docker compose exec backend python /app/scripts/run_first_audit.py
+
+stress:
+	docker compose exec backend python /app/scripts/stress_seed.py
+	docker compose exec backend python /app/scripts/stress_check.py
 
 logs:
 	docker compose logs -f backend worker

@@ -22,12 +22,17 @@ _TABLES: dict[str, str] = {
         invoice_number VARCHAR, invoice_date DATE, created_at TIMESTAMP,
         gross_amount DOUBLE, discount_amount DOUBLE, total_amount DOUBLE,
         status VARCHAR, e_way_bill_number VARCHAR, e_invoice_irn VARCHAR,
-        erp_source VARCHAR
+        erp_source VARCHAR, taxable_amount DOUBLE, cgst_amount DOUBLE,
+        sgst_amount DOUBLE, igst_amount DOUBLE, outstanding_amount DOUBLE
+    """,
+    "customers": """
+        id VARCHAR, company_id VARCHAR, name VARCHAR, gstin VARCHAR,
+        credit_limit DOUBLE
     """,
     "purchase_invoices": """
         id VARCHAR, company_id VARCHAR, vendor_id VARCHAR,
         invoice_number VARCHAR, our_po_number VARCHAR,
-        invoice_date DATE, receipt_date DATE,
+        invoice_date DATE, receipt_date DATE, due_date DATE,
         total_amount DOUBLE, paid_amount DOUBLE, status VARCHAR,
         approved_by_user_id VARCHAR, raw_data JSON
     """,
@@ -52,12 +57,13 @@ _TABLES: dict[str, str] = {
     """,
     "inventory_movements": """
         id VARCHAR, company_id VARCHAR, item_code VARCHAR,
-        warehouse_from VARCHAR, movement_type VARCHAR, movement_date DATE,
+        warehouse_from VARCHAR, warehouse_to VARCHAR,
+        movement_type VARCHAR, movement_date DATE,
         quantity DOUBLE, total_value DOUBLE, reference_document_number VARCHAR
     """,
     "vendors": """
         id VARCHAR, company_id VARCHAR, name VARCHAR,
-        address_line1 VARCHAR, msme_status VARCHAR
+        address_line1 VARCHAR, msme_status VARCHAR, bank_account_number VARCHAR
     """,
     "employees": """
         id VARCHAR, company_id VARCHAR, full_name VARCHAR,
@@ -67,7 +73,8 @@ _TABLES: dict[str, str] = {
         id VARCHAR, company_id VARCHAR, employee_id VARCHAR,
         net_pay DOUBLE, gross_earnings DOUBLE, status VARCHAR,
         pay_period_year INTEGER, pay_period_month INTEGER,
-        pf_employer DOUBLE, pf_employee DOUBLE, esic_employer DOUBLE
+        pf_employer DOUBLE, pf_employee DOUBLE, esic_employer DOUBLE,
+        esic_employee DOUBLE, basic_salary DOUBLE
     """,
 }
 

@@ -24,7 +24,8 @@ def _seed_known_scenario(db):
     overdue_receivables  = 30,000  -> DSO = 30
     avg_daily_purchases  = 90,000 / 90 = 1,000
     overdue_payables     = 20,000  -> DPO = 20
-    inventory_value      = 45,000  -> DIO = 45
+    inventory_value      = 1,35,000 received - 90,000 issued = 45,000
+    avg_daily_issues     = 90,000 / 90 = 1,000  -> DIO = 45
     """
     # 9 sales invoices of 10,000 each (turnover 90,000). 3 are overdue & unpaid.
     for i in range(9):
@@ -50,8 +51,9 @@ def _seed_known_scenario(db):
                 outstanding_amount=10000 if overdue else 0,
             )
         )
-    # Inventory worth 45,000.
-    db.add(make_inventory_movement(total_value=45000))
+    # Closing stock 45,000 at cost; 90,000 issued in the window.
+    db.add(make_inventory_movement(total_value=135000))
+    db.add(make_inventory_movement(movement_type="goods_issue", total_value=90000, movement_date=RECENT))
     db.commit()
 
 
@@ -132,3 +134,28 @@ def test_cancelled_sales_excluded_from_turnover(db):
     # Only the 90,000 confirmed invoice counts: avg_daily_sales = 1,000.
     # No overdue receivables -> DSO 0; the cancelled invoice is ignored entirely.
     assert metrics["dso"] == 0.0
+
+
+def test_inventory_nets_issues_and_ignores_transfers(db):
+    """Gross movements must net to closing stock; a transfer does not change it."""
+    db.add(make_inventory_movement(total_value=100000))
+    db.add(make_inventory_movement(movement_type="goods_issue", total_value=60000, movement_date=RECENT))
+    db.add(make_inventory_movement(movement_type="transfer", total_value=30000))
+    db.add(make_inventory_movement(movement_type="adjustment", total_value=-5000))
+    db.commit()
+
+    metrics = WorkingCapitalEngine(db, str(COMPANY_ID)).compute_and_store()
+
+    assert metrics["inventory_value"] == 35000
+
+
+def test_receivables_total_includes_balances_not_yet_due(db):
+    db.add(make_sales_invoice(invoice_date=RECENT, total_amount=90000, status="confirmed",
+                              due_date=TODAY + timedelta(days=30), outstanding_amount=90000))
+    db.commit()
+
+    metrics = WorkingCapitalEngine(db, str(COMPANY_ID)).compute_and_store()
+
+    assert metrics["receivables_total"] == 90000
+    assert metrics["receivables_overdue"] == 0
+    assert metrics["dso"] == 90.0           # 90,000 / (90,000 / 90)

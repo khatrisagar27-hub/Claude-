@@ -16,6 +16,7 @@ const CATEGORIES = [
   { value: 'gst', label: 'GST' },
   { value: 'inventory', label: 'Inventory' },
   { value: 'bank_reconciliation', label: 'Bank / Treasury' },
+  { value: 'general_ledger', label: 'General Ledger' },
   { value: 'related_party', label: 'Related Party' },
   { value: 'statutory', label: 'Statutory' },
 ];

@@ -59,7 +59,7 @@ wc_metrics = wc.compute_and_store()
 print(f"  DSO: {wc_metrics.get('dso', 'N/A')} days")
 print(f"  DPO: {wc_metrics.get('dpo', 'N/A')} days")
 print(f"  CCC: {wc_metrics.get('ccc', 'N/A')} days")
-print(f"  Stress Score: {wc_metrics.get('stress_score', 'N/A')}")
+print(f"  Stress Score: {wc_metrics.get('wc_stress_score', 'N/A')}")
 
 print()
 print("✅ First audit complete!")

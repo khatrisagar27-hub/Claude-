@@ -2,6 +2,7 @@
 AuditEngine: Loads enabled rules, runs them against transaction data using DuckDB for
 SQL-based rules and Python callables for complex logic, writes exceptions to DB.
 """
+import json
 import uuid
 import duckdb
 import pandas as pd
@@ -79,6 +80,25 @@ class AuditEngine:
         except Exception as e:
             return {"error": str(e), "rule_code": rule_code}
 
+    def _register(self, name: str, df: pd.DataFrame):
+        """Register a Postgres frame in DuckDB with types the rule SQL can use.
+
+        JSONB arrives as Python dicts, which DuckDB would turn into STRUCTs that
+        ``->>`` cannot read — serialise them to JSON text. TIMESTAMPTZ arrives
+        tz-aware; convert to IST wall-clock so rules compare plain timestamps and
+        dates fall on the Indian calendar day.
+        """
+        df = df.copy()
+        for col in df.columns:
+            series = df[col]
+            if isinstance(series.dtype, pd.DatetimeTZDtype):
+                df[col] = series.dt.tz_convert("Asia/Kolkata").dt.tz_localize(None)
+            elif series.dtype == object:
+                sample = series.dropna()
+                if not sample.empty and isinstance(sample.iloc[0], (dict, list)):
+                    df[col] = series.map(lambda v: None if v is None else json.dumps(v, default=str))
+        self.conn.register(name, df)
+
     def _load_data_to_duckdb(self):
         """Load transaction data from PostgreSQL into DuckDB for fast analytics."""
         if self._data_loaded:
@@ -94,7 +114,7 @@ class AuditEngine:
                     engine
                 )
                 if not sales_df.empty:
-                    self.conn.register("sales_invoices", sales_df)
+                    self._register("sales_invoices", sales_df)
                 else:
                     self.conn.execute(
                         "CREATE TABLE IF NOT EXISTS sales_invoices (id VARCHAR, company_id VARCHAR)"
@@ -111,7 +131,7 @@ class AuditEngine:
                     engine
                 )
                 if not purchase_df.empty:
-                    self.conn.register("purchase_invoices", purchase_df)
+                    self._register("purchase_invoices", purchase_df)
                 else:
                     self.conn.execute(
                         "CREATE TABLE IF NOT EXISTS purchase_invoices (id VARCHAR, company_id VARCHAR)"
@@ -128,7 +148,7 @@ class AuditEngine:
                     engine
                 )
                 if not je_df.empty:
-                    self.conn.register("journal_entries", je_df)
+                    self._register("journal_entries", je_df)
                 else:
                     self.conn.execute(
                         "CREATE TABLE IF NOT EXISTS journal_entries (id VARCHAR, company_id VARCHAR)"
@@ -147,7 +167,7 @@ class AuditEngine:
                     engine
                 )
                 if not jel_df.empty:
-                    self.conn.register("journal_entry_lines", jel_df)
+                    self._register("journal_entry_lines", jel_df)
                 else:
                     self.conn.execute(
                         "CREATE TABLE IF NOT EXISTS journal_entry_lines (id VARCHAR, journal_entry_id VARCHAR)"
@@ -164,7 +184,7 @@ class AuditEngine:
                     engine
                 )
                 if not bank_df.empty:
-                    self.conn.register("bank_transactions", bank_df)
+                    self._register("bank_transactions", bank_df)
                 else:
                     self.conn.execute(
                         "CREATE TABLE IF NOT EXISTS bank_transactions (id VARCHAR, company_id VARCHAR)"
@@ -181,7 +201,7 @@ class AuditEngine:
                     engine
                 )
                 if not inv_df.empty:
-                    self.conn.register("inventory_movements", inv_df)
+                    self._register("inventory_movements", inv_df)
                 else:
                     self.conn.execute(
                         "CREATE TABLE IF NOT EXISTS inventory_movements (id VARCHAR, company_id VARCHAR)"
@@ -198,7 +218,7 @@ class AuditEngine:
                     engine
                 )
                 if not payroll_df.empty:
-                    self.conn.register("payroll_records", payroll_df)
+                    self._register("payroll_records", payroll_df)
                 else:
                     self.conn.execute(
                         "CREATE TABLE IF NOT EXISTS payroll_records (id VARCHAR, company_id VARCHAR)"
@@ -215,7 +235,7 @@ class AuditEngine:
                     engine
                 )
                 if not emp_df.empty:
-                    self.conn.register("employees", emp_df)
+                    self._register("employees", emp_df)
                 else:
                     self.conn.execute(
                         "CREATE TABLE IF NOT EXISTS employees (id VARCHAR, company_id VARCHAR)"
@@ -232,7 +252,7 @@ class AuditEngine:
                     engine
                 )
                 if not cust_df.empty:
-                    self.conn.register("customers", cust_df)
+                    self._register("customers", cust_df)
                 else:
                     self.conn.execute(
                         "CREATE TABLE IF NOT EXISTS customers (id VARCHAR, company_id VARCHAR)"
@@ -249,7 +269,7 @@ class AuditEngine:
                     engine
                 )
                 if not vendor_df.empty:
-                    self.conn.register("vendors", vendor_df)
+                    self._register("vendors", vendor_df)
                 else:
                     self.conn.execute(
                         "CREATE TABLE IF NOT EXISTS vendors (id VARCHAR, company_id VARCHAR)"
@@ -266,7 +286,7 @@ class AuditEngine:
                     engine
                 )
                 if not gl_df.empty:
-                    self.conn.register("gl_accounts", gl_df)
+                    self._register("gl_accounts", gl_df)
                 else:
                     self.conn.execute(
                         "CREATE TABLE IF NOT EXISTS gl_accounts (id VARCHAR, company_id VARCHAR)"
@@ -310,42 +330,52 @@ class AuditEngine:
             from app.rules import get_rule_fn
             rule_fn = get_rule_fn(rule.rule_code)
 
-            if rule_fn:
-                exceptions_data = rule_fn(self.conn, self.company_id, rule)
-            else:
-                exceptions_data = []
+            if not rule_fn:
+                # A rule enabled in the DB with no code behind it must not report
+                # "completed, 0 exceptions" — that reads as a clean result.
+                raise LookupError(f"No rule code registered for {rule.rule_code}")
+            exceptions_data = rule_fn(self.conn, self.company_id, rule)
 
-            # Write exceptions that don't already exist
+            # Dedup against this rule's still-open exceptions, and ones the auditor
+            # marked false positive, by the rule's stable key (title for rows or
+            # rules without one). Loaded once so it also catches repeats in this run.
+            open_excs = self.db.query(AuditException).filter(
+                AuditException.company_id == uuid.UUID(self.company_id),
+                AuditException.rule_id == rule.id,
+                AuditException.status.in_([
+                    "open", "in_review", "management_query_sent",
+                    "remediation_in_progress", "false_positive",
+                ]),
+            ).all()
+            seen = {
+                (e.supporting_data or {}).get("dedup_key") or e.title
+                for e in open_excs
+            }
+
             new_count = 0
             for exc_data in exceptions_data:
                 title = exc_data.get("title", rule.rule_name)
-
-                # Dedup: same rule + same title + still open
-                existing = self.db.query(AuditException).filter(
-                    AuditException.company_id == uuid.UUID(self.company_id),
-                    AuditException.rule_id == rule.id,
-                    AuditException.status.in_(["open", "in_review", "management_query_sent"]),
-                    AuditException.title == title
-                ).first()
-
-                if not existing:
-                    exc = AuditException(
-                        id=uuid.uuid4(),
-                        company_id=uuid.UUID(self.company_id),
-                        rule_id=rule.id,
-                        execution_id=execution.id,
-                        title=title,
-                        description=exc_data.get("description", ""),
-                        severity=exc_data.get("severity", rule.severity),
-                        category=rule.category,
-                        risk_impact=rule.risk_area,
-                        financial_impact=exc_data.get("financial_impact"),
-                        supporting_data=exc_data.get("evidence", {}),
-                        status="open",
-                        detected_on=date.today(),
-                    )
-                    self.db.add(exc)
-                    new_count += 1
+                dedup_key = exc_data.get("key") or title
+                if dedup_key in seen:
+                    continue
+                seen.add(dedup_key)
+                exc = AuditException(
+                    id=uuid.uuid4(),
+                    company_id=uuid.UUID(self.company_id),
+                    rule_id=rule.id,
+                    execution_id=execution.id,
+                    title=title[:300],
+                    description=exc_data.get("description", ""),
+                    severity=exc_data.get("severity", rule.severity),
+                    category=rule.category,
+                    risk_impact=rule.risk_area,
+                    financial_impact=exc_data.get("financial_impact"),
+                    supporting_data={**exc_data.get("evidence", {}), "dedup_key": dedup_key},
+                    status="open",
+                    detected_on=date.today(),
+                )
+                self.db.add(exc)
+                new_count += 1
 
             self.db.commit()
 
@@ -373,7 +403,7 @@ class AuditEngine:
         from app.rules import get_rule_fn
         rule_fn = get_rule_fn(rule.rule_code)
         if not rule_fn:
-            return []
+            return [{"error": f"No rule code registered for {rule.rule_code}"}]
         try:
             return rule_fn(self.conn, self.company_id, rule)
         except Exception as e:

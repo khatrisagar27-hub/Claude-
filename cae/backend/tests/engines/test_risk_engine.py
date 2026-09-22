@@ -51,7 +51,8 @@ def test_composite_score_matches_formula(db):
     materiality      = clamp(2,000,000 / 10,000,000, 0.5, 2.0) = 0.5
     frequency        = 1.0 (nothing detected in the last 30 days)
     control_weakness = 1 critical / 2 = 0.5
-    composite        = 4 * 5 * 0.5 * 1.0 * (1 + 0.5) = 15.0  -> band "low"
+    raw              = 4 * 5 * 0.5 * 1.0 * (1 + 0.5) = 15.0
+    composite        = 15 / 300 * 100 = 5.0  -> band "low"
     """
     db.add(make_audit_exception(category="revenue", severity="critical",
                                 financial_impact=1_000_000, detected_on=OLD))
@@ -63,14 +64,14 @@ def test_composite_score_matches_formula(db):
     engine.compute_and_store()
 
     revenue = db.query(RiskScore).filter(RiskScore.entity_name == "revenue").one()
-    assert float(revenue.composite_score) == 15.0
+    assert float(revenue.composite_score) == 5.0
     assert revenue.risk_band == "low"
     assert float(revenue.impact) == 5.0
     assert float(revenue.likelihood) == 4.0
 
 
 def test_composite_score_capped_at_100(db):
-    """Many recent critical, highly material exceptions saturate the score at 100."""
+    """Recent, all-critical, highly material exceptions reach the maximum of 100."""
     for _ in range(5):
         db.add(make_audit_exception(category="revenue", severity="critical",
                                     financial_impact=50_000_000, detected_on=date.today()))
@@ -109,3 +110,19 @@ def test_exceptions_for_other_company_are_ignored(db):
 
     revenue = db.query(RiskScore).filter(RiskScore.entity_name == "revenue").one()
     assert revenue.risk_band == "low"
+
+
+def test_areas_remain_distinguishable_at_volume(db):
+    """Heavy exception volume in several areas must not flatten them all to 100."""
+    for _ in range(50):
+        db.add(make_audit_exception(category="revenue", severity="critical",
+                                    financial_impact=5_000_000, detected_on=date.today()))
+        db.add(make_audit_exception(category="payroll", severity="medium",
+                                    financial_impact=5_000_000, detected_on=date.today()))
+    db.commit()
+
+    RiskEngine(db, str(COMPANY_ID)).compute_and_store()
+
+    scores = {r.entity_name: float(r.composite_score) for r in db.query(RiskScore).all()}
+    assert scores["revenue"] == 100.0
+    assert scores["payroll"] < 50.0

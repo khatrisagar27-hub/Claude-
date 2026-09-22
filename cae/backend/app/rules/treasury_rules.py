@@ -4,22 +4,27 @@ from app.rules import register
 
 @register("TRE-001")
 def tre_001(conn, company_id, rule):
-    """Cash Payment >₹10,000 — Income Tax limit."""
+    """Cash payments to one person exceeding ₹10,000 in a day — s.40A(3).
+
+    The limit is on the aggregate paid to a person in a day, so split payments are
+    summed. Rule 6DD exceptions (e.g. ₹35,000 for transporters) are not evaluated.
+    """
     rows = conn.execute("""
-        SELECT id, transaction_date, amount, counterparty_name, description
+        SELECT counterparty_name, CAST(transaction_date AS DATE) as d, COUNT(*) as cnt, SUM(amount) as total
         FROM bank_transactions
-        WHERE company_id = ? AND transaction_type = 'debit'
-          AND transaction_mode = 'cash' AND amount > 10000
-        ORDER BY amount DESC
-        LIMIT 30
+        WHERE company_id = ? AND transaction_type = 'debit' AND transaction_mode = 'cash'
+        GROUP BY counterparty_name, CAST(transaction_date AS DATE)
+        HAVING SUM(amount) > 10000
+        ORDER BY total DESC
     """, [company_id]).fetchall()
     return [
         {
-            "title": f"Cash Payment >₹10K: ₹{float(r[2]):,.0f} to {r[3]}",
-            "description": f"Cash payment of ₹{float(r[2]):,.0f} to {r[3]} on {r[1]} violates Section 40A(3) — cash payments >₹10,000 disallowed as deduction.",
+            "title": f"Cash Payment >₹10K (s.40A(3)): {r[0]} on {r[1]}",
+            "description": f"Cash paid to {r[0]} on {r[1]}: ₹{float(r[3]):,.2f} across {r[2]} payment(s), above the ₹10,000 per-person-per-day limit of Section 40A(3). The expenditure is disallowed unless a Rule 6DD exception applies.",
             "severity": "high",
-            "financial_impact": float(r[2]) * 0.30,
-            "evidence": {"txn_id": str(r[0]), "date": str(r[1]), "amount": float(r[2]), "party": r[3]},
+            "financial_impact": float(r[3]),
+            "evidence": {"party": r[0], "date": str(r[1]), "count": r[2], "total": float(r[3])},
+            "key": f"party={r[0]}|date={r[1]}",
         }
         for r in rows
     ]
@@ -39,7 +44,6 @@ def tre_002(conn, company_id, rule):
           AND ABS(t1.amount - t2.amount) / NULLIF(t1.amount, 0) < 0.05
           AND DATEDIFF('hour', CAST(t1.transaction_date AS TIMESTAMP), CAST(t2.transaction_date AS TIMESTAMP)) BETWEEN 1 AND 48
         WHERE t1.company_id = ? AND t1.amount > 500000
-        LIMIT 10
     """, [company_id]).fetchall()
     return [
         {
@@ -48,6 +52,7 @@ def tre_002(conn, company_id, rule):
             "severity": "critical",
             "financial_impact": float(r[2]),
             "evidence": {"party": r[1], "amount": float(r[2]), "out_date": str(r[3]), "in_date": str(r[4])},
+            "key": f"txn_id={r[0]}",
         }
         for r in rows
     ]
@@ -64,7 +69,6 @@ def tre_004(conn, company_id, rule):
           AND transaction_mode IN ('RTGS', 'NEFT')
           AND (reference_number IS NULL OR reference_number = '')
         ORDER BY amount DESC
-        LIMIT 20
     """, [company_id]).fetchall()
     return [
         {
@@ -73,6 +77,7 @@ def tre_004(conn, company_id, rule):
             "severity": "critical",
             "financial_impact": float(r[2]),
             "evidence": {"txn_id": str(r[0]), "date": str(r[1]), "amount": float(r[2]), "party": r[3]},
+            "key": f"txn_id={r[0]}",
         }
         for r in rows
     ]
@@ -88,7 +93,6 @@ def tre_005(conn, company_id, rule):
         WHERE company_id = ? AND transaction_type = 'debit'
         GROUP BY counterparty_name, transaction_date
         HAVING COUNT(*) > 2 AND SUM(amount) > 500000
-        LIMIT 20
     """, [company_id]).fetchall()
     return [
         {
@@ -97,6 +101,7 @@ def tre_005(conn, company_id, rule):
             "severity": "high",
             "financial_impact": float(r[3]),
             "evidence": {"party": r[0], "date": str(r[1]), "count": r[2], "total": float(r[3])},
+            "key": f"party={r[0]}|date={r[1]}",
         }
         for r in rows
     ]
@@ -114,7 +119,6 @@ def tre_006(conn, company_id, rule):
                OR LOWER(description) LIKE '%loan%'
                OR LOWER(counterparty_name) LIKE '%director%')
         ORDER BY amount DESC
-        LIMIT 20
     """, [company_id]).fetchall()
     return [
         {
@@ -123,6 +127,7 @@ def tre_006(conn, company_id, rule):
             "severity": "critical",
             "financial_impact": float(r[2]),
             "evidence": {"txn_id": str(r[0]), "date": str(r[1]), "amount": float(r[2]), "party": r[3], "narration": r[4]},
+            "key": f"txn_id={r[0]}",
         }
         for r in rows
     ]
@@ -138,7 +143,6 @@ def tre_010(conn, company_id, rule):
           AND amount BETWEEN 800000 AND 990000
         GROUP BY transaction_date
         HAVING COUNT(*) >= 2
-        LIMIT 10
     """, [company_id]).fetchall()
     return [
         {
@@ -147,6 +151,7 @@ def tre_010(conn, company_id, rule):
             "severity": "critical",
             "financial_impact": float(r[1]),
             "evidence": {"date": str(r[0]), "total": float(r[1]), "transactions": r[2]},
+            "key": f"date={r[0]}",
         }
         for r in rows
     ]
