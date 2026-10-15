@@ -11,6 +11,7 @@ practice:
 | **[Continuous Audit Engine (CAE)](#continuous-audit-engine-cae)** (`cae/`) | Self-hosted continuous-auditing platform: ingest accounting data, run exception rules, score risk and fraud indicators, reconcile GSTR-2B, generate ICAI-format working papers |
 | **[LexComply India](#lexcomply-india)** (repo root) | Applicability engine for 69 Indian statutes — answers "which laws apply to this company, and what must it file when" |
 | **[Forex Gain/(Loss) workbook](#forex-gainloss-workbook)** (`build_forex_workbook.py`) | Formula-driven Excel workbook for exchange gain/loss on sales and purchases, handling part settlement and many-to-many invoice/receipt allocation |
+| **TallyPrime TDL controls** (`tdl/`) | Preventive controls inside TallyPrime. [TDL-INV-001](tdl/TDL-INV-001/README.md) blocks converting an e-invoiced (IRN) Sales voucher to another voucher type. Draft: not yet compiled or tested on TallyPrime |
 
 > **Status: pre-release.** Everything here is in active development and has not
 > had a tagged release. Interfaces will change. Neither tool is a substitute for
@@ -226,6 +227,7 @@ index.html app.js laws.js excel-export.js    LexComply web app
 lexcomply.html                               LexComply, single file
 build_excel.py LexComply.bas                 LexComply Excel workbook + VBA
 build_forex_workbook.py                      Forex gain/(loss) workbook generator
+tdl/TDL-INV-001/                             TallyPrime TDL: IRN-protected Sales voucher
 CAE_User_Guide.html                          CAE end-user guide
 ```
 

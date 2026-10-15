@@ -1,0 +1,279 @@
+;; ============================================================================
+;; TDL-INV-001  IRN-Protected Sales Voucher                        Version 0.1
+;; ----------------------------------------------------------------------------
+;; Rejects the save of an altered voucher when the voucher, as stored in the
+;; company before this alteration, is of a voucher type belonging to Sales and
+;; carries an e-invoice IRN (generated online or entered through Update IRN
+;; details), and the alteration either
+;;   (a) changes the voucher type - Stock Journal or any other type, or
+;;   (b) blanks both IRN and Ack No - the two-save route around (a),
+;; unless the logged-in user is on the authorised list AND has recorded a
+;; reason, an approval reference and the approver in the exception panel.
+;; A permitted exception is stamped into UDFs on the voucher, so the
+;; TallyPrime Edit Log keeps it with the alteration.
+;;
+;; Platform : TallyPrime Edit Log Release 7.1
+;; Status   : DRAFT. Not compiled and not executed. Every reference tagged
+;;            [R-nn] is listed in README.md section 6 and must be verified
+;;            against Release 7.1 before this file is loaded anywhere except
+;;            an isolated test company.
+;; ============================================================================
+
+
+;; ---- 1. Authorised exception list (spec D) ---------------------------------
+;; Fail-closed: nobody is authorised until this formula is changed under a
+;; documented approval. Owner and Administrator users are NOT exempt unless
+;; named here. Names are TallyPrime company-security usernames. [R-11]
+;; Example:
+;;   TDLInv001IsAuthorised : ($$CmpUserName = "fc.controller") OR ($$CmpUserName = "fc.deputy")
+
+[System: Formula]
+    TDLInv001IsAuthorised : No
+
+
+;; ---- 2. Conditions ---------------------------------------------------------
+
+[System: Formula]
+;; [R-05] Alteration of an existing voucher; creation and display are excluded.
+    TDLInv001IsAlter     : $$InAlterMode
+
+;; [R-09] Voucher e-invoice storage per Tally's e-invoice schema (IRN,
+;; IRNAckNo). Evaluated on whichever voucher is in context: the stored copy
+;; inside TDLInv001OrigVch, or the voucher being altered. Either field
+;; present counts, which covers manually updated IRN details as well as
+;; online generation.
+    TDLInv001HasIRN      : (NOT ($$IsEmpty:$IRN)) OR (NOT ($$IsEmpty:$IRNAckNo))
+
+;; [R-06] MasterID identifies the stored voucher and survives a type change.
+    TDLInv001IsSameVch   : $MasterID = ##pTDLInv001MasterID
+
+    TDLInv001HasApproval : (NOT ($$IsEmpty:##vTDLInv001Reason)) AND (NOT ($$IsEmpty:##vTDLInv001ApprRef)) AND (NOT ($$IsEmpty:##vTDLInv001ApprBy))
+    TDLInv001ExceptionOK : @@TDLInv001IsAuthorised AND @@TDLInv001HasApproval
+    TDLInv001ShowPanel   : @@TDLInv001IsAlter AND @@TDLInv001IsAuthorised
+
+
+;; ---- 3. Messages -----------------------------------------------------------
+;; MsgConversion is the wording fixed by spec B. Do not edit it.
+
+[System: Formula]
+    TDLInv001MsgTitle        : "TDL-INV-001"
+    TDLInv001MsgConversion   : "This Sales voucher has an e-invoice IRN and is protected from voucher-type conversion. Contact the authorised finance controller."
+    TDLInv001MsgIRNRemoval   : "This Sales voucher has an e-invoice IRN. Its IRN details cannot be removed. Contact the authorised finance controller."
+    TDLInv001MsgNeedApproval : "Authorised exception - complete the TDL-INV-001 panel (reason / approval reference / approved by) before saving."
+
+
+;; ---- 4. Stored (pre-alteration) state, spec A.2 / A.4 / E.1 ----------------
+
+[Collection: TDLInv001OrigVch]
+;; The voucher being altered, as stored in the company before this
+;; alteration. Holds one object only if that stored copy is of a voucher
+;; type belonging to Sales (custom Sales types included) and carries an IRN;
+;; otherwise it is empty.
+;; [R-07] Must return the stored voucher, not the in-memory one, and the
+;;        period in context must always cover the stored voucher date.
+;; [R-08] Parm Var is evaluated once, on the voucher being altered.
+    Type       : Vouchers : VoucherType
+    Child Of   : $$VchTypeSales
+    Belongs To : Yes
+    Parm Var   : pTDLInv001MasterID : Number : $MasterID
+    Filter     : TDLInv001IsSameVch, TDLInv001HasIRN
+    Fetch      : MasterID, VoucherTypeName, VoucherNumber, IRN, IRNAckNo
+
+
+;; ---- 5. Decision -----------------------------------------------------------
+
+[Function: TDLInv001State]
+;; Outcome for the voucher in context. Reads the company data at most once
+;; per call and not at all outside alteration mode, so voucher creation is
+;; unaffected.
+;;   PASS        nothing protected is changing
+;;   CONVERSION  type changed on a stored IRN Sales voucher, no valid exception
+;;   IRNREMOVAL  IRN and Ack No both blanked on one, no valid exception
+;;   EXCEPTION   either change, by an authorised user with approval recorded
+    Returns  : String
+    Variable : vTDLInv001Orig : String
+
+    00 : IF : NOT @@TDLInv001IsAlter
+    01 :    RETURN : "PASS"
+    02 : END IF
+    03 : SET : vTDLInv001Orig : $$CollectionField:$VoucherTypeName:1:TDLInv001OrigVch
+    04 : IF : $$IsEmpty:##vTDLInv001Orig
+    05 :    RETURN : "PASS"
+    06 : END IF
+    07 : IF : NOT ($VoucherTypeName = ##vTDLInv001Orig)
+    08 :    RETURN : IF @@TDLInv001ExceptionOK THEN "EXCEPTION" ELSE "CONVERSION"
+    09 : END IF
+    10 : IF : NOT @@TDLInv001HasIRN
+    11 :    RETURN : IF @@TDLInv001ExceptionOK THEN "EXCEPTION" ELSE "IRNREMOVAL"
+    12 : END IF
+    13 : RETURN : "PASS"
+
+[Function: TDLInv001AllowSave]
+    Returns  : Logical
+    Variable : vTDLInv001Outcome : String
+
+    00 : SET    : vTDLInv001Outcome : $$TDLInv001State
+    01 : RETURN : (##vTDLInv001Outcome = "PASS") OR (##vTDLInv001Outcome = "EXCEPTION")
+
+
+;; ---- 6. Save-time enforcement, spec B / C / E.3 / E.4 -----------------------
+
+[#Form: Voucher]
+;; [R-01] Form used to alter Sales AND to save the converted type.
+;; [R-03] Once a form defines On : Form Accept, the default save no longer
+;;        runs; the last handler below is then the only save, and it fires
+;;        only when nothing above blocked. No other loaded TDL may save this
+;;        form unconditionally - see README section 7.
+;; [R-04] Handlers run in the order written: stamp before save.
+    On  : Form Accept : ($$TDLInv001State = "CONVERSION") : Call : TDLInv001Reject : "CONVERSION"
+    On  : Form Accept : ($$TDLInv001State = "IRNREMOVAL") : Call : TDLInv001Reject : "IRNREMOVAL"
+    On  : Form Accept : ($$TDLInv001State = "EXCEPTION") : Call : TDLInv001Stamp
+    On  : Form Accept : $$TDLInv001AllowSave              : Form Accept
+    Add : Bottom Part : TDLInv001ExcPanel
+    Add : Button      : TDLInv001Diagnose
+
+[Function: TDLInv001Reject]
+;; Rejects the save. Nothing is written: the stored voucher is unchanged and
+;; the user stays on the voucher screen.
+    Parameter : pTDLInv001Kind : String
+
+    00 : IF : NOT @@TDLInv001IsAuthorised
+    01 :    IF : ##pTDLInv001Kind = "CONVERSION"
+    02 :       MSG BOX : @@TDLInv001MsgTitle : @@TDLInv001MsgConversion
+    03 :    ELSE
+    04 :       MSG BOX : @@TDLInv001MsgTitle : @@TDLInv001MsgIRNRemoval
+    05 :    END IF
+    06 : ELSE
+    07 :    MSG BOX : @@TDLInv001MsgTitle : @@TDLInv001MsgNeedApproval
+    08 : END IF
+
+
+;; ---- 7. Authorised exception record, spec D / E.5 ---------------------------
+
+[System: UDF]
+;; [R-14] Indices must be unused by every other TDL / add-on loaded for the
+;; company. Change them before go-live if any collide; never after.
+    TDLInv001ExcAction    : String : 7101
+    TDLInv001ExcUser      : String : 7102
+    TDLInv001ExcOn        : String : 7103
+    TDLInv001ExcOrigType  : String : 7104
+    TDLInv001ExcNewType   : String : 7105
+    TDLInv001ExcOrigVchNo : String : 7106
+    TDLInv001ExcOrigIRN   : String : 7107
+    TDLInv001ExcReason    : String : 7108
+    TDLInv001ExcApprRef   : String : 7109
+    TDLInv001ExcApprBy    : String : 7110
+
+[Function: TDLInv001Stamp]
+;; Runs only for EXCEPTION, immediately before the save handler.
+;; [R-13] SET VALUE must write to the voucher being saved.
+    Variable : vTDLInv001OrigType  : String
+    Variable : vTDLInv001OrigVchNo : String
+    Variable : vTDLInv001OrigIRN   : String
+
+    00 : WALK COLLECTION : TDLInv001OrigVch
+    01 :    SET : vTDLInv001OrigType  : $VoucherTypeName
+    02 :    SET : vTDLInv001OrigVchNo : $VoucherNumber
+    03 :    SET : vTDLInv001OrigIRN   : $IRN
+    04 : END WALK
+    05 : SET VALUE : TDLInv001ExcAction    : IF ($VoucherTypeName = ##vTDLInv001OrigType) THEN "IRN REMOVAL" ELSE "TYPE CONVERSION"
+    06 : SET VALUE : TDLInv001ExcUser      : $$CmpUserName
+    07 : SET VALUE : TDLInv001ExcOn        : ($$String:$$MachineDate) + " " + $$MachineTime
+    08 : SET VALUE : TDLInv001ExcOrigType  : ##vTDLInv001OrigType
+    09 : SET VALUE : TDLInv001ExcNewType   : $VoucherTypeName
+    10 : SET VALUE : TDLInv001ExcOrigVchNo : ##vTDLInv001OrigVchNo
+    11 : SET VALUE : TDLInv001ExcOrigIRN   : ##vTDLInv001OrigIRN
+    12 : SET VALUE : TDLInv001ExcReason    : ##vTDLInv001Reason
+    13 : SET VALUE : TDLInv001ExcApprRef   : ##vTDLInv001ApprRef
+    14 : SET VALUE : TDLInv001ExcApprBy    : ##vTDLInv001ApprBy
+
+
+;; ---- 8. Exception panel (authorised users, alteration mode only) -----------
+;; Entries live in report-scope variables, so every alteration starts blank
+;; and an old reason can never be reused. They reach the voucher only through
+;; TDLInv001Stamp.
+
+[Variable: vTDLInv001Reason]
+    Type       : String
+    Persistent : No
+
+[Variable: vTDLInv001ApprRef]
+    Type       : String
+    Persistent : No
+
+[Variable: vTDLInv001ApprBy]
+    Type       : String
+    Persistent : No
+
+[#Report: Voucher]
+;; [R-02]
+    Add : Variable : vTDLInv001Reason, vTDLInv001ApprRef, vTDLInv001ApprBy
+
+[Part: TDLInv001ExcPanel]
+;; [R-16]
+    Line      : TDLInv001ExcHead, TDLInv001ExcReason, TDLInv001ExcApprRef, TDLInv001ExcApprBy
+    Invisible : NOT @@TDLInv001ShowPanel
+    Border    : Thin Box
+
+[Line: TDLInv001ExcHead]
+    Field : TDLInv001ExcHeadTxt
+
+[Line: TDLInv001ExcReason]
+    Field : TDLInv001Prompt, TDLInv001ReasonFld
+    Local : Field : TDLInv001Prompt : Info : "Reason"
+
+[Line: TDLInv001ExcApprRef]
+    Field : TDLInv001Prompt, TDLInv001ApprRefFld
+    Local : Field : TDLInv001Prompt : Info : "Approval reference"
+
+[Line: TDLInv001ExcApprBy]
+    Field : TDLInv001Prompt, TDLInv001ApprByFld
+    Local : Field : TDLInv001Prompt : Info : "Approved by"
+
+[Field: TDLInv001ExcHeadTxt]
+    Info       : "TDL-INV-001 IRN exception - needed only for a type conversion or IRN removal on an e-invoiced Sales voucher"
+    Full Width : Yes
+    Style      : Normal Bold
+
+[Field: TDLInv001Prompt]
+    Width : 20
+    Style : Normal
+
+[Field: TDLInv001ReasonFld]
+    Type     : String
+    Width    : 60
+    Max      : 200
+    Modifies : vTDLInv001Reason
+
+[Field: TDLInv001ApprRefFld]
+    Type     : String
+    Width    : 30
+    Max      : 60
+    Modifies : vTDLInv001ApprRef
+
+[Field: TDLInv001ApprByFld]
+    Type     : String
+    Width    : 30
+    Max      : 60
+    Modifies : vTDLInv001ApprBy
+
+
+;; ---- 9. Diagnostics (read-only; test evidence for E.1 / E.2) ---------------
+
+[Button: TDLInv001Diagnose]
+;; [R-15] Confirm the key is free in 7.1 and in every loaded add-on.
+    Key    : Ctrl + Alt + G
+    Title  : "IRN Guard Check"
+    Action : Call : TDLInv001Diagnose
+
+[Function: TDLInv001Diagnose]
+    00 : MSG BOX : "TDL-INV-001 check" : @@TDLInv001DiagText
+
+[System: Formula]
+    TDLInv001DiagL1   : "Alteration mode = " + ($$String:@@TDLInv001IsAlter) + "   MasterID = " + ($$String:$MasterID)
+    TDLInv001DiagL2   : "User = " + $$CmpUserName + "   authorised = " + ($$String:@@TDLInv001IsAuthorised)
+    TDLInv001DiagL3   : "Current type = " + $VoucherTypeName + "   IRN = " + $IRN + "   Ack No = " + $IRNAckNo
+    TDLInv001DiagL4   : "Stored IRN Sales copy - type = " + ($$CollectionField:$VoucherTypeName:1:TDLInv001OrigVch) + "   IRN = " + ($$CollectionField:$IRN:1:TDLInv001OrigVch)
+    TDLInv001DiagL5   : "Outcome if saved now = " + $$TDLInv001State
+    TDLInv001DiagL6   : "Last exception = " + $TDLInv001ExcAction + " by " + $TDLInv001ExcUser + " on " + $TDLInv001ExcOn + "   ref " + $TDLInv001ExcApprRef
+    TDLInv001DiagText : @@TDLInv001DiagL1 + $$NewLine + @@TDLInv001DiagL2 + $$NewLine + @@TDLInv001DiagL3 + $$NewLine + @@TDLInv001DiagL4 + $$NewLine + @@TDLInv001DiagL5 + $$NewLine + @@TDLInv001DiagL6

@@ -6,7 +6,7 @@ to *change* the code.
 
 ## What's in here
 
-Two unrelated projects share this repo:
+Unrelated projects share this repo:
 
 1. **`cae/` — Continuous Audit Engine.** FastAPI + Postgres + Redis/Celery +
    React, Docker Compose. The substantial project; assume a task is about this
@@ -16,6 +16,12 @@ Two unrelated projects share this repo:
    workbook generator (`build_excel.py` → `LexComply_India.xlsm`, with
    `LexComply.bas` imported by hand). No build step, no package manager, no
    framework. Don't introduce one.
+3. **`tdl/` — TallyPrime TDL controls**, one folder per control ID (e.g.
+   `tdl/TDL-INV-001/`: source, README, test protocol). Nothing here can be
+   compiled or run in this repo or CI — there is no TallyPrime. Never describe
+   a TDL as verified or tested unless its test protocol was run on a real
+   TallyPrime install; keep its reference register (`[R-nn]` tags in the
+   source) in step with the code.
 
 ## Build & run commands
 
