@@ -22,7 +22,7 @@ So this plan has two jobs, not one:
 1. **Build the capability** to test, quantify and fix every process at MFP — the syllabus in Section 2.
 2. **Convert the architecture into a real baseline** — replace illustrative cells with client data, and confirm or reject each hypothesis with evidence. Section 5 lists what needs confirming.
 
-There is a third job implied by the scope. The two workbooks cover six cycles — P2P, Stores, Production, OTC, Exports, Costing/MIS. That is roughly a quarter of the process universe of a food manufacturer. NPD and recipe control, QA/QC and food safety, planning, maintenance, utilities, logistics, channel schemes, recall and traceability, job work, HR, IT and user access, treasury, capex, statutory calendar, EPR — these are absent from the papers entirely. An engagement scoped as "everything" that delivers on six cycles will be judged on the eighteen it did not reach.
+There is a third job implied by the scope. The two workbooks cover six cycles — P2P, Stores, Production, OTC, Exports, Costing/MIS. That is roughly a quarter of the process universe of a food manufacturer. NPD and recipe control, QA/QC and food safety, planning, maintenance, utilities, logistics, channel schemes, recall and traceability, job work, HR, IT and user access, treasury, capex, statutory calendar, EPR — these are absent from the papers entirely. An engagement scoped as "everything" that delivers on six cycles will be judged on the twenty processes that have no working paper of their own.
 
 Every module below terminates in a deliverable that plugs into the existing workbooks: a new RACM row, a new test-of-controls tab, a new diagnostic sheet. You are not studying to know things; you are studying to be able to test, quantify and fix things at this client.
 
@@ -69,7 +69,7 @@ Twenty-seven processes. This is the "no process left out" list; everything downs
 | 26 | Enable | Statutory compliance calendar — GST, TDS, IT, ROC, labour, GPCB, factory, boiler, legal metrology, EPR | **GAP** | New — `Compliance_Calendar` + `TOC_Compliance` |
 | 27 | Govern | Delegation of authority, related-party, entity-level controls | **GAP** | New — `TOC_ELC` + DoA matrix |
 
-**Score: 6 of 27 processes have a working-paper structure. 3 more are named in the programme without one. 18 are untouched. And of the 6, zero carry a client-tested conclusion yet.** That is the honest starting position, and both numbers — coverage and evidence — are what this plan is built to move.
+**Score: six test-of-controls working papers exist (T1–T6), and between them they cover 7 of the 27 processes. 5 more processes are named in the programme without a paper. 15 are untouched. And none of the 7 carries a client-tested conclusion yet.** That is the honest starting position, and both numbers — coverage and evidence — are what this plan is built to move.
 
 ---
 
@@ -428,7 +428,7 @@ Use this as the completion checklist. The engagement is done when every row has 
 | 26 | Statutory compliance calendar | M12 | `Compliance_Calendar` | `TOC_Compliance` | **Build** | No |
 | 27 | Entity-level controls & DoA | M3, M12 | `ELC_Assessment`, `SoD_Matrix`, `DoA_Matrix`, `Risk_Heatmap` | `TOC_ELC` | **Build** | No |
 
-**16 new working papers, 18 new diagnostic sheets, and 27 processes needing a client-evidenced conclusion.** That is the real size of "all the system improvements", and it is why the learning has to be structured rather than picked up as you go.
+**15 new working papers, 21 new diagnostic sheets, and 27 processes needing a client-evidenced conclusion.** That is the real size of "all the system improvements", and it is why the learning has to be structured rather than picked up as you go.
 
 ---
 
@@ -550,7 +550,7 @@ Score 1 (cannot do) to 5 (can do unsupervised and defend it to a challenging CFO
 
 ## 8. The one-paragraph version
 
-The workbooks are a well-built skeleton carrying sample data — the architecture is right, the baseline does not exist yet, and the illustrative findings are intelligent hypotheses rather than evidence. So the plan has to do three things at once: cover the eighteen processes the papers never reach, build the capability to test them properly, and replace every sample cell with a client-sourced number. Modules 1, 2, 3 and 11 are the gates — process technology so the yield standards survive contact with the production head, the regulatory perimeter so no cost recommendation creates a compliance breach, control frameworks so the work has a spine above the cycle tests, and Tally plus CAAT capability so remediation becomes enforcement and sampled extrapolations become full-population facts. Chase the data request before the syllabus; measure the utilities case or drop it; verify the incentive rates before a rupee of them is reported; and check fill giveaway early, because it is the largest thing the current toolkit cannot see.
+The workbooks are a well-built skeleton carrying sample data — the architecture is right, the baseline does not exist yet, and the illustrative findings are intelligent hypotheses rather than evidence. So the plan has to do three things at once: cover the twenty processes without a working paper, build the capability to test them properly, and replace every sample cell with a client-sourced number. Modules 1, 2, 3 and 11 are the gates — process technology so the yield standards survive contact with the production head, the regulatory perimeter so no cost recommendation creates a compliance breach, control frameworks so the work has a spine above the cycle tests, and Tally plus CAAT capability so remediation becomes enforcement and sampled extrapolations become full-population facts. Chase the data request before the syllabus; measure the utilities case or drop it; verify the incentive rates before a rupee of them is reported; and check fill giveaway early, because it is the largest thing the current toolkit cannot see.
 
 ---
 
