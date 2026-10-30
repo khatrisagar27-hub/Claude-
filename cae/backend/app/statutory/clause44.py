@@ -56,7 +56,7 @@ class ExpenseLine:
 def compute(lines: list[ExpenseLine]) -> dict:
     working = defaultdict(float)
     cols = {"col3_exempt": 0.0, "col4_composition": 0.0, "col5_other_registered": 0.0,
-            "col7_unregistered": 0.0}
+            "col7_unregistered": 0.0, "unattributed": 0.0}
     vendor_table: dict[tuple, dict] = {}
 
     for ln in lines:
@@ -70,7 +70,9 @@ def compute(lines: list[ExpenseLine]) -> dict:
         gstin = (ln.vendor_gstin or "").strip().upper()
         registered = bool(GSTIN_RE.match(gstin))
         exempt = treatment in ("exempt", "exempt_non_taxable")
-        if not registered:
+        if not gstin and not ln.vendor_name:
+            col = "unattributed"          # e.g. a journal expense with no party — needs the ledger
+        elif not registered:
             col = "col7_unregistered"
         elif exempt:
             col = "col3_exempt"
@@ -79,6 +81,8 @@ def compute(lines: list[ExpenseLine]) -> dict:
         else:
             col = "col5_other_registered"
         cols[col] += amt
+        if col == "unattributed":
+            continue
 
         key = (gstin or "UNREGISTERED", ln.vendor_name or "")
         row = vendor_table.setdefault(key, {"gstin": key[0], "vendor": key[1], "amount": 0.0, "column": col})
@@ -94,9 +98,12 @@ def compute(lines: list[ExpenseLine]) -> dict:
         **cols,
         "working_79_4": {k: round(v, 2) for k, v in working.items()},
         "balance_for_clause_44": in_scope,
-        "tie_out_difference": round(in_scope - cols["col6_total_registered"] - cols["col7_unregistered"], 2),
+        "tie_out_difference": round(in_scope - cols["col6_total_registered"] - cols["col7_unregistered"]
+                                    - cols["unattributed"], 2),
         "vendor_table_79_20": sorted(vendor_table.values(), key=lambda r: -r["amount"]),
         "remarks": [
+            "'unattributed' is in-scope expenditure with no party in the data — allocate it from the ledger "
+            "before reporting columns 3-7.",
             "Composition dealers cannot be identified from books — report per GN 79.13 with a 3CB remark.",
             "Expense-head classification is keyword-based; review the 79.4 working before signing.",
         ],

@@ -31,7 +31,16 @@ print()
 
 print("Step 1/4: Running audit rules…")
 engine = AuditEngine(db, company_id)
-results = engine.run_all_rules()
+results = {"rules_run": 0, "exceptions_raised": 0, "errors": 0}
+for frequency in ("daily", "weekly", "monthly"):
+    run = engine.run_all_rules(frequency)
+    for key in results:
+        results[key] += run[key]
+    for detail in run["rule_details"]:
+        if detail["status"] != "completed":
+            print(f"    {detail['rule_code']}: {detail['status']} {detail.get('error', '')[:120]}")
+    if run.get("load_errors"):
+        print(f"    load errors: {run['load_errors']}")
 engine.close()
 print(f"  Rules run: {results['rules_run']}")
 print(f"  Exceptions raised: {results['exceptions_raised']}")

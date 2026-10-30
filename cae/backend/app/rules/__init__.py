@@ -35,6 +35,16 @@ def fy_sql(col: str) -> str:
     return f"(CASE WHEN MONTH({col}) >= 4 THEN YEAR({col}) ELSE YEAR({col}) - 1 END)"
 
 
+def bulk_load_days_sql(table: str, date_col: str) -> str:
+    """Subquery of created_at dates that look like a bulk import rather than day-to-day entry:
+    rows created that day span more than :months invoice months. created_at on an imported
+    row is the import date, not the books entry date, so entry-timing rules skip those days.
+    Binds two parameters: company_id, months."""
+    return f"""(SELECT CAST(created_at AS DATE) FROM {table}
+               WHERE company_id = ? AND created_at IS NOT NULL
+               GROUP BY 1 HAVING COUNT(DISTINCT DATE_TRUNC('month', {date_col})) > ?)"""
+
+
 def as_date(value) -> date:
     if isinstance(value, datetime):
         return value.date()

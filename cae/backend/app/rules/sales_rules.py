@@ -1,5 +1,5 @@
 """Sales audit rules SAL-001 to SAL-034."""
-from app.rules import register, param, fy_sql, as_date
+from app.rules import register, param, fy_sql, as_date, bulk_load_days_sql
 from app.statutory import gst, income_tax
 
 
@@ -100,19 +100,22 @@ def sal_003(conn, company_id, rule):
 
 @register("SAL-004")
 def sal_004(conn, company_id, rule):
-    """Revenue Cut-Off — invoice entered well after the month it is dated in."""
+    """Revenue Cut-Off — invoice entered well after the month it is dated in.
+    Days that look like a bulk import are skipped (created_at is then the import date)."""
     grace_days = int(param(rule, "grace_days", 5))
     min_amount = float(param(rule, "min_amount", 100_000))
-    rows = conn.execute("""
+    bulk_months = int(param(rule, "bulk_load_months", 2))
+    rows = conn.execute(f"""
         SELECT id, invoice_number, invoice_date, created_at, total_amount
         FROM sales_invoices
         WHERE company_id = ?
           AND CAST(created_at AS DATE) > LAST_DAY(invoice_date) + TO_DAYS(CAST(? AS INTEGER))
+          AND CAST(created_at AS DATE) NOT IN {bulk_load_days_sql('sales_invoices', 'invoice_date')}
           AND status != 'cancelled'
           AND total_amount > ?
         ORDER BY total_amount DESC
         LIMIT 30
-    """, [company_id, grace_days, min_amount]).fetchall()
+    """, [company_id, grace_days, company_id, bulk_months, min_amount]).fetchall()
     return [
         {
             "title": f"Cut-Off Violation: Invoice {r[1]}",

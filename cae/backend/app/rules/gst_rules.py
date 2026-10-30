@@ -1,7 +1,7 @@
 """GST compliance rules GST-001 to GST-003."""
 from datetime import timedelta
 
-from app.rules import register, param, as_date, as_on_date
+from app.rules import register, param, as_date, as_on_date, bulk_load_days_sql
 from app.statutory import gst
 
 
@@ -74,14 +74,17 @@ def gst_002(conn, company_id, rule):
 
 @register("GST-003")
 def gst_003(conn, company_id, rule):
-    """ITC-eligible bill booked after the s.16(4) time limit (30 November after the year end)."""
-    rows = conn.execute("""
+    """ITC-eligible bill booked after the s.16(4) time limit (30 November after the year end).
+    Days that look like a bulk import are skipped (created_at is then the import date)."""
+    bulk_months = int(param(rule, "bulk_load_months", 2))
+    rows = conn.execute(f"""
         SELECT id, vendor_id, invoice_number, invoice_date, created_at,
                cgst_amount + sgst_amount + igst_amount AS tax
         FROM purchase_invoices
         WHERE company_id = ? AND itc_eligible = true AND status != 'cancelled'
           AND created_at IS NOT NULL AND (cgst_amount + sgst_amount + igst_amount) > 0
-    """, [company_id]).fetchall()
+          AND CAST(created_at AS DATE) NOT IN {bulk_load_days_sql('purchase_invoices', 'invoice_date')}
+    """, [company_id, company_id, bulk_months]).fetchall()
     out = []
     for r in rows:
         inv_date, booked = as_date(r[3]), as_date(r[4])

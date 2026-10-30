@@ -95,28 +95,50 @@ class AuditEngine:
     def _load_data_to_duckdb(self):
         """Load this company's data from PostgreSQL into DuckDB.
 
-        UUIDs become strings and JSON columns become JSON text, so rules can compare ids
-        with the bound company_id and use json_extract_string() on raw_data. A table that
-        fails to load is created empty and recorded in self.load_errors."""
+        Each DuckDB table is created from the ORM schema, so an empty table or an all-NULL
+        column still has the right type (pandas alone would make it INTEGER). UUIDs become
+        strings and JSON columns become JSON text, so rules can compare ids with the bound
+        company_id and use json_extract_string() on raw_data. A table that fails to load is
+        left empty and recorded in self.load_errors."""
         if self._data_loaded:
             return
         from sqlalchemy import text
+        from app.database import Base
+        import app.models  # noqa: F401 — registers every table on Base.metadata
 
         self.load_errors: dict[str, str] = {}
         engine = self.db.get_bind()
         for table, sql in self._TABLES.items():
+            columns = [(c.name, self._duck_type(c.type)) for c in Base.metadata.tables[table].columns]
+            ddl = ", ".join('"%s" %s' % (n, t) for n, t in columns)
+            self.conn.execute(f"CREATE OR REPLACE TABLE {table} ({ddl})")
             try:
-                df = pd.read_sql(text(sql), engine, params={"cid": self.company_id})
-                df = self._normalise_frame(df)
+                df = self._normalise_frame(pd.read_sql(text(sql), engine, params={"cid": self.company_id}))
                 if df.empty:
-                    raise ValueError("no rows")
-                self.conn.register(f"_{table}_df", df)
-                self.conn.execute(f"CREATE OR REPLACE TABLE {table} AS SELECT * FROM _{table}_df")
+                    continue
+                self.conn.register("_load_df", df)
+                select = ", ".join('CAST("%s" AS %s)' % (n, t) if n in df.columns else "CAST(NULL AS %s)" % t for n, t in columns)
+                self.conn.execute(f"INSERT INTO {table} SELECT {select} FROM _load_df")
+                self.conn.unregister("_load_df")
             except Exception as e:
-                if str(e) != "no rows":
-                    self.load_errors[table] = str(e)[:200]
-                self.conn.execute(f"CREATE OR REPLACE TABLE {table} (id VARCHAR, company_id VARCHAR)")
+                self.load_errors[table] = str(e)[:200]
         self._data_loaded = True
+
+    @staticmethod
+    def _duck_type(sa_type) -> str:
+        import sqlalchemy as sa
+
+        if isinstance(sa_type, sa.Boolean):
+            return "BOOLEAN"
+        if isinstance(sa_type, sa.DateTime):
+            return "TIMESTAMP"
+        if isinstance(sa_type, sa.Date):
+            return "DATE"
+        if isinstance(sa_type, sa.Integer):
+            return "BIGINT"
+        if isinstance(sa_type, (sa.Numeric, sa.Float)):
+            return "DOUBLE"
+        return "VARCHAR"   # strings, UUIDs, JSON/JSONB, enums
 
     @staticmethod
     def _normalise_frame(df: pd.DataFrame) -> pd.DataFrame:

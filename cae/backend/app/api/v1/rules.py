@@ -94,3 +94,35 @@ def test_rule(
         return {"rule_code": rule.rule_code, "matches": result}
     except Exception as e:
         return {"rule_code": rule.rule_code, "error": str(e)}
+
+
+@router.post("/sync")
+def sync_catalogue(
+    company_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("super_admin", "partner", "manager")),
+):
+    """Add catalogue rules a company is missing and refresh names/categories; user-set
+    parameters and enable flags are kept."""
+    from app.rules.catalogue import sync_rules
+    return sync_rules(db, company_id)
+
+
+class RuleParamsIn(BaseModel):
+    parameters: dict
+
+
+@router.put("/{rule_id}/parameters")
+def set_rule_parameters(
+    rule_id: uuid.UUID,
+    body: RuleParamsIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("super_admin", "partner", "manager")),
+):
+    """Merge tunables (thresholds, as_on date, tolerances) into a rule's parameters."""
+    rule = db.query(AuditRule).filter(AuditRule.id == rule_id).first()
+    if not rule:
+        raise HTTPException(status_code=404, detail="Rule not found")
+    rule.parameters = {**(rule.parameters or {}), **body.parameters}
+    db.commit()
+    return {"rule_id": str(rule.id), "rule_code": rule.rule_code, "parameters": rule.parameters}

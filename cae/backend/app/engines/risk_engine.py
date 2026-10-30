@@ -16,8 +16,11 @@ if TYPE_CHECKING:
 
 BUSINESS_AREAS = [
     "revenue", "expenditure", "inventory", "bank_reconciliation",
-    "payroll", "gst", "related_party", "statutory",
+    "payroll", "gst", "related_party", "statutory", "financial_reporting",
 ]
+
+DEFAULT_MATERIALITY_BASE = 10_000_000   # Rs.1 crore when turnover is unknown
+MATERIALITY_PCT_OF_TURNOVER = 0.005     # 0.5% of turnover, a common overall-materiality benchmark
 
 
 def _risk_band(score: float) -> str:
@@ -60,11 +63,18 @@ class RiskEngine:
         self.db.commit()
         return written
 
+    def _materiality_base(self) -> float:
+        from app.models.tenant import Company
+        company = self.db.query(Company).filter(Company.id == self.company_id).first()
+        turnover = float(company.annual_turnover or 0) if company else 0.0
+        return turnover * MATERIALITY_PCT_OF_TURNOVER if turnover > 0 else DEFAULT_MATERIALITY_BASE
+
     def _compute_scores(self) -> dict:
         from app.models.audit import AuditException
         from sqlalchemy import func
 
         thirty_days_ago = date.today() - timedelta(days=30)
+        materiality_base = self._materiality_base()
 
         result = {}
         for area in BUSINESS_AREAS:
@@ -92,7 +102,7 @@ class RiskEngine:
 
             financial_impacts = [float(e.financial_impact or 0) for e in excs]
             total_impact = sum(financial_impacts)
-            materiality = min(2.0, max(0.5, total_impact / 10_000_000))
+            materiality = min(2.0, max(0.5, total_impact / materiality_base))
 
             recent_count = sum(1 for e in excs if e.detected_on >= thirty_days_ago)
             frequency = min(3.0, 1.0 + recent_count / max(len(excs), 1) * 2)

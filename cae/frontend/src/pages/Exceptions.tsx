@@ -17,7 +17,8 @@ const CATEGORIES = [
   { value: 'inventory', label: 'Inventory' },
   { value: 'bank_reconciliation', label: 'Bank / Treasury' },
   { value: 'related_party', label: 'Related Party' },
-  { value: 'statutory', label: 'Statutory' },
+  { value: 'statutory', label: 'Statutory (Tax / MSME / PF)' },
+  { value: 'financial_reporting', label: 'Journals / Reporting' },
 ];
 
 export default function Exceptions() {

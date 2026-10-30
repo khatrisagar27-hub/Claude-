@@ -41,6 +41,7 @@ CONCORDANCE: dict[str, tuple[str, str, str]] = {
     "cash_loan_accept":      ("s.269SS",     "s.185",                 "Cash loan/deposit accepted"),
     "cash_receipt":          ("s.269ST",     "s.186",                 "Cash receipt Rs.2 lakh or more"),
     "cash_loan_repay":       ("s.269T",      "s.188",                 "Cash repayment of loan/deposit"),
+    "electronic_payment_facility": ("s.269SU", "s.187",               "Prescribed electronic payment facility"),
     "tds_commission":        ("s.194H",      "s.393(1) Table Sl.1(ii)",  "TDS — commission/brokerage"),
     "tds_rent":              ("s.194-I",     "s.393(1) Table Sl.2(ii)",  "TDS — rent"),
     "tds_contract":          ("s.194C",      "s.393(1) Table Sl.6(i)",   "TDS — contractors"),

@@ -55,6 +55,13 @@ def test_sal_004_cut_off():
     assert [r["evidence"]["invoice_number"] for r in run("SAL-004", conn)] == ["LATE"]
 
 
+def test_sal_004_and_gst_003_ignore_bulk_import_days():
+    imported = [dict(invoice_number=f"H{m}", invoice_date=date(2024, m, 10), created_at=datetime(2026, 10, 1, 9),
+                     total_amount=500000, taxable_amount=1, igst_amount=500) for m in (1, 2, 3, 4)]
+    conn = build_conn(sales_invoices=imported, purchase_invoices=imported)
+    assert run("SAL-004", conn) == [] and run("GST-003", conn) == []
+
+
 def test_sal_005_discount_impact_is_the_discount():
     conn = build_conn(sales_invoices=[
         dict(invoice_number="D", invoice_date=date(2025, 5, 1), gross_amount=100000, discount_amount=20000, total_amount=80000, taxable_amount=1),

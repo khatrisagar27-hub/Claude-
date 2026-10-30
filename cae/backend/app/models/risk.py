@@ -67,6 +67,7 @@ class GSTReconciliation(Base):
     risk_category: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, server_default="pending")
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    details_json: Mapped[Optional[dict]] = mapped_column(sa.JSON, nullable=True, comment="Invoice-level match buckets and summary")
     created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False, server_default=func.now())
 
     __table_args__ = (

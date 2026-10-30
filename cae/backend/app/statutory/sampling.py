@@ -15,8 +15,9 @@ import random
 def select(population: list[dict], seed: int, n: int = 25, high_value_threshold: float = 0.0,
            amount_key: str = "amount", id_key: str = "id") -> dict:
     items = [dict(p, _amt=float(p.get(amount_key) or 0)) for p in population]
-    key_items = [p for p in items if high_value_threshold > 0 and abs(p["_amt"]) >= high_value_threshold]
-    residual = [p for p in items if not (high_value_threshold > 0 and abs(p["_amt"]) >= high_value_threshold)]
+    is_key = lambda p: high_value_threshold > 0 and abs(p["_amt"]) >= high_value_threshold  # noqa: E731
+    key_items = sorted((p for p in items if is_key(p)), key=lambda p: (-abs(p["_amt"]), str(p.get(id_key))))
+    residual = [p for p in items if not is_key(p)]
     residual.sort(key=lambda p: (p["_amt"], str(p.get(id_key))))
     take = min(n, len(residual))
     random_items = random.Random(seed).sample(residual, take) if take else []
