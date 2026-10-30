@@ -97,6 +97,7 @@ export interface AuditRule {
   risk_category: string;
   frequency: string;
   is_enabled: boolean;
+  parameters: Record<string, unknown> | null;
 }
 
 export interface RemediationAction {

@@ -12,6 +12,7 @@ import RiskHeatmap from './pages/RiskHeatmap';
 import FraudAnalytics from './pages/FraudAnalytics';
 import GST from './pages/GST';
 import WorkingCapital from './pages/WorkingCapital';
+import Statutory from './pages/Statutory';
 import DataIngestion from './pages/DataIngestion';
 import Reports from './pages/Reports';
 import Profile from './pages/Profile';
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="fraud" element={<FraudAnalytics />} />
           <Route path="gst" element={<GST />} />
           <Route path="working-capital" element={<WorkingCapital />} />
+          <Route path="statutory" element={<Statutory />} />
           <Route path="ingestion" element={<DataIngestion />} />
           <Route path="reports" element={<Reports />} />
           <Route path="profile" element={<Profile />} />

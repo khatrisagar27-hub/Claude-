@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, AlertTriangle, MessageSquare, Wrench,
   BookOpen, Activity, TrendingUp, Receipt, Package,
-  BarChart3, Upload, FileText, Shield
+  BarChart3, Upload, FileText, Shield, Landmark
 } from 'lucide-react';
 
 const nav = [
@@ -15,6 +15,7 @@ const nav = [
   { to: '/fraud', icon: Shield, label: 'Fraud Analytics' },
   { to: '/gst', icon: Receipt, label: 'GST' },
   { to: '/working-capital', icon: TrendingUp, label: 'Working Capital' },
+  { to: '/statutory', icon: Landmark, label: 'Statutory' },
   { to: '/ingestion', icon: Upload, label: 'Data Ingestion' },
   { to: '/reports', icon: FileText, label: 'Reports' },
 ];

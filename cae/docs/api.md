@@ -83,7 +83,7 @@ List recent sync jobs. Query: `?company_id=...&limit=20`
 ## Audit Rules
 
 ### GET /rules
-List rules. Filters: `?business_area=Sales&severity=critical&is_enabled=true`
+List rules with their current `parameters`. Filters: `?company_id=...&business_area=revenue&severity=critical&is_enabled=true` (`business_area` is the catalogue category, e.g. `revenue`, `expenditure`, `gst`, `statutory`).
 
 ### PUT /rules/{id}/toggle
 Enable/disable a rule. Roles: super_admin, partner, manager.

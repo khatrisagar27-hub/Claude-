@@ -24,6 +24,7 @@ class RuleOut(BaseModel):
     risk_category: str | None
     frequency: str
     is_enabled: bool
+    parameters: dict | None
 
     model_config = {"from_attributes": True}
 
@@ -39,6 +40,7 @@ def _rule_to_out(r: AuditRule) -> RuleOut:
         risk_category=r.risk_area,
         frequency=r.run_frequency,
         is_enabled=r.is_active,
+        parameters=r.parameters,
     )
 
 

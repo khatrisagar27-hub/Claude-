@@ -101,8 +101,14 @@ def test_exceptions_carry_statutory_references(stack, company_id):
 def test_rules_api_and_catalogue_sync(client, company_id):
     rules = client.get(f"/api/v1/rules?company_id={company_id}")
     assert rules.status_code == 200 and len(rules.json()) >= 55
+    sal002 = next(r for r in rules.json() if r["rule_code"] == "SAL-002")
+    assert sal002["parameters"] == {"min_amount": 100000, "multiple": 1000}
+    put = client.put(f"/api/v1/rules/{sal002['id']}/parameters", json={"parameters": {"min_amount": 250000}})
+    assert put.status_code == 200 and put.json()["parameters"] == {"min_amount": 250000, "multiple": 1000}
     sync = client.post(f"/api/v1/rules/sync?company_id={company_id}")
     assert sync.status_code == 200 and sync.json()["created"] == 0
+    after = client.get(f"/api/v1/rules?company_id={company_id}").json()
+    assert next(r for r in after if r["rule_code"] == "SAL-002")["parameters"]["min_amount"] == 250000
 
 
 def test_gst_invoice_level_recon_from_csv(client, company_id):
