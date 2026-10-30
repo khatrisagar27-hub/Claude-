@@ -10,8 +10,6 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from app.models.audit import AuditRule, RuleExecution, AuditException
-from app.models.transaction import SalesInvoice, PurchaseInvoice, JournalEntry
-from app.database import SessionLocal
 
 
 class AuditEngine:
@@ -32,7 +30,8 @@ class AuditEngine:
         # Load data into DuckDB once
         self._load_data_to_duckdb()
 
-        results = {"rules_run": 0, "exceptions_raised": 0, "errors": 0, "rule_details": []}
+        results = {"rules_run": 0, "exceptions_raised": 0, "errors": 0, "rule_details": [],
+                   "load_errors": self.load_errors}
         for rule in rules:
             try:
                 execution = self._run_rule(rule)
@@ -76,217 +75,68 @@ class AuditEngine:
         except Exception as e:
             return {"error": str(e), "rule_code": rule_code}
 
+    # table -> SQL selecting this company's rows (bound parameter :cid)
+    _TABLES = {
+        "sales_invoices": "SELECT * FROM sales_invoices WHERE company_id = :cid",
+        "purchase_invoices": "SELECT * FROM purchase_invoices WHERE company_id = :cid",
+        "journal_entries": "SELECT * FROM journal_entries WHERE company_id = :cid",
+        "journal_entry_lines": """SELECT jel.* FROM journal_entry_lines jel
+                                   JOIN journal_entries je ON jel.journal_entry_id = je.id
+                                   WHERE je.company_id = :cid""",
+        "bank_transactions": "SELECT * FROM bank_transactions WHERE company_id = :cid",
+        "inventory_movements": "SELECT * FROM inventory_movements WHERE company_id = :cid",
+        "payroll_records": "SELECT * FROM payroll_records WHERE company_id = :cid",
+        "employees": "SELECT * FROM employees WHERE company_id = :cid",
+        "customers": "SELECT * FROM customers WHERE company_id = :cid",
+        "vendors": "SELECT * FROM vendors WHERE company_id = :cid",
+        "gl_accounts": "SELECT * FROM gl_accounts WHERE company_id = :cid",
+    }
+
     def _load_data_to_duckdb(self):
-        """Load transaction data from PostgreSQL into DuckDB for fast analytics."""
+        """Load this company's data from PostgreSQL into DuckDB.
+
+        UUIDs become strings and JSON columns become JSON text, so rules can compare ids
+        with the bound company_id and use json_extract_string() on raw_data. A table that
+        fails to load is created empty and recorded in self.load_errors."""
         if self._data_loaded:
             return
+        from sqlalchemy import text
 
-        try:
-            engine = self.db.get_bind()
-
-            # Load sales invoices
+        self.load_errors: dict[str, str] = {}
+        engine = self.db.get_bind()
+        for table, sql in self._TABLES.items():
             try:
-                sales_df = pd.read_sql(
-                    f"SELECT * FROM sales_invoices WHERE company_id = '{self.company_id}'",
-                    engine
-                )
-                if not sales_df.empty:
-                    self.conn.register("sales_invoices", sales_df)
-                else:
-                    self.conn.execute(
-                        "CREATE TABLE IF NOT EXISTS sales_invoices (id VARCHAR, company_id VARCHAR)"
-                    )
-            except Exception:
-                self.conn.execute(
-                    "CREATE TABLE IF NOT EXISTS sales_invoices (id VARCHAR, company_id VARCHAR)"
-                )
+                df = pd.read_sql(text(sql), engine, params={"cid": self.company_id})
+                df = self._normalise_frame(df)
+                if df.empty:
+                    raise ValueError("no rows")
+                self.conn.register(f"_{table}_df", df)
+                self.conn.execute(f"CREATE OR REPLACE TABLE {table} AS SELECT * FROM _{table}_df")
+            except Exception as e:
+                if str(e) != "no rows":
+                    self.load_errors[table] = str(e)[:200]
+                self.conn.execute(f"CREATE OR REPLACE TABLE {table} (id VARCHAR, company_id VARCHAR)")
+        self._data_loaded = True
 
-            # Load purchase invoices
-            try:
-                purchase_df = pd.read_sql(
-                    f"SELECT * FROM purchase_invoices WHERE company_id = '{self.company_id}'",
-                    engine
-                )
-                if not purchase_df.empty:
-                    self.conn.register("purchase_invoices", purchase_df)
-                else:
-                    self.conn.execute(
-                        "CREATE TABLE IF NOT EXISTS purchase_invoices (id VARCHAR, company_id VARCHAR)"
-                    )
-            except Exception:
-                self.conn.execute(
-                    "CREATE TABLE IF NOT EXISTS purchase_invoices (id VARCHAR, company_id VARCHAR)"
-                )
+    @staticmethod
+    def _normalise_frame(df: pd.DataFrame) -> pd.DataFrame:
+        import json
+        from decimal import Decimal
 
-            # Load journal entries
-            try:
-                je_df = pd.read_sql(
-                    f"SELECT * FROM journal_entries WHERE company_id = '{self.company_id}'",
-                    engine
-                )
-                if not je_df.empty:
-                    self.conn.register("journal_entries", je_df)
-                else:
-                    self.conn.execute(
-                        "CREATE TABLE IF NOT EXISTS journal_entries (id VARCHAR, company_id VARCHAR)"
-                    )
-            except Exception:
-                self.conn.execute(
-                    "CREATE TABLE IF NOT EXISTS journal_entries (id VARCHAR, company_id VARCHAR)"
-                )
-
-            # Load journal entry lines
-            try:
-                jel_df = pd.read_sql(
-                    f"""SELECT jel.* FROM journal_entry_lines jel
-                        JOIN journal_entries je ON jel.journal_entry_id = je.id
-                        WHERE je.company_id = '{self.company_id}'""",
-                    engine
-                )
-                if not jel_df.empty:
-                    self.conn.register("journal_entry_lines", jel_df)
-                else:
-                    self.conn.execute(
-                        "CREATE TABLE IF NOT EXISTS journal_entry_lines (id VARCHAR, journal_entry_id VARCHAR)"
-                    )
-            except Exception:
-                self.conn.execute(
-                    "CREATE TABLE IF NOT EXISTS journal_entry_lines (id VARCHAR, journal_entry_id VARCHAR)"
-                )
-
-            # Load bank transactions
-            try:
-                bank_df = pd.read_sql(
-                    f"SELECT * FROM bank_transactions WHERE company_id = '{self.company_id}'",
-                    engine
-                )
-                if not bank_df.empty:
-                    self.conn.register("bank_transactions", bank_df)
-                else:
-                    self.conn.execute(
-                        "CREATE TABLE IF NOT EXISTS bank_transactions (id VARCHAR, company_id VARCHAR)"
-                    )
-            except Exception:
-                self.conn.execute(
-                    "CREATE TABLE IF NOT EXISTS bank_transactions (id VARCHAR, company_id VARCHAR)"
-                )
-
-            # Load inventory movements
-            try:
-                inv_df = pd.read_sql(
-                    f"SELECT * FROM inventory_movements WHERE company_id = '{self.company_id}'",
-                    engine
-                )
-                if not inv_df.empty:
-                    self.conn.register("inventory_movements", inv_df)
-                else:
-                    self.conn.execute(
-                        "CREATE TABLE IF NOT EXISTS inventory_movements (id VARCHAR, company_id VARCHAR)"
-                    )
-            except Exception:
-                self.conn.execute(
-                    "CREATE TABLE IF NOT EXISTS inventory_movements (id VARCHAR, company_id VARCHAR)"
-                )
-
-            # Load payroll records
-            try:
-                payroll_df = pd.read_sql(
-                    f"SELECT * FROM payroll_records WHERE company_id = '{self.company_id}'",
-                    engine
-                )
-                if not payroll_df.empty:
-                    self.conn.register("payroll_records", payroll_df)
-                else:
-                    self.conn.execute(
-                        "CREATE TABLE IF NOT EXISTS payroll_records (id VARCHAR, company_id VARCHAR)"
-                    )
-            except Exception:
-                self.conn.execute(
-                    "CREATE TABLE IF NOT EXISTS payroll_records (id VARCHAR, company_id VARCHAR)"
-                )
-
-            # Load employees
-            try:
-                emp_df = pd.read_sql(
-                    f"SELECT * FROM employees WHERE company_id = '{self.company_id}'",
-                    engine
-                )
-                if not emp_df.empty:
-                    self.conn.register("employees", emp_df)
-                else:
-                    self.conn.execute(
-                        "CREATE TABLE IF NOT EXISTS employees (id VARCHAR, company_id VARCHAR)"
-                    )
-            except Exception:
-                self.conn.execute(
-                    "CREATE TABLE IF NOT EXISTS employees (id VARCHAR, company_id VARCHAR)"
-                )
-
-            # Load customers
-            try:
-                cust_df = pd.read_sql(
-                    f"SELECT * FROM customers WHERE company_id = '{self.company_id}'",
-                    engine
-                )
-                if not cust_df.empty:
-                    self.conn.register("customers", cust_df)
-                else:
-                    self.conn.execute(
-                        "CREATE TABLE IF NOT EXISTS customers (id VARCHAR, company_id VARCHAR)"
-                    )
-            except Exception:
-                self.conn.execute(
-                    "CREATE TABLE IF NOT EXISTS customers (id VARCHAR, company_id VARCHAR)"
-                )
-
-            # Load vendors
-            try:
-                vendor_df = pd.read_sql(
-                    f"SELECT * FROM vendors WHERE company_id = '{self.company_id}'",
-                    engine
-                )
-                if not vendor_df.empty:
-                    self.conn.register("vendors", vendor_df)
-                else:
-                    self.conn.execute(
-                        "CREATE TABLE IF NOT EXISTS vendors (id VARCHAR, company_id VARCHAR)"
-                    )
-            except Exception:
-                self.conn.execute(
-                    "CREATE TABLE IF NOT EXISTS vendors (id VARCHAR, company_id VARCHAR)"
-                )
-
-            # Load GL accounts
-            try:
-                gl_df = pd.read_sql(
-                    f"SELECT * FROM gl_accounts WHERE company_id = '{self.company_id}'",
-                    engine
-                )
-                if not gl_df.empty:
-                    self.conn.register("gl_accounts", gl_df)
-                else:
-                    self.conn.execute(
-                        "CREATE TABLE IF NOT EXISTS gl_accounts (id VARCHAR, company_id VARCHAR)"
-                    )
-            except Exception:
-                self.conn.execute(
-                    "CREATE TABLE IF NOT EXISTS gl_accounts (id VARCHAR, company_id VARCHAR)"
-                )
-
-            self._data_loaded = True
-
-        except Exception as e:
-            # Ensure basic tables exist even on complete failure
-            for table in ["sales_invoices", "purchase_invoices", "journal_entries",
-                          "journal_entry_lines", "bank_transactions", "inventory_movements",
-                          "payroll_records", "employees", "customers", "vendors", "gl_accounts"]:
-                try:
-                    self.conn.execute(
-                        f"CREATE TABLE IF NOT EXISTS {table} (id VARCHAR, company_id VARCHAR)"
-                    )
-                except Exception:
-                    pass
-            self._data_loaded = True
+        for col in df.columns:
+            if df[col].dtype != object:
+                continue
+            sample = df[col].dropna()
+            if sample.empty:
+                continue
+            first = sample.iloc[0]
+            if isinstance(first, uuid.UUID):
+                df[col] = df[col].map(lambda v: str(v) if v is not None else None)
+            elif isinstance(first, (dict, list)):
+                df[col] = df[col].map(lambda v: json.dumps(v, default=str) if v is not None else None)
+            elif isinstance(first, Decimal):
+                df[col] = pd.to_numeric(df[col], errors="coerce")
+        return df
 
     def _run_rule(self, rule: AuditRule) -> RuleExecution:
         """Run a single rule and write exceptions."""
@@ -307,10 +157,9 @@ class AuditEngine:
             from app.rules import get_rule_fn
             rule_fn = get_rule_fn(rule.rule_code)
 
-            if rule_fn:
-                exceptions_data = rule_fn(self.conn, self.company_id, rule)
-            else:
-                exceptions_data = []
+            if not rule_fn:
+                raise ValueError(f"No implementation registered for rule {rule.rule_code}")
+            exceptions_data = rule_fn(self.conn, self.company_id, rule)
 
             # Write exceptions that don't already exist
             new_count = 0
