@@ -587,28 +587,32 @@ python scripts/run_first_audit.py</div>
     <p>After the action is implemented, the auditor can run a <strong>Retest</strong>. The system re-runs the same audit rule to check if the problem has been fixed. The retest result is recorded as: <em>Effective / Partially Effective / Ineffective.</em></p>
 
     <!-- SECTION 9 -->
-    <h3>9. Audit Rules — The 100+ Automated Checks</h3>
+    <h3>9. Audit Rules — The 55 Automated Checks</h3>
 
     <p><strong>URL:</strong> <code>http://localhost:3000/rules</code></p>
 
-    <p>The platform runs 100+ audit rules automatically. Think of each rule as a specific question the robot auditor asks every day about your data.</p>
+    <p>The platform runs 55 audit rules automatically. Think of each rule as a specific question the robot auditor asks about your data. The full list, with what each rule checks and its default thresholds, is in <code>cae/docs/rules.md</code>.</p>
+
+    <p><strong>Which Act is cited?</strong> Statutory exceptions name the section that applied on the transaction date: the Income-tax Act, 1961 for anything dated up to 31-03-2026, and the Income-tax Act, 2025 from 01-04-2026 (with the old section shown alongside, e.g. "s.36(4) of the Income-tax Act, 2025 (earlier s.40A(3))").</p>
 
     <h4>Categories of Rules:</h4>
     <table>
       <tr><th>Category</th><th>No. of Rules</th><th>Examples</th></tr>
-      <tr><td><strong>Sales</strong></td><td>35 rules</td><td>Duplicate invoices, credit limit breach, missing e-way bill, cash invoice above Rs.2 lakh</td></tr>
-      <tr><td><strong>Purchases</strong></td><td>35 rules</td><td>Duplicate payment, vendor bank changed, invoice without PO, related party vendor</td></tr>
-      <tr><td><strong>Inventory</strong></td><td>20 rules</td><td>Negative stock, shrinkage &gt;2%, BOM variance, ghost inventory</td></tr>
-      <tr><td><strong>Journal Entries</strong></td><td>15 rules</td><td>JE without narration, round amount, SoD violation, suspense not cleared</td></tr>
-      <tr><td><strong>Payroll</strong></td><td>10 rules</td><td>Ghost employee, terminated employee paid, duplicate bank account</td></tr>
-      <tr><td><strong>Treasury / Bank</strong></td><td>10 rules</td><td>Cash payment &gt;Rs.10K, circular transfers, unapproved large transfers</td></tr>
+      <tr><td><strong>Sales</strong></td><td>13 rules</td><td>Duplicate invoice number in a financial year, credit limit breach, missing e-way bill, missing e-invoice IRN, cash receipt of Rs.2 lakh or more</td></tr>
+      <tr><td><strong>Purchases</strong></td><td>10 rules</td><td>Possible duplicate payment, payment to a bank account not in the vendor master, invoice without PO, vendor sharing a bank account or PAN with an employee, MSME dues beyond 45 days with s.16 interest</td></tr>
+      <tr><td><strong>GST</strong></td><td>3 rules</td><td>Removed 12% / 28% slab after 22-09-2025, Rule 37 ITC reversal for bills unpaid 180 days, ITC booked after the s.16(4) time limit</td></tr>
+      <tr><td><strong>TDS</strong></td><td>2 rules</td><td>TDS on purchase of goods above Rs.50 lakh not deducted, TDS below the section's minimum rate</td></tr>
+      <tr><td><strong>Inventory</strong></td><td>6 rules</td><td>Negative stock, shrinkage &gt;2%, slow-moving stock valued at last cost, ghost inventory</td></tr>
+      <tr><td><strong>Journal Entries</strong></td><td>8 rules</td><td>JE without narration, late posting, uncleared suspense balance, prior-period JE (April–March year)</td></tr>
+      <tr><td><strong>Payroll</strong></td><td>6 rules</td><td>Ghost employee, terminated employee paid, duplicate bank account, PF/ESI not deposited by the 15th</td></tr>
+      <tr><td><strong>Treasury / Bank</strong></td><td>7 rules</td><td>Cash payment to a person above Rs.10,000 in a day (Rs.35,000 for transporters), cash loans of Rs.20,000 or more, circular transfers</td></tr>
     </table>
 
     <h4>What you can do on the Rules page:</h4>
     <ul style="padding-left:20px;margin:10px 0;">
       <li style="margin:6px 0"><strong>Browse all rules</strong> — search by name, category, or severity</li>
       <li style="margin:6px 0"><strong>Enable / Disable a rule</strong> — if a rule is generating too many false positives, toggle it off</li>
-      <li style="margin:6px 0"><strong>Change the threshold</strong> — e.g., change "flag discounts &gt;15%" to "&gt;20%" for your business</li>
+      <li style="margin:6px 0"><strong>Change the threshold</strong> — e.g., change "flag discounts &gt;15%" to "&gt;20%" for your business (currently through the API: <code>PUT /rules/{id}/parameters</code>)</li>
       <li style="margin:6px 0"><strong>Test a rule</strong> — run just one rule on your data right now and see immediate results</li>
       <li style="margin:6px 0"><strong>See run history</strong> — when was this rule last run, how many exceptions did it find</li>
     </ul>
@@ -658,11 +662,12 @@ Score Bands:
 
     <h4>How to use:</h4>
     <ol style="padding-left:20px;margin:10px 0;">
-      <li style="margin:6px 0">Upload your GSTR-2B JSON file (download from GST portal)</li>
-      <li style="margin:6px 0">The system matches it against your purchase register automatically</li>
-      <li style="margin:6px 0">You see a table showing every month's variance</li>
-      <li style="margin:6px 0">Months with high variance are flagged red with the Rs. risk amount</li>
+      <li style="margin:6px 0">Download the month's GSTR-2B Excel from the GST portal and upload it as is (a CSV with the same headers also works)</li>
+      <li style="margin:6px 0">The system matches every invoice to your purchase register on supplier GSTIN + invoice number (spaces, slashes and leading zeros are ignored, so "INV/007" matches "INV-7")</li>
+      <li style="margin:6px 0">Each invoice lands in one bucket: <em>matched</em>, <em>mismatch</em> (taxable value, tax or date differ), <em>in books but not in 2B</em> (your ITC at risk), <em>in 2B but not in books</em> (credit you have not booked), or <em>review</em> (same supplier and tax, different invoice number — you decide)</li>
+      <li style="margin:6px 0">The month's risk amount is the ITC at risk, plus the output-tax gap when you also enter the GSTR-1 tax</li>
     </ol>
+    <p>The matching is rule-based and repeatable — the same files always give the same buckets. Nothing is matched by guesswork.</p>
 
     <!-- SECTION 12 -->
     <h3>12. Fraud Analytics</h3>

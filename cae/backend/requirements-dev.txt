@@ -1,0 +1,4 @@
+-r requirements.txt
+pytest==9.2.0
+# Embedded PostgreSQL for tests/test_integration_pg.py — no Docker needed
+pgserver==0.1.4

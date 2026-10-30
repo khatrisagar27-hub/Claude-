@@ -43,11 +43,19 @@ regenerate the workbook.
 
 ## Tests
 
-**There are none.** No pytest, no vitest, no CI. Do not claim a change is
-"tested" — verify by exercising the running stack (`make up`, then hit the
-endpoint or the UI) and say that's what you did. If you add tests, put backend
-tests under `cae/backend/tests/`, add pytest to `requirements.txt`, and record
-the command in the table above.
+Backend tests live in `cae/backend/tests/` (pytest; `pip install -r
+requirements-dev.txt`). Run from `cae/backend/`:
+
+| Suite | Command | Needs |
+|---|---|---|
+| Rules + statutory units | `python -m pytest tests/test_rules.py tests/test_statutory.py -q` | nothing — in-memory DuckDB |
+| End to end | `python -m pytest tests/test_integration_pg.py -q` | `pgserver` (embedded Postgres) — no Docker |
+
+The end-to-end suite migrates a throwaway Postgres, runs `scripts/seed_data.py`
+and `scripts/run_first_audit.py`, asserts all catalogue rules run with zero
+errors, then drives the API through `TestClient`. Run it on its own process (it
+sets `DATABASE_URL` before the app is imported). Every new rule needs a
+fire / don't-fire pair in `test_rules.py`. No frontend tests and no CI yet.
 
 ## Architecture
 
@@ -57,8 +65,8 @@ the command in the table above.
 `app/main.py` mounts `app/api/v1/router.py` under `/api/v1`; that router
 aggregates one module per domain (`auth`, `companies`, `ingestion`, `rules`,
 `exceptions`, `queries`, `remediation`, `risk`, `gst`, `dashboard`, `reports`,
-`working_capital`). Adding a domain means: new module in `app/api/v1/`, then
-register it in `router.py`.
+`working_capital`, `statutory`). Adding a domain means: new module in
+`app/api/v1/`, then register it in `router.py`.
 
 ### The audit engine — Postgres for state, DuckDB for analysis
 
@@ -70,9 +78,14 @@ DuckDB table. Rules then run as plain analytical SQL against DuckDB.
 Consequences to respect:
 
 - Rule SQL is **DuckDB dialect** with `?` positional params — not SQLAlchemy,
-  not Postgres.
-- A rule can only query tables `_load_data_to_duckdb()` actually loads. Needing
-  a new table means loading it there first.
+  not Postgres. DuckDB day codes differ: use `ISODOW()` (Mon=1..Sun=7), never
+  `DAYOFWEEK()` (Sun=0).
+- A rule can only query tables listed in `AuditEngine._TABLES`. Needing a new
+  table means adding it there first.
+- Each DuckDB table is created from the ORM schema (`_duck_type`), then filled.
+  Don't go back to `CREATE TABLE AS SELECT * FROM df`: an all-NULL column then
+  becomes INTEGER and `TRIM()` / `DATEDIFF()` on it fails — that broke 8 rules
+  on real data. UUIDs arrive as VARCHAR, JSON as text (`json_extract_string`).
 - Every rule run reloads the company's data. Keep that in mind before adding
   per-rule loads.
 
@@ -81,20 +94,48 @@ Consequences to respect:
 `app/rules/__init__.py` is a decorator registry: `@register("SAL-001")` maps a
 rule code to a callable, and the module's tail imports every rule module to
 trigger registration. Rule packs are `sales_rules`, `purchase_rules`,
-`inventory_rules`, `journal_rules`, `payroll_rules`, `treasury_rules`.
+`inventory_rules`, `journal_rules`, `payroll_rules`, `treasury_rules`,
+`gst_rules`, `tds_rules`.
 
 A rule is `fn(conn, company_id, rule)` returning a **list of exception dicts**
-with keys `title`, `description`, `severity`, `financial_impact`, `evidence`.
-To add one: write the function in the right pack with the next code in sequence,
-decorate it, and ensure a corresponding `AuditRule` row exists (rules are
-enabled/disabled from the DB, not from code).
+with keys `title`, `description`, `severity`, `financial_impact`, `evidence`
+(statutory rules put the section in `evidence["statutory_ref"]`). Thresholds
+come from `param(rule, key, default)` — `rule.parameters`, then
+`threshold_config` — never hard-coded. Ageing rules take `as_on` via
+`as_on_date()`, which defaults to the latest date in the data, not today.
+Financial years are Apr–Mar: group with `fy_sql()`.
+
+**`app/rules/catalogue.py` is the single source of truth** for which rules exist
+(name, category, severity, frequency, default parameters). `sync_rules()` (also
+`POST /rules/sync`) creates and refreshes a company's `AuditRule` rows from it;
+`seed_data.py` uses it too. To add a rule: function + `@register`, a catalogue
+row, a fire / don't-fire test, then `python scripts/gen_rule_docs.py` to
+refresh `docs/rules.md`. A test fails if the catalogue and registry disagree,
+and the engine marks an unregistered code as failed instead of returning [].
+
+`created_at` on imported rows is the CAE import date, not the books entry date.
+Entry-timing rules (SAL-004, GST-003) skip bulk-load days via
+`bulk_load_days_sql()`.
+
+### Statutory layer
+
+`app/statutory/` holds every legal threshold, rate and section number, each with
+its effective date and source: `income_tax` (1961→2025 Act concordance; the
+2025 Act applies from 01-04-2026 and `section_ref()` picks the right citation by
+transaction date), `gst`, `msme`, `companies` (small company / CARO / IFC),
+`labour`, `sampling` (SA 530), `clause44` (Form 3CD cl.44, GN para 79). Rules,
+engines and `/statutory` endpoints import from here. A change in law is a dated
+edit in one file plus a test — don't put a statutory figure anywhere else.
 
 ### Engines
 
 `app/engines/` — `audit_engine` (orchestrates rules), `risk_engine` (scores,
 heatmap, trend), `fraud_engine` (fraud indicators — these use **`score`**, not
-`severity`), `gst_engine` (GSTR-2B reconciliation, ITC at risk), `wc_engine`
-(working capital), `ai_engine` (narrative explanations only).
+`severity`; `score` is NUMERIC(5,2), so cap it), `gst_engine` + `gst_match`
+(deterministic GSTR-2B ↔ books match on GSTIN + normalised invoice number,
+buckets in `gst_reconciliation.details_json`), `wc_engine` (working capital),
+`ai_engine` (narrative explanations only; `claude-sonnet-5-5`, reads text
+blocks by type because replies can open with a thinking block).
 
 ### Connectors
 
@@ -142,6 +183,11 @@ likely way to waste an hour:
 - **Fraud indicators are scored, not severity-graded** — read `score`.
 - **Frontend must set `companyId` after login**, or the dashboard hangs on
   loading forever.
+- **The backend image is Python 3.11.** Local venvs are often 3.12, which
+  accepts f-strings that reuse the outer quote inside `{}` — 3.11 rejects them
+  as a syntax error.
+- **Migration 001 only creates `pgcrypto` on PostgreSQL < 13** — `gen_random_uuid()`
+  is core from 13, and embedded test Postgres ships no contrib extensions.
 
 ### Seed data quirks (`scripts/seed_data.py`)
 
@@ -151,6 +197,9 @@ looks odd:
 - some `due_date` values are NULL
 - some 2026 invoices are zero-value
 - inventory is recorded as **gross movements**, not net positions
+- no PF/ESI challan payments are seeded, so PAY-005 flags every wage month
+- GSTINs are valid-format (15 chars) but fictitious — needed for SAL-021 and the
+  2B matcher, which reject malformed GSTINs
 
 ## Security posture
 
@@ -166,7 +215,7 @@ disabled rather than erroring.
 
 - Rule codes: `<PACK>-<NNN>`, sequential within a pack. Existing prefixes are
   `SAL-` (sales), `PUR-` (purchase), `INV-` (inventory), `JE-` (journal),
-  `PAY-` (payroll), `TRE-` (treasury).
+  `PAY-` (payroll), `TRE-` (treasury), `GST-` (GST), `TDS-` (TDS).
 - API modules are one-per-domain, plural, snake_case, mirrored by the router
   prefix.
 - Backend: pydantic schemas in `app/schemas/`, SQLAlchemy models in

@@ -27,13 +27,23 @@ exports.
 
 - **Ingestion** — Tally Prime connector and Excel/CSV importer, with job tracking
   (`app/connectors/`)
-- **Exception rule engine** — configurable rule packs across sales, purchase,
-  journal, payroll, treasury and inventory (`app/rules/`); rules can be toggled
-  and test-run individually
-- **Risk & fraud scoring** — risk scores, heatmap, trend, and fraud indicators
-  (`app/engines/risk_engine.py`, `fraud_engine.py`)
-- **GST** — GSTR-2B upload, reconciliation against the purchase register, and an
-  **input-tax-credit-at-risk** figure (`app/engines/gst_engine.py`)
+- **Exception rule engine** — 55 rules across sales, purchase, GST, TDS,
+  journal, payroll, treasury and inventory (`app/rules/`); thresholds are
+  per-company parameters, and rules can be toggled and test-run individually.
+  Catalogue: [`cae/docs/rules.md`](cae/docs/rules.md)
+- **Statutory layer** — every threshold, rate and section number with its
+  effective date and source (`app/statutory/`). Exceptions cite the Income-tax
+  Act, 1961 or 2025 by transaction date (2025 Act from 01-04-2026), and cover
+  cash limits (s.36(4) / 185 / 186 / 188), MSMED s.15–16 interest and
+  s.37(2)(g), TDS under s.393, GST 2.0 rates, e-invoicing, Rule 37 and s.16(4)
+- **Applicability and audit tools** — small company / CARO 2020 / IFC tests, an
+  MSME interest schedule, a reproducible SA 530 sample and a Form 3CD clause 44
+  draft per the ICAI Guidance Note (`/api/v1/statutory`)
+- **Risk & fraud scoring** — risk scores, heatmap, trend, and fraud indicators,
+  with Benford tested by Nigrini MAD (`app/engines/risk_engine.py`, `fraud_engine.py`)
+- **GST** — invoice-level GSTR-2B ↔ books match on supplier GSTIN + invoice
+  number from the portal Excel/CSV, with an **input-tax-credit-at-risk** figure
+  (`app/engines/gst_engine.py`, `gst_match.py`)
 - **Working capital** — working-capital analysis engine (`app/engines/wc_engine.py`)
 - **Audit workflow** — exceptions → client queries → remediation tracking, each
   with status transitions
@@ -71,6 +81,17 @@ make audit         # runs the first audit pass over the seed data
 | API + interactive docs | http://localhost:8000/api/docs |
 | Grafana | http://localhost:3001 |
 | Prometheus | http://localhost:9090 |
+
+### Tests
+
+No Docker needed — the end-to-end suite runs on an embedded PostgreSQL:
+
+```bash
+cd cae/backend
+pip install -r requirements-dev.txt
+python -m pytest tests/test_rules.py tests/test_statutory.py -q   # rules + statutory units
+python -m pytest tests/test_integration_pg.py -q                  # migrate, seed, audit, API
+```
 
 Other targets: `make migrate`, `make logs`, `make shell-backend`,
 `make shell-db`, `make down`, `make clean` (drops volumes).
