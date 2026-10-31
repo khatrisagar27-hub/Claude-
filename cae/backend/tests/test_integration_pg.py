@@ -239,3 +239,58 @@ def test_statutory_and_internal_engagements_end_to_end(client, company_id):
     # the two engagements and continuous monitoring keep separate exception sets
     cont = client.get(f"/api/v1/exceptions?company_id={company_id}&page_size=1").json()["total"]
     assert cont > 0 and cont != excs["total"]
+
+
+def test_tally_load_handles_cross_side_parties_and_reimport(stack):
+    """A debtor on a purchase voucher (customer who also supplies) and a creditor on a sales voucher
+    must get masters on the right side; re-importing the period replaces rather than duplicates."""
+    import uuid as _uuid
+    from datetime import date as _d
+    from app.connectors import tally_live as tl
+    from app.database import SessionLocal
+    from app.models.tenant import Company
+    from app.models.master import Customer, Vendor
+    from app.models.transaction import JournalEntry, PurchaseInvoice, SalesInvoice
+
+    def line(ledger, amount, party=False):
+        return {"ledger": ledger, "amount": amount, "is_party": party, "bills": [], "bank": []}
+
+    def vch(no, parent, party, lines, day):
+        return {"guid": f"g-{no}", "date": _d(2026, 5, day), "vtype": parent, "parent": parent, "number": str(no),
+                "reference": f"R{no}", "ref_date": None, "party": party, "party_gstin": "", "narration": "",
+                "entered_by": "HARDIK", "irn": "", "eway": "", "in_books": True, "lines": lines, "stock": []}
+
+    groups = {"Sundry Debtors": ("Sundry Debtors", "Current Assets"), "Sundry Creditors": ("Sundry Creditors", "Current Liabilities"),
+              "Current Assets": ("Current Assets", "Primary"), "Current Liabilities": ("Current Liabilities", "Primary"),
+              "Sales Accounts": ("Sales Accounts", "Primary"), "Purchase Accounts": ("Purchase Accounts", "Primary")}
+    led = lambda parent: {"parent": parent, "pan": "", "gstin": "", "state": "", "billwise": False, "opening": 0.0, "msme": ""}  # noqa: E731
+    ledgers = {"Debtor Co": led("Sundry Debtors"), "Creditor Co": led("Sundry Creditors"),
+               "Sales": led("Sales Accounts"), "Purchases": led("Purchase Accounts")}
+    data = {"company": "T", "from": _d(2026, 4, 1), "to": _d(2026, 9, 30), "groups": groups, "vtypes": {},
+            "ledgers": ledgers, "items": {}, "bills": None, "warnings": [], "vouchers": [
+                vch(1, "Purchase", "Debtor Co", [line("Debtor Co", 1000.0, True), line("Purchases", -1000.0)], 3),
+                vch(1, "Sales", "Creditor Co", [line("Creditor Co", -500.0, True), line("Sales", 500.0)], 4),
+                vch(2, "Sales", "Debtor Co", [line("Debtor Co", -700.0, True), line("Sales", 700.0)], 5),
+                vch(3, "Sales", "Debtor Co", [line("Debtor Co", 0.0, True), line("Sales", 0.0)], 6),   # zero-value
+                dict(vch(4, "Sales", "", [], 7), in_books=False, excluded="cancelled")]}
+    db = SessionLocal()
+    try:
+        tenant_id = db.query(Company).first().tenant_id
+        company = Company(id=_uuid.uuid4(), tenant_id=tenant_id, name="Tally cross-side test")
+        db.add(company)
+        db.commit()
+        for _ in range(2):                                    # second run = re-import of the same period
+            stats = tl.load(db, company.id, data)
+        assert stats["purchase_invoices"] == 1 and stats["sales_invoices"] == 2 and stats["zero_value_vouchers"] == 1
+        assert any("zero-value" in w and "Sales 3" in w for w in data["warnings"])
+        assert stats["cancelled_vouchers"] == 1 and any("cancelled" in w and "Sales 4" in w for w in data["warnings"])
+        pi = db.query(PurchaseInvoice).filter(PurchaseInvoice.company_id == company.id).one()
+        assert db.query(Vendor).filter(Vendor.id == pi.vendor_id).one().name == "Debtor Co"
+        sales = db.query(SalesInvoice).filter(SalesInvoice.company_id == company.id).all()
+        names = {db.query(Customer).filter(Customer.id == s.customer_id).one().name for s in sales}
+        assert names == {"Creditor Co", "Debtor Co"}
+        assert db.query(JournalEntry).filter(JournalEntry.company_id == company.id).count() == 3
+        assert {j.voucher_number for j in db.query(JournalEntry).filter(JournalEntry.company_id == company.id)} == {
+            "Purchase/1/FY26-27", "Sales/1/FY26-27", "Sales/2/FY26-27"}
+    finally:
+        db.close()

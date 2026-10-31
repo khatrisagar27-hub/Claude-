@@ -176,6 +176,8 @@ def test_tally_voucher_takes_one_ledger_list_and_reads_bills_stock_irn():
     assert len(vouchers) == 1
     v = vouchers[0]
     assert v["parent"] == "Sales" and v["in_books"] and v["irn"] == "112410001"
+    cancelled = tl._parse_voucher(ET.fromstring(tl.clean(_SALES_XML.replace("<ISCANCELLED>No", '<ISCANCELLED TYPE="Logical">Yes'))).find(".//VOUCHER"), {"GST Sales": "Sales"})
+    assert not cancelled["in_books"] and cancelled["excluded"] == "cancelled"
     assert len(v["lines"]) == 4 and sum(ln["amount"] for ln in v["lines"]) == 0      # not doubled
     assert v["lines"][0]["bills"][0] == {"ref": "INV/1", "type": "New Ref", "amount": -118000.0, "credit_days": 30}
     assert v["stock"] == [{"item": "Pipe", "qty": 10.0, "unit": "Nos", "rate": 10000.0, "amount": 100000.0,

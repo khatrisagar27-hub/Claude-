@@ -309,7 +309,9 @@ def pull(gw: Gateway, company: str, frm: date, to: date, extended: bool = False,
 def _parse_voucher(v, vtypes) -> dict:
     vt = txt(v, "VOUCHERTYPENAME") or v.get("VCHTYPE", "")
     parent = _base_parent(vt, vtypes)
-    if txt(v, "ISCANCELLED") == "Yes" or txt(v, "ISDELETED") == "Yes" or txt(v, "ISOPTIONAL") == "Yes":
+    excluded = next((label for flag, label in (("ISCANCELLED", "cancelled"), ("ISDELETED", "deleted"),
+                                              ("ISOPTIONAL", "optional")) if txt(v, flag) == "Yes"), None)
+    if excluded:
         books = False
     else:
         books = parent not in NON_ACCOUNTING and parent not in STOCK_ONLY
@@ -348,7 +350,7 @@ def _parse_voucher(v, vtypes) -> dict:
             "number": txt(v, "VOUCHERNUMBER"), "reference": txt(v, "REFERENCE"), "ref_date": _tdate(txt(v, "REFERENCEDATE")),
             "party": txt(v, "PARTYLEDGERNAME"), "party_gstin": txt(v, "PARTYGSTIN"), "narration": txt(v, "NARRATION"),
             "entered_by": txt(v, "ENTEREDBY"), "irn": txt(v, "IRN") or txt(v, "IRNACKNO"), "eway": eway,
-            "in_books": books, "lines": lines, "stock": stock}
+            "in_books": books, "excluded": excluded, "lines": lines, "stock": stock}
 
 
 # ---------------------------------------------------------------------------- load into CAE
@@ -413,24 +415,37 @@ def load(db, company_id: uuid.UUID, data: dict) -> dict:
         g.is_cash_account = c == "Cash-in-Hand"
         g.is_control_account = c in ("Sundry Debtors", "Sundry Creditors")
         gl_ids[name] = (g.id, g.account_code)
-    party_ids = {}
-    for model, group, kind in ((Customer, "Sundry Debtors", "customer"), (Vendor, "Sundry Creditors", "vendor")):
-        current = {p.name: p for p in db.query(model).filter(model.company_id == company_id).all()}
-        for name, info in ledgers.items():
-            if cls[name] != group:
-                continue
-            p = current.get(name[:300])
-            if p is None:
-                code_field = "customer_code" if kind == "customer" else "vendor_code"
-                p = model(id=uuid.uuid4(), company_id=company_id, name=name[:300], **{code_field: _code("TL", name)})
-                db.add(p)
-                stats[f"{kind}s_added"] += 1
+    # customers and vendors are separate masters: a debtor can appear on a purchase voucher (a customer
+    # who also supplies) and a creditor on a sales voucher, so each side keeps its own name -> id map
+    masters = {"customer": (Customer, "customer_code"), "vendor": (Vendor, "vendor_code")}
+    party_ids = {kind: {p.name: p for p in db.query(model).filter(model.company_id == company_id).all()}
+                 for kind, (model, _) in masters.items()}
+
+    def party_id(kind: str, name: str | None):
+        """Master id for a party on the given side, creating the master if the ledger is not there yet."""
+        if not name:
+            return None
+        p = party_ids[kind].get(name[:300])
+        if p is None:
+            model, code_field = masters[kind]
+            p = model(id=uuid.uuid4(), company_id=company_id, name=name[:300], **{code_field: _code("TL", name)})
+            db.add(p)
+            party_ids[kind][name[:300]] = p
+            stats[f"{kind}s_added"] += 1
+        info = ledgers.get(name)
+        if info:
             p.gstin = (info["gstin"] or None) and info["gstin"][:15]
             p.pan = (info["pan"] or None) and info["pan"][:10]
             p.state = info["state"] or None
             if kind == "vendor" and info["msme"]:
                 p.msme_status = info["msme"].title()[:20]
-            party_ids[name] = p.id
+        return p.id
+
+    for name in ledgers:
+        if cls[name] == "Sundry Debtors":
+            party_id("customer", name)
+        elif cls[name] == "Sundry Creditors":
+            party_id("vendor", name)
     db.flush()
 
     # settlement dates: the last Agst Ref allocation against each bill
@@ -472,7 +487,7 @@ def load(db, company_id: uuid.UUID, data: dict) -> dict:
         return key
 
     for v in sorted(data["vouchers"], key=lambda x: (x["date"] or frm, x["number"])):
-        if v["in_books"] and v["lines"]:
+        if v["in_books"] and any(abs(ln["amount"]) >= 0.005 for ln in v["lines"]):
             dr = sum(-ln["amount"] for ln in v["lines"] if ln["amount"] < 0)
             cr = sum(ln["amount"] for ln in v["lines"] if ln["amount"] > 0)
             je = JournalEntry(id=uuid.uuid4(), company_id=company_id, voucher_number=voucher_key(v),
@@ -489,7 +504,7 @@ def load(db, company_id: uuid.UUID, data: dict) -> dict:
                                         credit_amount=D(ln["amount"]) if ln["amount"] > 0 else D(0)))
             stats["journal_entries"] += 1
             if v["parent"] in ("Sales", "Purchase"):
-                _invoice(db, company_id, v, cls, party_ids, ledgers, bills, settled_on, stats)
+                _invoice(db, company_id, v, cls, party_id, ledgers, bills, settled_on, stats)
             for ln in v["lines"]:
                 c = cls.get(ln["ledger"])
                 if c not in ("Bank Accounts", "Bank OD A/c", "Cash-in-Hand") or not ln["amount"]:
@@ -530,10 +545,25 @@ def load(db, company_id: uuid.UUID, data: dict) -> dict:
     db.commit()
     stats["vouchers_read"] = len(data["vouchers"])
     stats["vouchers_in_books"] = sum(1 for v in data["vouchers"] if v["in_books"])
+    # zero-value vouchers carry no ledger amount, so they are not loaded — but nullifying an invoice
+    # instead of cancelling it is itself worth a look, so say which ones
+    for label in ("cancelled", "optional", "deleted"):
+        out = [v for v in data["vouchers"] if v.get("excluded") == label]
+        if out:
+            stats[f"{label}_vouchers"] = len(out)
+            listed = ", ".join(f"{v['vtype']} {v['number']}" for v in out[:15])
+            data["warnings"].append(f"{len(out)} {label} voucher(s) kept out of the books: {listed}"
+                                    f"{' …' if len(out) > 15 else ''}")
+    zero = [v for v in data["vouchers"] if v["in_books"] and not any(abs(ln["amount"]) >= 0.005 for ln in v["lines"])]
+    if zero:
+        stats["zero_value_vouchers"] = len(zero)
+        listed = ", ".join(f"{v['vtype']} {v['number']} ({v['date']:%d-%m-%Y})" for v in zero[:15] if v["date"])
+        data["warnings"].append(f"{len(zero)} zero-value voucher(s) in the books were not loaded — review them: "
+                                f"{listed}{' …' if len(zero) > 15 else ''}")
     return dict(stats)
 
 
-def _invoice(db, company_id, v, cls, party_ids, ledgers, bills, settled_on, stats):
+def _invoice(db, company_id, v, cls, party_id, ledgers, bills, settled_on, stats):
     from app.models.transaction import PurchaseInvoice, SalesInvoice
 
     sales = v["parent"] == "Sales"
@@ -577,14 +607,14 @@ def _invoice(db, company_id, v, cls, party_ids, ledgers, bills, settled_on, stat
                             "outstanding_known": known, "has_inventory": bool(v["stock"]),
                             "entered_by": v["entered_by"] or None})
     if sales:
-        db.add(SalesInvoice(invoice_number=(v["number"] or v["guid"][:30])[:50], customer_id=party_ids.get(party),
+        db.add(SalesInvoice(invoice_number=(v["number"] or v["guid"][:30])[:50], customer_id=party_id("customer", party),
                             e_invoice_irn=(v["irn"] or None) and v["irn"][:64],
                             e_way_bill_number=(v["eway"] or None) and v["eway"][:12],
                             tds_amount=Decimal(str(round(tax["tds"], 2))), **common))
         stats["sales_invoices"] += 1
     else:
         db.add(PurchaseInvoice(invoice_number=(v["reference"] or v["number"] or v["guid"][:30])[:50],
-                               our_po_number=None, vendor_id=party_ids.get(party), receipt_date=v["date"],
+                               our_po_number=None, vendor_id=party_id("vendor", party), receipt_date=v["date"],
                                vendor_gstin=(v["party_gstin"] or ledgers.get(party, {}).get("gstin") or "")[:15] or None,
                                itc_eligible=(tax["cgst"] + tax["sgst"] + tax["igst"]) > 0,
                                tds_amount=Decimal(str(round(tax["tds"], 2))),
