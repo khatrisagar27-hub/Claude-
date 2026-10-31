@@ -27,6 +27,10 @@ class SyncJob(Base):
     exceptions_raised: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     triggered_by: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    engagement_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        sa.UUID(as_uuid=True), sa.ForeignKey("audit_engagements.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    result_json: Mapped[Optional[dict]] = mapped_column(sa.JSON, nullable=True, comment="Per-step counts / import stats")
     created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False, server_default=func.now())
 
     company: Mapped["Company"] = relationship("Company", back_populates="sync_jobs", lazy="select")

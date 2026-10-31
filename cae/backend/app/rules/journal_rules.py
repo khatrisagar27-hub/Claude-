@@ -13,7 +13,6 @@ def je_001(conn, company_id, rule):
           AND (narration IS NULL OR TRIM(narration) = '')
           AND total_debit > ?
         ORDER BY total_debit DESC
-        LIMIT 30
     """, [company_id, min_amount]).fetchall()
     return [
         {
@@ -40,7 +39,6 @@ def je_002(conn, company_id, rule):
           AND DATEDIFF('day', entry_date, CAST(posted_at AS DATE)) > ?
           AND total_debit > ?
         ORDER BY lag DESC
-        LIMIT 20
     """, [company_id, max_days, min_amount]).fetchall()
     return [
         {
@@ -63,7 +61,6 @@ def je_003(conn, company_id, rule):
         FROM journal_entries
         WHERE company_id = ? AND voucher_type = 'journal' AND total_debit > ?
         ORDER BY total_debit DESC
-        LIMIT 20
     """, [company_id, min_amount]).fetchall()
     return [
         {
@@ -86,8 +83,8 @@ def je_005(conn, company_id, rule):
     rows = conn.execute("""
         SELECT COALESCE(jel.account_code, jel.account_name) AS acct, MAX(jel.account_name),
                SUM(jel.debit_amount - jel.credit_amount) AS net, MIN(je.entry_date) AS oldest, COUNT(*) AS lines
-        FROM journal_entry_lines jel
-        JOIN journal_entries je ON jel.journal_entry_id = je.id
+        FROM journal_entry_lines_all jel
+        JOIN journal_entries_all je ON jel.journal_entry_id = je.id
         WHERE je.company_id = ? AND je.entry_date <= ?
           AND (UPPER(jel.account_code) LIKE 'SUSP%' OR LOWER(jel.account_name) LIKE '%suspense%')
         GROUP BY acct
@@ -114,7 +111,6 @@ def je_006(conn, company_id, rule):
         SELECT id, voucher_number, total_debit, entry_date
         FROM journal_entries
         WHERE company_id = ? AND is_reversed = true AND reversal_of_id IS NULL
-        LIMIT 20
     """, [company_id]).fetchall()
     return [
         {
@@ -139,7 +135,6 @@ def je_009(conn, company_id, rule):
         WHERE je.company_id = ?
         GROUP BY je.id, je.voucher_number
         HAVING ABS(SUM(jel.debit_amount) - SUM(jel.credit_amount)) > ?
-        LIMIT 20
     """, [company_id, tolerance]).fetchall()
     return [
         {
@@ -159,13 +154,17 @@ def je_011(conn, company_id, rule):
     min_amount = float(param(rule, "min_amount", 500_000))
     min_count = int(param(rule, "min_count", 10))
     rows = conn.execute("""
-        SELECT posted_by_user_id, COUNT(*) AS cnt, SUM(total_debit) AS total_value
-        FROM journal_entries
-        WHERE company_id = ? AND posted_by_user_id IS NOT NULL AND is_posted = true
+        WITH je AS (
+            SELECT j.*, COALESCE(u.full_name, json_extract_string(CAST(j.raw_data AS VARCHAR), '$.entered_by'),
+                                 j.posted_by_user_id) AS poster
+            FROM journal_entries j LEFT JOIN users u ON u.id = j.posted_by_user_id
+        )
+        SELECT poster, COUNT(*) AS cnt, SUM(total_debit) AS total_value, MAX(posted_by_user_id)
+        FROM je
+        WHERE company_id = ? AND poster IS NOT NULL AND is_posted = true
           AND total_debit > ?
-        GROUP BY posted_by_user_id
+        GROUP BY poster
         HAVING COUNT(*) > ?
-        LIMIT 10
     """, [company_id, min_amount, min_count]).fetchall()
     return [
         {
@@ -173,7 +172,7 @@ def je_011(conn, company_id, rule):
             "description": f"User {r[0]} posted {r[1]} JEs above ₹{min_amount:,.0f}, totalling ₹{float(r[2]):,.0f}. Check maker-checker separation.",
             "severity": "critical",
             "financial_impact": float(r[2]),
-            "evidence": {"user_id": str(r[0]), "count": r[1], "total": float(r[2])},
+            "evidence": {"posted_by": str(r[0]), "user_id": str(r[3]) if r[3] else None, "count": r[1], "total": float(r[2])},
         }
         for r in rows
     ]
@@ -190,7 +189,6 @@ def je_015(conn, company_id, rule):
           AND {fy_sql('entry_date')} < {fy_sql('CAST(posted_at AS DATE)')}
           AND total_debit > ?
         ORDER BY total_debit DESC
-        LIMIT 20
     """, [company_id, min_amount]).fetchall()
     return [
         {

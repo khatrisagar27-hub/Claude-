@@ -7,23 +7,14 @@ import SeverityBadge from '../components/common/SeverityBadge';
 import StatusBadge from '../components/common/StatusBadge';
 import AmountDisplay from '../components/common/AmountDisplay';
 import type { AuditException } from '../types';
+import { AREA_LABELS, AUDIT_TYPE_LABEL, areaLabel, engagementQS } from '../api/labels';
 
-const CATEGORIES = [
-  { value: '', label: 'All Areas' },
-  { value: 'revenue', label: 'Revenue' },
-  { value: 'expenditure', label: 'Expenditure' },
-  { value: 'payroll', label: 'Payroll' },
-  { value: 'gst', label: 'GST' },
-  { value: 'inventory', label: 'Inventory' },
-  { value: 'bank_reconciliation', label: 'Bank / Treasury' },
-  { value: 'related_party', label: 'Related Party' },
-  { value: 'statutory', label: 'Statutory (Tax / MSME / PF)' },
-  { value: 'financial_reporting', label: 'Journals / Reporting' },
-];
+const CATEGORIES = [{ value: '', label: 'All Areas' }, ...Object.entries(AREA_LABELS).map(([value, label]) => ({ value, label }))];
 
 export default function Exceptions() {
-  const { companyId } = useAuthStore();
+  const { companyId, engagement } = useAuthStore();
   const navigate = useNavigate();
+  const statutory = engagement?.audit_type === 'statutory';
   const [exceptions, setExceptions] = useState<AuditException[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -39,18 +30,21 @@ export default function Exceptions() {
     if (severity) params.set('severity', severity);
     if (status) params.set('status', status);
     if (category) params.set('category', category);
-    apiClient.get(`/exceptions?${params}`).then(r => {
+    apiClient.get(`/exceptions?${params}${engagementQS(engagement?.id)}`).then(r => {
       setExceptions(r.data.items);
       setTotal(r.data.total);
     }).finally(() => setLoading(false));
-  }, [companyId, page, severity, status, category]);
+  }, [companyId, engagement?.id, page, severity, status, category]);
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-white">Exceptions</h1>
-          <p className="text-sm text-gray-500">{total} total exceptions</p>
+          <h1 className="text-xl font-bold text-white">{engagement ? (statutory ? 'Audit Findings' : 'Observations') : 'Exceptions'}</h1>
+          <p className="text-sm text-gray-500">
+            {total} {engagement ? `in ${engagement.label}` : 'from continuous monitoring'}
+            {engagement && ` · ${AUDIT_TYPE_LABEL[engagement.audit_type]}: ${statutory ? 'reporting reference = CARO 2020 / tax audit / IFC / SA' : 'grouped by process'}`}
+          </p>
         </div>
       </div>
 
@@ -87,16 +81,16 @@ export default function Exceptions() {
         <table className="w-full">
           <thead>
             <tr>
-              {['Severity', 'Title', 'Business Area', 'Financial Impact', 'Status', 'Detected'].map(h => (
+              {['Severity', 'Rule', 'Title', engagement ? (statutory ? 'Reporting reference' : 'Process') : 'Business Area', 'Financial Impact', 'Status', 'Detected'].map(h => (
                 <th key={h} className="table-header text-left">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} className="text-center py-12 text-gray-500">Loading…</td></tr>
+              <tr><td colSpan={7} className="text-center py-12 text-gray-500">Loading…</td></tr>
             ) : exceptions.length === 0 ? (
-              <tr><td colSpan={6} className="text-center py-12 text-gray-500">No exceptions found</td></tr>
+              <tr><td colSpan={7} className="text-center py-12 text-gray-500">No exceptions found{engagement ? ' — run the engagement from the Engagements page' : ''}</td></tr>
             ) : exceptions.map(exc => (
               <tr
                 key={exc.id}
@@ -104,11 +98,19 @@ export default function Exceptions() {
                 onClick={() => navigate(`/exceptions/${exc.id}`)}
               >
                 <td className="table-cell"><SeverityBadge severity={exc.severity} /></td>
+                <td className="table-cell font-mono text-xs text-gray-500">{exc.rule_code}</td>
                 <td className="table-cell max-w-xs">
                   <span className="text-gray-200 line-clamp-2 text-sm">{exc.title}</span>
                 </td>
-                <td className="table-cell text-gray-400 capitalize">{exc.category?.replace(/_/g, ' ')}</td>
-                <td className="table-cell"><AmountDisplay amount={exc.financial_impact} /></td>
+                <td className="table-cell text-gray-400 text-xs max-w-xs">
+                  {!engagement ? areaLabel(exc.category)
+                    : statutory ? (exc.audit_refs?.length ? exc.audit_refs.map(r => `${r.frame.split(' (')[0]} ${r.ref}`).join(' · ') : 'SA / financial statements')
+                    : exc.process}
+                </td>
+                <td className="table-cell">
+                  <AmountDisplay amount={exc.financial_impact} />
+                  {exc.material && <span className="ml-1 text-[10px] font-semibold text-red-300 border border-red-800/60 rounded px-1">≥ MAT</span>}
+                </td>
                 <td className="table-cell"><StatusBadge status={exc.status} /></td>
                 <td className="table-cell text-gray-500 text-xs">
                   {new Date(exc.detected_on).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })}

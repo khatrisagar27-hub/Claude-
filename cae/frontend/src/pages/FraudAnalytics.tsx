@@ -21,11 +21,21 @@ export default function FraudAnalytics() {
   const { companyId } = useAuthStore();
   const [indicators, setIndicators] = useState<FraudIndicator[]>([]);
   const [loading, setLoading] = useState(true);
+  const [population, setPopulation] = useState('sales');
 
   useEffect(() => {
-    if (!companyId) return;
+    if (!companyId) { setLoading(false); return; }
     apiClient.get(`/risk/fraud-indicators?company_id=${companyId}`).then(r => setIndicators(r.data)).finally(() => setLoading(false));
   }, [companyId]);
+
+  // observed first-digit shares come from the Benford indicators the fraud engine stored
+  const benford = indicators.filter(i => i.indicator_type === 'benford_deviation' && i.details_json?.observed);
+  const pick = benford.find(i => String(i.details_json?.population || '').startsWith(population)) || benford[0];
+  const chart = benfordExpected.map((d, k) => ({
+    ...d,
+    observed: pick ? Math.round(pick.details_json!.observed[k] * 1000) / 10 : 0,
+  }));
+  const band = (score: number) => (score >= 60 ? 'critical' : score >= 40 ? 'high' : score >= 20 ? 'medium' : 'low');
 
   return (
     <div className="space-y-6">
@@ -36,11 +46,22 @@ export default function FraudAnalytics() {
 
       {/* Benford's chart */}
       <div className="card">
-        <h2 className="text-sm font-semibold text-gray-300 mb-4 uppercase tracking-wider">
-          Benford's Law Analysis — Leading Digit Distribution
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">
+            Benford's Law Analysis — Leading Digit Distribution
+          </h2>
+          {benford.length > 1 && (
+            <select aria-label="Benford population" value={population} onChange={e => setPopulation(e.target.value)}
+              className="bg-navy-700 border border-navy-border text-xs text-gray-300 rounded px-2 py-1">
+              {benford.map(b => {
+                const p = String(b.details_json?.population || '').split(' ')[0];
+                return <option key={b.id} value={p}>{b.details_json?.population}</option>;
+              })}
+            </select>
+          )}
+        </div>
         <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={benfordExpected} barSize={20} barGap={4}>
+          <BarChart data={chart} barSize={20} barGap={4}>
             <XAxis dataKey="digit" stroke="#4B5563" tick={{ fill: '#9CA3AF', fontSize: 12 }} label={{ value: 'Leading Digit', fill: '#6B7280', fontSize: 11, position: 'insideBottom', offset: -5 }} />
             <YAxis stroke="#4B5563" tick={{ fill: '#6B7280', fontSize: 11 }} unit="%" />
             <Tooltip contentStyle={{ background: '#161B22', border: '1px solid #30363D' }} labelStyle={{ color: '#E5E7EB' }} />
@@ -48,8 +69,9 @@ export default function FraudAnalytics() {
             <Bar dataKey="observed" name="Observed" fill="#3B82F6" />
           </BarChart>
         </ResponsiveContainer>
-        <p className="text-xs text-gray-600 mt-2 text-center">
-          Observed data will populate after audit cycle runs on actual transaction data
+        <p className="text-xs text-gray-500 mt-2 text-center">
+          {pick ? `${pick.details_json?.population}: n = ${pick.details_json?.n}, MAD ${Number(pick.details_json?.mad).toFixed(4)} — ${pick.details_json?.conformity} (Nigrini bands)`
+            : 'Observed data will populate after an audit cycle runs'}
         </p>
       </div>
 
@@ -66,7 +88,7 @@ export default function FraudAnalytics() {
           <table className="w-full">
             <thead>
               <tr>
-                {['Type', 'Description', 'Severity', 'Detected'].map(h => (
+                {['Type', 'Description', 'Score', 'Exposure', 'Analysed'].map(h => (
                   <th key={h} className="table-header text-left">{h}</th>
                 ))}
               </tr>
@@ -74,13 +96,18 @@ export default function FraudAnalytics() {
             <tbody>
               {indicators.map(ind => (
                 <tr key={ind.id} className="table-row">
-                  <td className="table-cell font-mono text-xs text-gray-400">{ind.type}</td>
+                  <td className="table-cell font-mono text-xs text-gray-400">{ind.indicator_type.replace(/_/g, ' ')}</td>
                   <td className="table-cell text-gray-300 max-w-md">
                     <p className="text-sm">{ind.description}</p>
                   </td>
-                  <td className="table-cell"><SeverityBadge severity={ind.severity} /></td>
+                  <td className="table-cell whitespace-nowrap">
+                    <SeverityBadge severity={band(ind.score)} /> <span className="text-xs text-gray-500 ml-1">{ind.score.toFixed(1)}</span>
+                  </td>
+                  <td className="table-cell text-gray-400 text-xs">
+                    {ind.financial_exposure ? `₹${Math.round(ind.financial_exposure).toLocaleString('en-IN')}` : `${ind.affected_transactions} txns`}
+                  </td>
                   <td className="table-cell text-gray-500 text-xs">
-                    {new Date(ind.detected_at).toLocaleDateString('en-IN')}
+                    {new Date(ind.analysis_date).toLocaleDateString('en-IN')}
                   </td>
                 </tr>
               ))}

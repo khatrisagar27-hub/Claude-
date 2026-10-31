@@ -12,7 +12,9 @@ from app.models.workflow import ManagementQuery
 from app.models.risk import RiskScore, FraudIndicator, GSTReconciliation
 from app.schemas.dashboard import KPIOut, TopExceptionOut, TrendPoint, DashboardOut
 from app.utils.rbac import get_current_user
+from app.utils.engagement import exception_scope, get_engagement
 from app.models.user import User
+from typing import Optional
 
 router = APIRouter()
 
@@ -22,27 +24,28 @@ _OPEN_STATUSES = ["open", "in_review", "management_query_sent", "remediation_in_
 @router.get("/kpis", response_model=KPIOut)
 def get_kpis(
     company_id: uuid.UUID,
+    engagement_id: Optional[uuid.UUID] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    base = db.query(AuditException).filter(AuditException.company_id == company_id)
+    engagement = get_engagement(db, engagement_id, company_id)
+    base = db.query(AuditException).filter(AuditException.company_id == company_id, exception_scope(engagement_id))
     total = base.count()
     critical = base.filter(AuditException.severity == "critical").count()
     high = base.filter(AuditException.severity == "high").count()
     medium = base.filter(AuditException.severity == "medium").count()
     low = base.filter(AuditException.severity == "low").count()
 
-    queries = db.query(ManagementQuery).filter(ManagementQuery.company_id == company_id)
-    open_queries = queries.filter(ManagementQuery.status.in_(["open", "pending"])).count()
-    overdue_queries = queries.filter(
-        ManagementQuery.status.in_(["open", "pending"]),
-        ManagementQuery.due_date < date.today(),
-    ).count()
+    queries = (db.query(ManagementQuery).join(AuditException, AuditException.id == ManagementQuery.exception_id)
+               .filter(ManagementQuery.company_id == company_id, exception_scope(engagement_id)))
+    outstanding = ManagementQuery.status.notin_(["closed", "resolved"])
+    open_queries = queries.filter(outstanding).count()
+    overdue_queries = queries.filter(outstanding, ManagementQuery.due_date < date.today()).count()
 
     first_of_month = date.today().replace(day=1)
     resolved_this_month = base.filter(
-        AuditException.status == "resolved",
-        AuditException.detected_on >= first_of_month,
+        AuditException.status.in_(["resolved", "closed"]),
+        AuditException.resolved_on >= first_of_month,
     ).count()
 
     latest_score = (
@@ -53,8 +56,14 @@ def get_kpis(
     )
     composite_score = float(latest_score.composite_score) if latest_score else 0.0
     risk_band = latest_score.risk_band if latest_score else "low"
-
-    fraud_count = db.query(FraudIndicator).filter(FraudIndicator.company_id == company_id).count()
+    if engagement is not None:   # live, from this engagement's own exceptions
+        from app.engines.risk_engine import RiskEngine
+        top = max(RiskEngine(db, str(company_id), str(engagement.id))._compute_scores().values(),
+                  key=lambda v: v["composite_score"])
+        composite_score, risk_band = float(top["composite_score"]), top["risk_band"]
+    last_run = db.query(func.max(FraudIndicator.analysis_date)).filter(FraudIndicator.company_id == company_id).scalar()
+    fraud_count = db.query(FraudIndicator).filter(FraudIndicator.company_id == company_id,
+                                                  FraudIndicator.analysis_date == last_run).count() if last_run else 0
     gst_risk = db.query(func.sum(GSTReconciliation.risk_amount)).filter(
         GSTReconciliation.company_id == company_id
     ).scalar() or 0.0
@@ -65,6 +74,9 @@ def get_kpis(
         resolved_this_month=resolved_this_month,
         composite_risk_score=composite_score, risk_band=risk_band,
         fraud_indicators=fraud_count, gst_risk_amount=float(gst_risk),
+        engagement_label=engagement.label if engagement is not None else None,
+        audit_type=engagement.audit_type if engagement is not None else None,
+        total_financial_impact=float(base.with_entities(func.sum(AuditException.financial_impact)).scalar() or 0),
     )
 
 
@@ -72,12 +84,14 @@ def get_kpis(
 def get_top_exceptions(
     company_id: uuid.UUID,
     limit: int = 10,
+    engagement_id: Optional[uuid.UUID] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     excs = (
         db.query(AuditException)
-        .filter(AuditException.company_id == company_id, AuditException.status.in_(_OPEN_STATUSES))
+        .filter(AuditException.company_id == company_id, AuditException.status.in_(_OPEN_STATUSES),
+                exception_scope(engagement_id))
         .order_by(AuditException.financial_impact.desc().nullslast(), AuditException.detected_on.desc())
         .limit(limit)
         .all()
@@ -98,13 +112,15 @@ def get_top_exceptions(
 def get_exception_trend(
     company_id: uuid.UUID,
     months: int = 6,
+    engagement_id: Optional[uuid.UUID] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     from_date = date.today() - timedelta(days=months * 30)
     excs = (
         db.query(AuditException)
-        .filter(AuditException.company_id == company_id, AuditException.detected_on >= from_date)
+        .filter(AuditException.company_id == company_id, AuditException.detected_on >= from_date,
+                exception_scope(engagement_id))
         .all()
     )
     by_period: dict = {}

@@ -32,8 +32,9 @@ def stack(tmp_path_factory):
     server.psql("CREATE DATABASE cae_it;")
     uri = server.get_uri("cae_it")
     env = {**os.environ, "DATABASE_URL": uri, "SECRET_KEY": "integration-test-secret-key-32chars!",
-           "PYTHONIOENCODING": "utf-8", "ANTHROPIC_API_KEY": "", "ENVIRONMENT": "test"}
-    os.environ.update({k: env[k] for k in ("DATABASE_URL", "SECRET_KEY", "ANTHROPIC_API_KEY", "ENVIRONMENT")})
+           "PYTHONIOENCODING": "utf-8", "ANTHROPIC_API_KEY": "", "ENVIRONMENT": "test",
+           "REDIS_URL": "redis://127.0.0.1:1/0"}   # no broker: background work runs in-process
+    os.environ.update({k: env[k] for k in ("DATABASE_URL", "SECRET_KEY", "ANTHROPIC_API_KEY", "ENVIRONMENT", "REDIS_URL")})
     _run(["-m", "alembic", "upgrade", "head"], env)
     seed_out = _run([str(SCRIPTS / "seed_data.py")], env)
     audit_out = _run([str(SCRIPTS / "run_first_audit.py")], env)
@@ -174,3 +175,67 @@ def test_risk_and_working_capital_still_work(client, company_id):
     finally:
         db.close()
     assert "financial_reporting" in areas
+
+
+def test_companies_queries_and_remediation_workflow(client, company_id):
+    companies = client.get("/api/v1/companies")
+    assert companies.status_code == 200 and any(c["id"] == company_id for c in companies.json())
+    exc = client.get(f"/api/v1/exceptions?company_id={company_id}&page_size=1").json()["items"][0]
+    q = client.post("/api/v1/queries", json={"exception_id": exc["id"], "process_area": "revenue", "severity": exc["severity"],
+                                             "description": exc["title"], "evidence_summary": "", "suggested_question": "Why?"})
+    assert q.status_code == 201, q.text
+    assert q.json()["raised_by_name"] and q.json()["due_date"]
+    r = client.post(f"/api/v1/queries/{q.json()['id']}/respond", json={"response_text": "Explained with documents."})
+    assert r.status_code == 201, r.text
+    assert client.get(f"/api/v1/queries/{q.json()['id']}").json()["responses"][0]["responded_by_name"]
+    assert client.get(f"/api/v1/exceptions/{exc['id']}").json()["status"] == "management_query_sent"
+    rem = client.post("/api/v1/remediation", json={"company_id": company_id, "exception_id": exc["id"],
+                                                   "control_gap_description": "gap", "action_plan": "fix"})
+    assert rem.status_code == 201, rem.text
+    assert rem.json()["target_date"] and rem.json()["responsible_name"]
+    assert client.get(f"/api/v1/remediation?company_id={company_id}").status_code == 200
+    for ep, kind in (("working-paper", "spreadsheet"), ("exception-summary", "spreadsheet"), ("audit-deck", "pdf")):
+        rep = client.post(f"/api/v1/reports/{ep}?company_id={company_id}")       # continuous monitoring
+        assert rep.status_code == 200 and kind in rep.headers["content-type"], (ep, rep.status_code)
+
+
+def test_statutory_and_internal_engagements_end_to_end(client, company_id):
+    stat = client.post("/api/v1/engagements", json={"company_id": company_id, "audit_type": "statutory",
+                                                    "financial_year": 2024, "caro_applicable": True,
+                                                    "tax_audit_applicable": True, "materiality": 2_000_000})
+    assert stat.status_code == 201, stat.text
+    sid = stat.json()["id"]
+    assert stat.json()["period_from"] == "2024-04-01" and stat.json()["period_to"] == "2025-03-31"
+    run = client.post(f"/api/v1/engagements/{sid}/run")     # no broker in tests -> runs in-process
+    assert run.status_code == 200, run.text
+    job = client.get(f"/api/v1/ingestion/jobs/{run.json()['id']}").json()
+    assert job["status"] == "completed", job
+    assert job["result"]["rule_errors"] == 0 and job["result"]["rules_run"] < 55     # internal-only rules left out
+    excs = client.get(f"/api/v1/exceptions?company_id={company_id}&engagement_id={sid}&page_size=500").json()
+    assert excs["total"] > 0 and all(e["engagement_id"] == sid for e in excs["items"])
+    assert not {e["rule_code"] for e in excs["items"]} & {"SAL-019", "INV-010", "PAY-002", "SAL-002"}
+    from datetime import date as _d
+    assert all(_d.fromisoformat("2024-04-01") <= _d.fromisoformat(e["supporting_data"]["date"]) <= _d.fromisoformat("2025-03-31")
+               for e in excs["items"] if e["rule_code"] == "TRE-001")
+    assert any(r["frame"] == "CARO 2020" for e in excs["items"] for r in e["audit_refs"])
+    summary = client.get(f"/api/v1/engagements/{sid}/summary").json()
+    assert {m["frame"].split(" (")[0] for m in summary["reporting_matrix"]} == {"CARO 2020", "Form 3CD"}
+    wp = client.post(f"/api/v1/reports/working-paper?company_id={company_id}&engagement_id={sid}")
+    assert wp.status_code == 200 and "Statutory_Audit_WP" in wp.headers["content-disposition"]
+    pdf = client.post(f"/api/v1/reports/audit-deck?company_id={company_id}&engagement_id={sid}")
+    assert pdf.status_code == 200 and pdf.content[:4] == b"%PDF"
+    kpis = client.get(f"/api/v1/dashboard/kpis?company_id={company_id}&engagement_id={sid}").json()
+    assert kpis["audit_type"] == "statutory" and kpis["total_exceptions"] == excs["total"]
+
+    ia = client.post("/api/v1/engagements", json={"company_id": company_id, "audit_type": "internal",
+                                                  "period_from": "2024-07-01", "period_to": "2024-09-30"})
+    assert ia.status_code == 201, ia.text
+    iid = ia.json()["id"]
+    assert client.post(f"/api/v1/engagements/{iid}/run").status_code == 200
+    isum = client.get(f"/api/v1/engagements/{iid}/summary").json()
+    assert isum["total_findings"] > 0 and {p["process"] for p in isum["by_process"]} >= {"Order to Cash", "Procure to Pay"}
+    rep = client.post(f"/api/v1/reports/working-paper?company_id={company_id}&engagement_id={iid}")
+    assert rep.status_code == 200 and "Internal_Audit_Report" in rep.headers["content-disposition"]
+    # the two engagements and continuous monitoring keep separate exception sets
+    cont = client.get(f"/api/v1/exceptions?company_id={company_id}&page_size=1").json()["total"]
+    assert cont > 0 and cont != excs["total"]

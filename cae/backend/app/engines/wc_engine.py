@@ -87,7 +87,7 @@ class WorkingCapitalEngine:
         from sqlalchemy import func
 
         ref_date = self._reference_date()
-        window_start = ref_date - timedelta(days=365)
+        window_start = ref_date - timedelta(days=364)   # 365 days including ref_date
 
         # --- Sales velocity (trailing 12 months) ---
         annual_sales = self.db.query(func.sum(SalesInvoice.total_amount)).filter(
@@ -115,13 +115,16 @@ class WorkingCapitalEngine:
         ap = self._payables_breakdown(ref_date)
         dpo = ap["total"] / avg_daily_purchases if avg_daily_purchases > 0 else 0
 
-        # --- Inventory on-hand ---
+        # --- Inventory on-hand, turned over at cost (goods issued), not at selling price ---
         inventory_value = self._inventory_value(ref_date)
-        dio = inventory_value / avg_daily_sales if avg_daily_sales > 0 else 0
+        cogs, dio_basis = self._annual_cost_of_goods(window_start, ref_date)
+        if cogs <= 0:
+            cogs, dio_basis = float(annual_sales), "sales (no cost data)"
+        dio = inventory_value / (cogs / 365) if cogs > 0 else 0
 
         # --- Cash conversion cycle + stress score ---
         ccc = dso + dio - dpo
-        stress_score = min(100.0, max(0.0, (ccc / 180) * 100))
+        stress_score, stress_components = self._stress_score(ar, ap, dso, ccc)
 
         return {
             "as_of": ref_date.isoformat(),
@@ -131,6 +134,8 @@ class WorkingCapitalEngine:
             "ccc": round(ccc, 1),
             "stress_score": round(stress_score, 1),
             "wc_stress_score": round(stress_score, 1),  # alias for stored model
+            "stress_components": stress_components,
+            "dio_basis": dio_basis,
             "receivables_total": round(ar["total"], 2),
             "receivables_overdue": round(ar["overdue"], 2),
             "payables_total": round(ap["total"], 2),
@@ -159,6 +164,45 @@ class WorkingCapitalEngine:
             .scalar()
         )
         return ref or date.today()
+
+    # Stress = weighted share of warning signs, 0 (healthy) to 100 (critical). A CCC-only score
+    # read 0 / "healthy" with 92% of receivables overdue, because a long DPO netted it away.
+    STRESS_WEIGHTS = {"receivables_90_plus": 0.30, "receivables_overdue": 0.20, "dso_vs_180": 0.20,
+                      "payables_overdue": 0.15, "ccc_vs_180": 0.15}
+
+    @classmethod
+    def _stress_score(cls, ar: dict, ap: dict, dso: float, ccc: float) -> tuple[float, dict]:
+        share = lambda part, whole: (part / whole) if whole else 0.0  # noqa: E731
+        signals = {
+            "receivables_90_plus": share(ar["aging"]["d90_plus"], ar["total"]),
+            "receivables_overdue": share(ar["overdue"], ar["total"]),
+            "dso_vs_180": min(max(dso, 0) / 180, 1.0),
+            "payables_overdue": share(ap["overdue"], ap["total"]),
+            "ccc_vs_180": min(max(ccc, 0) / 180, 1.0),
+        }
+        score = 100 * sum(cls.STRESS_WEIGHTS[k] * v for k, v in signals.items())
+        return min(100.0, score), {k: round(v * 100, 1) for k, v in signals.items()}
+
+    def _annual_cost_of_goods(self, start: date, end: date) -> tuple[float, str]:
+        """Cost of goods issued in the window (inventory ledger), else taxable purchases."""
+        from app.models.transaction import InventoryMovement, PurchaseInvoice
+        from sqlalchemy import func
+
+        issued = self.db.query(func.sum(InventoryMovement.total_value)).filter(
+            InventoryMovement.company_id == self.company_id,
+            InventoryMovement.movement_type == "goods_issue",
+            InventoryMovement.movement_date >= start,
+            InventoryMovement.movement_date <= end,
+        ).scalar() or 0
+        if float(issued) > 0:
+            return float(issued), "cost of goods issued"
+        bought = self.db.query(func.sum(PurchaseInvoice.taxable_amount)).filter(
+            PurchaseInvoice.company_id == self.company_id,
+            PurchaseInvoice.invoice_date >= start,
+            PurchaseInvoice.invoice_date <= end,
+            PurchaseInvoice.status != "cancelled",
+        ).scalar() or 0
+        return float(bought), "taxable purchases"
 
     @staticmethod
     def _effective_due(invoice) -> date:
@@ -204,6 +248,7 @@ class WorkingCapitalEngine:
                 SalesInvoice.company_id == self.company_id,
                 SalesInvoice.outstanding_amount > 0,
                 SalesInvoice.status != "cancelled",
+                SalesInvoice.invoice_date <= ref_date,
             )
             .all()
         )
@@ -258,6 +303,7 @@ class WorkingCapitalEngine:
                 PurchaseInvoice.company_id == self.company_id,
                 PurchaseInvoice.outstanding_amount > 0,
                 PurchaseInvoice.status != "cancelled",
+                PurchaseInvoice.invoice_date <= ref_date,   # a bill dated after the as-of date is not yet payable
             )
             .all()
         )

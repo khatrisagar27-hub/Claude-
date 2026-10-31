@@ -34,7 +34,7 @@ SCHEMAS = {
         "id": "VARCHAR", "company_id": "VARCHAR", "voucher_number": "VARCHAR", "entry_date": "DATE",
         "voucher_type": "VARCHAR", "narration": "VARCHAR", "total_debit": "DOUBLE", "total_credit": "DOUBLE",
         "is_posted": "BOOLEAN", "is_reversed": "BOOLEAN", "reversal_of_id": "VARCHAR",
-        "posted_by_user_id": "VARCHAR", "posted_at": "TIMESTAMP",
+        "posted_by_user_id": "VARCHAR", "posted_at": "TIMESTAMP", "raw_data": "VARCHAR",
     },
     "journal_entry_lines": {
         "id": "VARCHAR", "journal_entry_id": "VARCHAR", "account_code": "VARCHAR", "account_name": "VARCHAR",
@@ -66,6 +66,7 @@ SCHEMAS = {
         "id": "VARCHAR", "company_id": "VARCHAR", "name": "VARCHAR", "gstin": "VARCHAR", "pan": "VARCHAR",
         "msme_status": "VARCHAR", "payment_terms_days": "INTEGER", "bank_account_number": "VARCHAR",
     },
+    "users": {"id": "VARCHAR", "full_name": "VARCHAR"},
 }
 
 DEFAULTS = {
@@ -87,10 +88,19 @@ DEFAULTS = {
 }
 
 
-def build_conn(**tables):
+def _stored(name):
+    """Transaction tables are loaded as <name>_all, with <name> an in-period view (as in AuditEngine)."""
+    from app.rules import PERIOD_TABLES
+    return f"{name}_all" if name in PERIOD_TABLES or name == "journal_entry_lines" else name
+
+
+def build_conn(period_from=None, period_to=None, **tables):
+    from app.rules import apply_period
+
     conn = duckdb.connect(":memory:")
     for name, cols in SCHEMAS.items():
-        conn.execute(f"CREATE TABLE {name} ({', '.join(f'{c} {t}' for c, t in cols.items())})")
+        conn.execute(f"CREATE TABLE {_stored(name)} ({', '.join(f'{c} {t}' for c, t in cols.items())})")
+    apply_period(conn, period_from, period_to)
     for name, rows in tables.items():
         if not rows:
             continue
@@ -104,7 +114,7 @@ def build_conn(**tables):
             full.append(base)
         df = pd.DataFrame(full, columns=list(cols))
         conn.register("_df", df)
-        conn.execute(f"INSERT INTO {name} SELECT {', '.join(f'CAST({c} AS {t})' for c, t in cols.items())} FROM _df")
+        conn.execute(f"INSERT INTO {_stored(name)} SELECT {', '.join(f'CAST({c} AS {t})' for c, t in cols.items())} FROM _df")
         conn.unregister("_df")
     return conn
 

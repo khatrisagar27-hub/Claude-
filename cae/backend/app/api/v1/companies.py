@@ -23,11 +23,12 @@ class CompanyCreate(BaseModel):
     industry_sector: Optional[str] = None
     city: Optional[str] = None
     state: Optional[str] = None
+    annual_turnover: Optional[float] = None
 
 
 class CompanyOut(BaseModel):
-    id: str
-    tenant_id: str
+    id: uuid.UUID
+    tenant_id: uuid.UUID
     name: str
     gstin: Optional[str]
     pan: Optional[str]
@@ -37,6 +38,7 @@ class CompanyOut(BaseModel):
     city: Optional[str]
     state: Optional[str]
     is_active: bool
+    annual_turnover: Optional[float] = None
 
     model_config = {"from_attributes": True}
 

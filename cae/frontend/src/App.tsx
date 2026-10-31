@@ -16,6 +16,7 @@ import Statutory from './pages/Statutory';
 import DataIngestion from './pages/DataIngestion';
 import Reports from './pages/Reports';
 import Profile from './pages/Profile';
+import Engagements from './pages/Engagements';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { accessToken } = useAuthStore();
@@ -38,6 +39,7 @@ export default function App() {
         >
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
+          <Route path="engagements" element={<Engagements />} />
           <Route path="exceptions" element={<Exceptions />} />
           <Route path="exceptions/:id" element={<ExceptionDetail />} />
           <Route path="queries" element={<Queries />} />

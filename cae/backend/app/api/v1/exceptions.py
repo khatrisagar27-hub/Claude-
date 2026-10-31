@@ -6,7 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.audit import AuditException
+from app.models.audit import AuditException, AuditRule
+from app.utils.engagement import enrich, exception_scope, get_engagement, severity_order
 from app.schemas.exceptions import ExceptionOut, ExceptionListOut, ExceptionStatusUpdate, AiExplainOut
 from app.utils.rbac import get_current_user, require_roles
 from app.models.user import User
@@ -30,10 +31,17 @@ def list_exceptions(
     severity: Optional[str] = None,
     status: Optional[str] = None,
     category: Optional[str] = None,
+    engagement_id: Optional[uuid.UUID] = None,
+    rule_code: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    q = db.query(AuditException).filter(AuditException.company_id == company_id)
+    engagement = get_engagement(db, engagement_id, company_id)
+    q = (db.query(AuditException, AuditRule.rule_code)
+         .outerjoin(AuditRule, AuditRule.id == AuditException.rule_id)
+         .filter(AuditException.company_id == company_id, exception_scope(engagement_id)))
+    if rule_code:
+        q = q.filter(AuditRule.rule_code == rule_code)
     if severity:
         q = q.filter(AuditException.severity == severity)
     if status:
@@ -42,8 +50,10 @@ def list_exceptions(
         q = q.filter(AuditException.category == category)
 
     total = q.count()
-    items = q.order_by(AuditException.detected_on.desc()).offset((page - 1) * page_size).limit(page_size).all()
-    return ExceptionListOut(items=items, total=total, page=page, page_size=page_size)
+    rows = (q.order_by(severity_order(), AuditException.financial_impact.desc().nullslast(), AuditException.title)
+            .offset((page - 1) * page_size).limit(page_size).all())
+    return ExceptionListOut(items=[enrich(e, code, engagement) for e, code in rows], total=total, page=page,
+                            page_size=page_size)
 
 
 @router.get("/{exception_id}", response_model=ExceptionOut)
@@ -52,10 +62,13 @@ def get_exception(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    exc = db.query(AuditException).filter(AuditException.id == exception_id).first()
-    if not exc:
+    row = (db.query(AuditException, AuditRule.rule_code)
+           .outerjoin(AuditRule, AuditRule.id == AuditException.rule_id)
+           .filter(AuditException.id == exception_id).first())
+    if not row:
         raise HTTPException(status_code=404, detail="Exception not found")
-    return exc
+    exc, code = row
+    return enrich(exc, code, get_engagement(db, exc.engagement_id))
 
 
 @router.patch("/{exception_id}/status")
@@ -76,6 +89,9 @@ def update_status(
     exc.status = payload.status
     if payload.comment:
         exc.resolution_notes = payload.comment
+    if payload.status in ("resolved", "closed", "false_positive") and not exc.resolved_on:
+        from datetime import date
+        exc.resolved_on = date.today()
     db.commit()
     return {"exception_id": str(exc.id), "status": exc.status}
 

@@ -60,7 +60,8 @@ class FraudEngine:
         out = []
         for label, model in (("Sales", SalesInvoice), ("Purchase", PurchaseInvoice)):
             amounts = [float(r[0]) for r in self.db.query(model.total_amount)
-                       .filter(model.company_id == self.company_id, model.total_amount > 0).all()]
+                       .filter(model.company_id == self.company_id, model.total_amount > 0,
+                               model.status != "cancelled").all()]
             if len(amounts) < MIN_BENFORD_N:
                 continue
             result = benford_first_digit(amounts)
@@ -169,6 +170,9 @@ class FraudEngine:
     def write_indicators(self, indicators: list[dict]) -> int:
         from app.models.risk import FraudIndicator
         today = date.today()
+        # one set per day — a re-run replaces today's indicators instead of stacking duplicates
+        self.db.query(FraudIndicator).filter(FraudIndicator.company_id == self.company_id,
+                                             FraudIndicator.analysis_date == today).delete(synchronize_session=False)
         written = 0
         for ind in indicators:
             fi = FraudIndicator(

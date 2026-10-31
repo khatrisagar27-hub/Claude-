@@ -44,17 +44,18 @@ def generate_working_paper_excel(db: "Session", company_id: str, period: str | N
         if bold_val:
             c.font = Font(bold=True, size=11)
 
-    ws_cover["A1"] = "INTERNAL AUDIT WORKING PAPER"
+    ws_cover["A1"] = "CONTINUOUS AUDIT MONITORING — WORKING PAPER"
     ws_cover["A1"].font = Font(bold=True, size=18, color="C8A951")
     ws_cover.merge_cells("A1:B1")
     ws_cover.row_dimensions[1].height = 32
 
     cover_row(ws_cover, 3, "Company", company_name, bold_val=True)
     cover_row(ws_cover, 4, "GSTIN", company_gstin)
-    cover_row(ws_cover, 5, "Period", period or "All Periods")
+    cover_row(ws_cover, 5, "Scope", "Continuous monitoring — exceptions raised outside an audit engagement "
+              "(open a Statutory or Internal engagement for an audit report)")
     cover_row(ws_cover, 6, "Generated", __import__('datetime').datetime.now().strftime('%d %b %Y %H:%M'))
 
-    q_all = db.query(AuditException).filter(AuditException.company_id == uuid.UUID(company_id))
+    q_all = db.query(AuditException).filter(AuditException.company_id == uuid.UUID(company_id), AuditException.engagement_id.is_(None))
     total = q_all.count()
     cover_row(ws_cover, 8, "Total Exceptions", total, bold_val=True)
 
@@ -164,10 +165,10 @@ def generate_exception_summary_excel(db: "Session", company_id: str) -> io.Bytes
     total_fin = 0.0
     for i, sev in enumerate(["critical", "high", "medium", "low"], 5):
         count = db.query(func.count(AuditException.id)).filter(
-            AuditException.company_id == cid, AuditException.severity == sev,
+            AuditException.company_id == cid, AuditException.engagement_id.is_(None), AuditException.severity == sev,
         ).scalar() or 0
         fin = float(db.query(func.sum(AuditException.financial_impact)).filter(
-            AuditException.company_id == cid, AuditException.severity == sev,
+            AuditException.company_id == cid, AuditException.engagement_id.is_(None), AuditException.severity == sev,
         ).scalar() or 0)
         total_all += count
         total_fin += fin
@@ -194,7 +195,7 @@ def generate_exception_summary_excel(db: "Session", company_id: str) -> io.Bytes
         AuditException.category,
         func.count(AuditException.id),
         func.sum(AuditException.financial_impact),
-    ).filter(AuditException.company_id == cid).group_by(AuditException.category).all()
+    ).filter(AuditException.company_id == cid, AuditException.engagement_id.is_(None)).group_by(AuditException.category).all()
 
     for j, (cat, cnt, fin_sum) in enumerate(area_rows, 13):
         ws1.cell(row=j, column=1, value=(cat or "").replace("_", " ").title())
@@ -243,14 +244,14 @@ def generate_exception_summary_excel(db: "Session", company_id: str) -> io.Bytes
 
     ws2 = wb.create_sheet("All Exceptions")
     all_exc = db.query(AuditException).filter(
-        AuditException.company_id == cid
+        AuditException.company_id == cid, AuditException.engagement_id.is_(None)
     ).order_by(AuditException.detected_on.desc()).all()
     _write_exception_sheet(ws2, all_exc)
 
     # ── Sheet 3: Critical & High ──────────────────────────────────────────────
     ws3 = wb.create_sheet("Critical & High")
     critical_exc = db.query(AuditException).filter(
-        AuditException.company_id == cid,
+        AuditException.company_id == cid, AuditException.engagement_id.is_(None),
         AuditException.severity.in_(["critical", "high"]),
     ).order_by(AuditException.detected_on.desc()).all()
     _write_exception_sheet(ws3, critical_exc)
@@ -293,7 +294,7 @@ def generate_audit_deck_pdf(db: "Session", company_id: str) -> io.BytesIO:
     bg(c)
     c.setFillColorRGB(*GOLD)
     c.setFont("Helvetica-Bold", 26)
-    c.drawCentredString(w / 2, h - 120, "INTERNAL AUDIT REPORT")
+    c.drawCentredString(w / 2, h - 120, "CONTINUOUS AUDIT MONITORING REPORT")
 
     c.setFillColorRGB(*WHITE)
     c.setFont("Helvetica-Bold", 16)
@@ -338,10 +339,10 @@ def generate_audit_deck_pdf(db: "Session", company_id: str) -> io.BytesIO:
     sev_data = []
     for sev in severities:
         count = db.query(func.count(AuditException.id)).filter(
-            AuditException.company_id == cid, AuditException.severity == sev,
+            AuditException.company_id == cid, AuditException.engagement_id.is_(None), AuditException.severity == sev,
         ).scalar() or 0
         fin = float(db.query(func.sum(AuditException.financial_impact)).filter(
-            AuditException.company_id == cid, AuditException.severity == sev,
+            AuditException.company_id == cid, AuditException.engagement_id.is_(None), AuditException.severity == sev,
         ).scalar() or 0)
         total_count += count
         total_impact += fin
@@ -351,7 +352,7 @@ def generate_audit_deck_pdf(db: "Session", company_id: str) -> io.BytesIO:
     c.setFont("Helvetica-Bold", 12)
     c.drawString(50, y, "Severity")
     c.drawString(200, y, "Exception Count")
-    c.drawString(360, y, "Financial Exposure (₹)")
+    c.drawString(360, y, "Financial Exposure (Rs.)")
     y -= 8
     c.setStrokeColorRGB(0.3, 0.3, 0.3)
     c.line(50, y, w - 50, y)
@@ -368,7 +369,7 @@ def generate_audit_deck_pdf(db: "Session", company_id: str) -> io.BytesIO:
         c.setFillColorRGB(*WHITE)
         c.setFont("Helvetica", 11)
         c.drawString(220, y + 2, str(count))
-        c.drawString(360, y + 2, f"₹ {fin:,.0f}")
+        c.drawString(360, y + 2, f"Rs. {fin:,.0f}")
         y -= 28
 
     y -= 10
@@ -379,14 +380,14 @@ def generate_audit_deck_pdf(db: "Session", company_id: str) -> io.BytesIO:
     c.setFont("Helvetica-Bold", 12)
     c.drawString(50, y, "TOTAL")
     c.drawString(220, y, str(total_count))
-    c.drawString(360, y, f"₹ {total_impact:,.0f}")
+    c.drawString(360, y, f"Rs. {total_impact:,.0f}")
 
     c.showPage()
 
     # ── Page 3+: Top Findings ──────────────────────────────────────────────────
     top_exceptions = (
         db.query(AuditException)
-        .filter(AuditException.company_id == cid)
+        .filter(AuditException.company_id == cid, AuditException.engagement_id.is_(None))
         .order_by(AuditException.financial_impact.desc().nullslast(), AuditException.detected_on.desc())
         .limit(20)
         .all()
@@ -430,7 +431,7 @@ def generate_audit_deck_pdf(db: "Session", company_id: str) -> io.BytesIO:
         if fin:
             c.setFillColorRGB(*GOLD)
             c.setFont("Helvetica", 9)
-            c.drawRightString(w - 50, y + 1, f"₹ {fin:,.0f}")
+            c.drawRightString(w - 50, y + 1, f"Rs. {fin:,.0f}")
 
         y -= line_h
 

@@ -1,7 +1,7 @@
 """Aggregate all v1 API routers."""
 from fastapi import APIRouter
 
-from app.api.v1 import auth, companies, ingestion, rules, exceptions, queries, remediation, risk, gst, dashboard, reports, working_capital, statutory
+from app.api.v1 import auth, companies, ingestion, rules, exceptions, queries, remediation, risk, gst, dashboard, reports, working_capital, statutory, engagements, tally
 
 api_router = APIRouter()
 
@@ -18,3 +18,5 @@ api_router.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboar
 api_router.include_router(reports.router, prefix="/reports", tags=["Reports"])
 api_router.include_router(working_capital.router, prefix="/working-capital", tags=["Working Capital"])
 api_router.include_router(statutory.router, prefix="/statutory", tags=["Statutory"])
+api_router.include_router(engagements.router, prefix="/engagements", tags=["Engagements"])
+api_router.include_router(tally.router, prefix="/tally", tags=["Tally Prime"])

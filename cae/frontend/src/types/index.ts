@@ -25,6 +25,7 @@ export interface Company {
   city?: string;
   state?: string;
   is_active: boolean;
+  annual_turnover?: number | null;
 }
 
 export interface AuditException {
@@ -41,6 +42,65 @@ export interface AuditException {
   supporting_data?: any | null;
   ai_analysis?: string | null;
   status: string;
+  rule_code?: string | null;
+  engagement_id?: string | null;
+  process?: string | null;
+  audit_refs?: AuditRef[];
+  material?: boolean | null;
+}
+
+export interface AuditRef {
+  frame: string;
+  ref: string;
+  title?: string;
+  note?: string;
+}
+
+export type AuditType = 'statutory' | 'internal';
+
+export interface EngagementRef {
+  id: string;
+  label: string;
+  audit_type: AuditType;
+}
+
+export interface Engagement extends EngagementRef {
+  company_id: string;
+  name: string;
+  financial_year: number | null;
+  period_from: string;
+  period_to: string;
+  status: string;
+  caro_applicable: boolean;
+  ifc_applicable: boolean;
+  tax_audit_applicable: boolean;
+  materiality: number | null;
+  scope_notes: string | null;
+  exception_count: number;
+  rules_in_scope: number;
+  last_run_at: string | null;
+}
+
+export interface SyncJob {
+  id: string;
+  company_id: string;
+  job_type: string;
+  status: string;
+  records_processed: number;
+  exceptions_raised: number;
+  error_message: string | null;
+  created_at: string;
+  completed_at?: string | null;
+  engagement_id?: string | null;
+  run_mode?: string | null;
+  result?: Record<string, any> | null;
+}
+
+export interface QueryResponse {
+  id: string;
+  response_text: string;
+  responded_at: string;
+  responded_by_name?: string | null;
 }
 
 export interface ManagementQuery {
@@ -57,6 +117,9 @@ export interface ManagementQuery {
   due_date?: string;
   status: string;
   raised_at: string;
+  raised_by_name?: string | null;
+  auditor_comment?: string | null;
+  responses?: QueryResponse[];
 }
 
 export interface RiskScore {
@@ -84,6 +147,9 @@ export interface KPIs {
   risk_band: string;
   fraud_indicators: number;
   gst_risk_amount: number;
+  engagement_label?: string | null;
+  audit_type?: AuditType | null;
+  total_financial_impact?: number;
 }
 
 export interface AuditRule {
@@ -98,6 +164,8 @@ export interface AuditRule {
   frequency: string;
   is_enabled: boolean;
   parameters: Record<string, unknown> | null;
+  audit_scope?: 'statutory' | 'ifc' | 'internal' | null;
+  process?: string | null;
 }
 
 export interface RemediationAction {
@@ -111,14 +179,19 @@ export interface RemediationAction {
   actual_closure_date?: string;
   retest_outcome?: string;
   residual_risk_score?: number;
+  responsible_name?: string;
+  status?: string;
 }
 
 export interface FraudIndicator {
   id: string;
-  type: string;
+  indicator_type: string;
   description: string;
-  severity: string;
-  detected_at: string;
+  score: number;
+  analysis_date: string;
+  affected_transactions: number;
+  financial_exposure?: number | null;
+  details_json?: Record<string, any> | null;
 }
 
 export interface GSTRecon {

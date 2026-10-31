@@ -48,7 +48,7 @@ requirements-dev.txt`). Run from `cae/backend/`:
 
 | Suite | Command | Needs |
 |---|---|---|
-| Rules + statutory units | `python -m pytest tests/test_rules.py tests/test_statutory.py -q` | nothing — in-memory DuckDB |
+| Rules + statutory + engagement units | `python -m pytest tests/test_rules.py tests/test_statutory.py tests/test_engagement.py -q` | nothing — in-memory DuckDB |
 | End to end | `python -m pytest tests/test_integration_pg.py -q` | `pgserver` (embedded Postgres) — no Docker |
 
 The end-to-end suite migrates a throwaway Postgres, runs `scripts/seed_data.py`
@@ -65,8 +65,27 @@ fire / don't-fire pair in `test_rules.py`. No frontend tests and no CI yet.
 `app/main.py` mounts `app/api/v1/router.py` under `/api/v1`; that router
 aggregates one module per domain (`auth`, `companies`, `ingestion`, `rules`,
 `exceptions`, `queries`, `remediation`, `risk`, `gst`, `dashboard`, `reports`,
-`working_capital`, `statutory`). Adding a domain means: new module in
-`app/api/v1/`, then register it in `router.py`.
+`working_capital`, `statutory`, `engagements`, `tally`). Adding a domain means:
+new module in `app/api/v1/`, then register it in `router.py`.
+
+### Engagements — Statutory vs Internal audit
+
+`app/models/engagement.py` (`audit_engagements`): one audit of one company — a
+**Statutory** audit of a financial year (period forced to 1 Apr–31 Mar, CARO /
+IFC / tax-audit flags, SA 320 materiality) or an **Internal** audit of any
+period. `audit_exceptions.engagement_id` and `sync_jobs.engagement_id` scope
+everything: NULL = continuous monitoring outside any engagement. Every screen
+and report takes `engagement_id`; without it they show continuous monitoring
+only (`app/utils/engagement.py: exception_scope`), so audits never mix.
+
+`app/statutory/reporting.py` is the single source of truth for *where a rule's
+findings land*: per rule a `process` (internal audit), a `scope`
+(`statutory` / `ifc` = statutory only when IFC applies / `internal` only) and
+reporting `refs` (CARO 2020 clause, Form 3CD clause, IFC, SA / law). A test
+fails if a catalogue rule is missing there. Reports: `app/utils/engagement_export.py`
+(statutory working paper with CARO / tax-audit matrices + IFC sheet; internal
+audit report with process summary, observations, management response, action
+plan; PDF for both).
 
 ### The audit engine — Postgres for state, DuckDB for analysis
 
@@ -88,6 +107,19 @@ Consequences to respect:
   on real data. UUIDs arrive as VARCHAR, JSON as text (`json_extract_string`).
 - Every rule run reloads the company's data. Keep that in mind before adding
   per-rule loads.
+- **Period scoping.** Transaction tables (`PERIOD_TABLES` in `app/rules/__init__.py`)
+  load as `<table>_all` — every row up to the engagement's period end — and
+  `<table>` is a **view** of the period itself (`apply_period`). Transaction
+  tests read `<table>`; balance / cumulative tests (stock on hand, MSME dues,
+  credit exposure, FY-to-date TDS threshold, duplicates within a FY, suspense
+  balance) read `<table>_all`. Without an engagement the two are identical.
+  Inside an engagement the engine injects `as_on` = period end (and
+  `period_from` / `period_to`) into a runtime copy of the rule — never saved.
+- **Never truncate a population.** No `LIMIT` in rule SQL and no `out[:50]`;
+  `capped(out, rule)` trims only when a rule sets `max_results`. Capped lists
+  understated exposure, risk scores and reports (fixed 31-10-2026).
+- `AuditEngine.run_all_rules()` with no frequency runs **every** active rule;
+  the UI / worker path used to run only the daily ones.
 
 ### Rule registry
 
@@ -130,17 +162,31 @@ edit in one file plus a test — don't put a statutory figure anywhere else.
 ### Engines
 
 `app/engines/` — `audit_engine` (orchestrates rules), `risk_engine` (scores,
-heatmap, trend), `fraud_engine` (fraud indicators — these use **`score`**, not
-`severity`; `score` is NUMERIC(5,2), so cap it), `gst_engine` + `gst_match`
-(deterministic GSTR-2B ↔ books match on GSTIN + normalised invoice number,
-buckets in `gst_reconciliation.details_json`), `wc_engine` (working capital),
+heatmap, trend; live per engagement), `fraud_engine` (fraud indicators — these
+use **`score`**, not `severity`; `score` is NUMERIC(5,2), so cap it; a re-run
+replaces the day's rows), `gst_engine` + `gst_match` (deterministic GSTR-2B ↔
+books match on GSTIN + normalised invoice number, buckets in
+`gst_reconciliation.details_json`), `wc_engine` (working capital — DIO on cost
+of goods issued, stress score = weighted overdue / DSO / CCC signals, balances
+as of the reference date),
 `ai_engine` (narrative explanations only; `claude-sonnet-5-5`, reads text
 blocks by type because replies can open with a thinking block).
 
 ### Connectors
 
-`app/connectors/` — `tally_connector.py` (Tally Prime), `excel_importer.py`
-(Excel/CSV upload with auto-detect ingestion).
+`app/connectors/` — `tally_live.py` (**live Tally Prime** over the XML gateway,
+read-only: masters, vouchers month by month, bill-wise outstanding and
+settlement dates → CAE tables; idempotent per period; `TALLY_URL`, from Docker
+`http://host.docker.internal:9000`), `tally_connector.py` (legacy XML-file
+parser, unused), `excel_importer.py` (Excel/CSV upload with auto-detect; the
+Analyse step's column mapping is applied on import, Indian day-first dates,
+party names resolved to masters).
+
+Background work goes through `app/workers/dispatch.enqueue()`: Celery when a
+broker answers, otherwise the same function runs in-process (FastAPI
+`BackgroundTasks`) — never "queued" work that silently never runs. Task bodies
+are plain `execute_*` functions in `app/workers/tasks.py`. The `beat` service
+in docker-compose fires the daily continuous-monitoring run.
 
 ### Frontend
 
@@ -188,6 +234,16 @@ likely way to waste an hour:
   as a syntax error.
 - **Migration 001 only creates `pgcrypto` on PostgreSQL < 13** — `gen_random_uuid()`
   is core from 13, and embedded test Postgres ships no contrib extensions.
+- **Pydantic `*Out` models must type ids as `uuid.UUID`**, not `str` — the ORM
+  hands back UUID objects and a `str` field 500s the whole endpoint
+  (`/companies` and `/remediation` did, 31-10-2026).
+- **Workflow tables have NOT NULL name/date columns** (`raised_by_name`,
+  `responded_by_name`, `responsible_name`, `due_date`, `target_date`). The API
+  fills them from the current user / sensible defaults; keep it that way.
+- **The integration test must not see the Docker stack's Redis** (localhost:6379)
+  — it sets `REDIS_URL` to a dead port so background work runs in-process.
+- **Tally gateway traps** are documented at the top of `app/connectors/tally_live.py`;
+  never fetch the bare `Voucher` collection or `CLOSINGBALANCE` on ledgers.
 
 ### Seed data quirks (`scripts/seed_data.py`)
 

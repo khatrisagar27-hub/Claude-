@@ -15,6 +15,9 @@ class KPIOut(BaseModel):
     risk_band: str
     fraud_indicators: int
     gst_risk_amount: float
+    engagement_label: str | None = None
+    audit_type: str | None = None
+    total_financial_impact: float = 0.0
 
 
 class TopExceptionOut(BaseModel):

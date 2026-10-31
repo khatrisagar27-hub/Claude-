@@ -1,7 +1,7 @@
 """Treasury/Cash audit rules TRE-001 to TRE-010."""
 import re
 
-from app.rules import register, param, as_date
+from app.rules import register, param, as_date, capped
 from app.statutory import income_tax
 
 _SELF_PARTIES = ("self", "cash", "cash withdrawal", "atm", "petty cash")
@@ -45,7 +45,7 @@ def tre_001(conn, company_id, rule):
             "evidence": {"party": party, "date": str(on), "count": cnt, "amount": float(total),
                          "limit_applied": applicable, "tax_rate_used": tax_rate, "statutory_ref": ref},
         })
-    return out[: int(param(rule, "limit_results", 30))]
+    return capped(out, rule)
 
 
 @register("TRE-002")
@@ -64,7 +64,6 @@ def tre_002(conn, company_id, rule):
          AND DATEDIFF('day', t1.transaction_date, t2.transaction_date) BETWEEN 0 AND ?
         WHERE t1.company_id = ? AND t1.amount > ?
         ORDER BY t1.amount DESC
-        LIMIT 10
     """, [window_days, company_id, min_amount]).fetchall()
     return [
         {
@@ -93,7 +92,6 @@ def tre_003(conn, company_id, rule):
         GROUP BY counterparty_name, transaction_date, transaction_type
         HAVING SUM(amount) >= ?
         ORDER BY total DESC
-        LIMIT 30
     """, [company_id, list(_SELF_PARTIES), limit]).fetchall()
     out = []
     for party, on, ttype, total, descr in rows:
@@ -124,7 +122,6 @@ def tre_004(conn, company_id, rule):
           AND (reference_number IS NULL OR TRIM(reference_number) = '')
           AND (utr_number IS NULL OR TRIM(utr_number) = '')
         ORDER BY amount DESC
-        LIMIT 20
     """, [company_id, min_amount]).fetchall()
     return [
         {
@@ -151,7 +148,6 @@ def tre_005(conn, company_id, rule):
         GROUP BY counterparty_name, transaction_date
         HAVING COUNT(*) >= ? AND SUM(amount) > ?
         ORDER BY total DESC
-        LIMIT 20
     """, [company_id, min_count, min_total]).fetchall()
     return [
         {
@@ -176,7 +172,6 @@ def tre_006(conn, company_id, rule):
           AND (REGEXP_MATCHES(LOWER(COALESCE(description, '')), 'director|loan|advance to')
                OR LOWER(COALESCE(counterparty_name, '')) LIKE '%director%')
         ORDER BY amount DESC
-        LIMIT 20
     """, [company_id, min_amount]).fetchall()
     return [
         {
@@ -205,7 +200,6 @@ def tre_010(conn, company_id, rule):
         GROUP BY transaction_date
         HAVING COUNT(*) >= ?
         ORDER BY daily_cash DESC
-        LIMIT 10
     """, [company_id, low, high, min_count]).fetchall()
     return [
         {

@@ -25,12 +25,19 @@ class RuleOut(BaseModel):
     frequency: str
     is_enabled: bool
     parameters: dict | None
+    audit_scope: str | None = None       # statutory / ifc / internal (app.statutory.reporting)
+    process: str | None = None
 
     model_config = {"from_attributes": True}
 
 
 def _rule_to_out(r: AuditRule) -> RuleOut:
+    from app.statutory.reporting import RULE_MAP
+
+    m = RULE_MAP.get(r.rule_code, {})
     return RuleOut(
+        audit_scope=m.get("scope"),
+        process=m.get("process"),
         id=str(r.id),
         rule_code=r.rule_code,
         name=r.rule_name,

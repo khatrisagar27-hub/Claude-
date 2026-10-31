@@ -18,6 +18,8 @@ interface WCMetrics {
   dio: number;
   ccc: number;
   stress_score: number;
+  stress_components?: Record<string, number>;
+  dio_basis?: string;
   receivables_total: number;
   receivables_overdue: number;
   payables_total: number;
@@ -117,7 +119,7 @@ export default function WorkingCapital() {
             <div className="card">
               <div className="text-xs text-gray-500 uppercase">DIO (days)</div>
               <div className="text-3xl font-bold font-mono text-white mt-1">{metrics.dio}</div>
-              <div className="text-xs text-gray-600 mt-0.5">Days Inventory Outstanding</div>
+              <div className="text-xs text-gray-600 mt-0.5">Days Inventory Outstanding{metrics.dio_basis ? ` · on ${metrics.dio_basis}` : ''}</div>
             </div>
             <div className="card">
               <div className="text-xs text-gray-500 uppercase">CCC (days)</div>
@@ -154,6 +156,16 @@ export default function WorkingCapital() {
                 {metrics.stress_score?.toFixed(0)}
               </div>
               <div className="text-xs text-gray-600 mt-0.5">0=Healthy, 100=Critical</div>
+              {metrics.stress_components && (
+                <dl className="mt-2 space-y-0.5 text-[11px] text-gray-500">
+                  {Object.entries({
+                    receivables_90_plus: 'Receivables 90+ days (30%)', receivables_overdue: 'Receivables overdue (20%)',
+                    dso_vs_180: 'DSO vs 180 days (20%)', payables_overdue: 'Payables overdue (15%)', ccc_vs_180: 'CCC vs 180 days (15%)',
+                  }).map(([k, label]) => (
+                    <div key={k} className="flex justify-between gap-2"><dt>{label}</dt><dd className="text-gray-300">{metrics.stress_components![k]}%</dd></div>
+                  ))}
+                </dl>
+              )}
             </div>
           </div>
 

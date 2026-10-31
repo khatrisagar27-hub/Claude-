@@ -34,14 +34,18 @@ def _risk_band(score: float) -> str:
 
 
 class RiskEngine:
-    def __init__(self, db: "Session", company_id: str):
+    def __init__(self, db: "Session", company_id: str, engagement_id: str | None = None):
         self.db = db
         self.company_id = uuid.UUID(company_id)
+        self.engagement_id = uuid.UUID(str(engagement_id)) if engagement_id else None
 
     def compute_and_store(self) -> int:
         from app.models.risk import RiskScore
         today = date.today()
         scores = self._compute_scores()
+        # one set per day — a re-run replaces today's scores instead of stacking duplicates
+        self.db.query(RiskScore).filter(RiskScore.company_id == self.company_id,
+                                        RiskScore.score_date == today).delete(synchronize_session=False)
         written = 0
         for area, data in scores.items():
             rs = RiskScore(
@@ -84,6 +88,7 @@ class RiskEngine:
                     AuditException.company_id == self.company_id,
                     AuditException.category == area,
                     AuditException.status.in_(["open", "in_review", "management_query_sent", "remediation_in_progress"]),
+                    *([AuditException.engagement_id == self.engagement_id] if self.engagement_id else []),
                 )
                 .all()
             )

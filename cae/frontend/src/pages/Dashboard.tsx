@@ -7,6 +7,7 @@ import { useAuthStore } from '../store/authStore';
 import SeverityBadge from '../components/common/SeverityBadge';
 import AmountDisplay from '../components/common/AmountDisplay';
 import type { KPIs } from '../types';
+import { AUDIT_TYPE_LABEL, areaLabel, engagementQS } from '../api/labels';
 
 const SEVERITY_COLORS: Record<string, string> = {
   critical: '#DC2626',
@@ -33,7 +34,7 @@ function KPICard({ title, value, sub, icon: Icon, accent = false }: {
 }
 
 export default function Dashboard() {
-  const { companyId } = useAuthStore();
+  const { companyId, engagement } = useAuthStore();
   const [kpis, setKpis] = useState<KPIs | null>(null);
   const [topExceptions, setTopExceptions] = useState<any[]>([]);
   const [trend, setTrend] = useState<any[]>([]);
@@ -42,16 +43,18 @@ export default function Dashboard() {
   useEffect(() => {
     if (!companyId) { setLoading(false); return; }
     const cid = companyId;
+    const scope = engagementQS(engagement?.id);
+    setLoading(true);
     Promise.all([
-      apiClient.get(`/dashboard/kpis?company_id=${cid}`),
-      apiClient.get(`/dashboard/top-exceptions?company_id=${cid}&limit=8`),
-      apiClient.get(`/dashboard/trend?company_id=${cid}&months=6`),
+      apiClient.get(`/dashboard/kpis?company_id=${cid}${scope}`),
+      apiClient.get(`/dashboard/top-exceptions?company_id=${cid}&limit=8${scope}`),
+      apiClient.get(`/dashboard/trend?company_id=${cid}&months=6${scope}`),
     ]).then(([k, t, tr]) => {
       setKpis(k.data);
       setTopExceptions(t.data);
       setTrend(tr.data);
     }).finally(() => setLoading(false));
-  }, [companyId]);
+  }, [companyId, engagement?.id]);
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
@@ -74,8 +77,14 @@ export default function Dashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-white">Executive Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Real-time audit risk intelligence</p>
+          <h1 className="text-xl font-bold text-white">
+            {engagement ? `${AUDIT_TYPE_LABEL[engagement.audit_type]} Dashboard` : 'Continuous Monitoring Dashboard'}
+          </h1>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {engagement ? `${engagement.label} — findings of this engagement only`
+              : 'Exceptions raised outside an audit engagement — select or create an engagement to audit a period'}
+            {kpis?.total_financial_impact ? ` · total impact ₹${Math.round(kpis.total_financial_impact).toLocaleString('en-IN')}` : ''}
+          </p>
         </div>
         <div className={`text-2xl font-bold font-mono ${riskBandColor[kpis?.risk_band || 'low']}`}>
           {kpis?.composite_risk_score?.toFixed(1)} <span className="text-sm font-normal uppercase">{kpis?.risk_band} risk</span>
@@ -141,7 +150,7 @@ export default function Dashboard() {
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-gray-300 truncate">{exc.title}</p>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-xs text-gray-600">{exc.business_area}</span>
+                    <span className="text-xs text-gray-600">{areaLabel(exc.business_area)}</span>
                     {exc.financial_impact && (
                       <AmountDisplay amount={exc.financial_impact} className="text-xs text-gray-500" />
                     )}

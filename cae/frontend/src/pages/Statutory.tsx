@@ -42,6 +42,10 @@ interface MsmeOut {
   total_interest_s16: number;
   unpaid_beyond_s15_limit: number;
   disallowance_ref: string;
+  s43bh?: {
+    financial_year: string; this_year: number; this_year_bills: number; within_limit_at_year_end: number;
+    within_limit_bills: number; earlier_years_unpaid: number; before_provision_unpaid: number;
+  };
   notes: string[];
 }
 
@@ -293,17 +297,29 @@ function MsmeInterest({ companyId }: { companyId: string }) {
 
       {result && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="card">
               <div className="text-xs text-gray-500 uppercase">Interest u/s 16 MSMED</div>
               <Amt v={result.total_interest_s16} className="text-xl font-bold text-red-400 block mt-1" />
               <div className="text-xs text-gray-600 mt-0.5">as on {result.as_on} · {result.bills.length} delayed bills</div>
             </div>
             <div className="card">
-              <div className="text-xs text-gray-500 uppercase">Unpaid beyond the s.15 limit</div>
+              <div className="text-xs text-gray-500 uppercase">Unpaid beyond the s.15 limit (all years)</div>
               <Amt v={result.unpaid_beyond_s15_limit} className="text-xl font-bold text-yellow-400 block mt-1" />
-              <div className="text-xs text-gray-600 mt-0.5">Disallowance: {result.disallowance_ref}</div>
+              <div className="text-xs text-gray-600 mt-0.5">Principal incl. GST — the MSME dues to disclose</div>
             </div>
+            {result.s43bh && (
+              <div className="card">
+                <div className="text-xs text-gray-500 uppercase">{result.disallowance_ref} — FY {result.s43bh.financial_year}</div>
+                <Amt v={result.s43bh.this_year} className="text-xl font-bold text-orange-400 block mt-1" />
+                <div className="text-xs text-gray-500 mt-0.5 space-y-0.5">
+                  <div>{result.s43bh.this_year_bills} bills of this year unpaid at year-end past the limit (expense value)</div>
+                  <div>Watch — within limit at year-end: <Amt v={result.s43bh.within_limit_at_year_end} /> ({result.s43bh.within_limit_bills} bills, allowed only if paid in time)</div>
+                  <div>Earlier years' bills still unpaid: <Amt v={result.s43bh.earlier_years_unpaid} /> (disallowed in their own year; deductible when paid)</div>
+                  <div>Bills before 01-04-2023: <Amt v={result.s43bh.before_provision_unpaid} /> (s.43B(h) not applicable)</div>
+                </div>
+              </div>
+            )}
             <div className="card text-xs text-gray-400 space-y-1">
               {result.notes.map((n, i) => <p key={i}>{n}</p>)}
             </div>

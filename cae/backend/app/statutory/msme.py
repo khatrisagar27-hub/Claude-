@@ -67,6 +67,10 @@ def is_protected(msme_status: str | None) -> bool:
     return (msme_status or "").strip().lower() in PROTECTED_CLASSES
 
 
+# s.43B(h) inserted by Finance Act 2023 w.e.f. AY 2024-25, i.e. for FY 2023-24 onwards
+S43BH_FROM = date(2023, 4, 1)
+
+
 def appointed_day(acceptance: date, agreed_credit_days: int | None) -> tuple[date, int]:
     """Last day for payment under s.15 and the credit period actually applied."""
     if agreed_credit_days is None:
@@ -111,7 +115,7 @@ def bill_interest(amount: float, acceptance: date, paid_on: date | None, as_on: 
     """s.16 interest on one bill. Rate = 3x the bank rate in force on the appointed day
     unless an explicit bank_rate is passed."""
     due, credit = appointed_day(acceptance, agreed_credit_days)
-    end = paid_on or as_on
+    end = min(paid_on, as_on) if paid_on else as_on   # a bill paid after as_on is still unpaid on as_on
     rate = bank_rate if bank_rate is not None else bank_rate_on(due)
     interest, segments = compound_interest(amount, due, end, 3.0 * rate)
     return {

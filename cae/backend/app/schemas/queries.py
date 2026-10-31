@@ -30,6 +30,9 @@ class QueryOut(BaseModel):
     due_date: date | None
     status: str
     raised_at: datetime
+    raised_by_name: str | None = None
+    auditor_comment: str | None = None
+    responses: list["QueryResponseOut"] = []
 
     model_config = {"from_attributes": True}
 
@@ -47,8 +50,12 @@ class QueryResponseOut(BaseModel):
     attachment_url: str | None
     auditor_review_status: str | None
     auditor_comment: str | None
+    responded_by_name: str | None = None
 
     model_config = {"from_attributes": True}
+
+
+QueryOut.model_rebuild()
 
 
 class QueryStatusUpdate(BaseModel):

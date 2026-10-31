@@ -1,20 +1,36 @@
 import { useEffect, useState, useRef } from 'react';
-import { LogOut, Bell, ChevronDown, Building2, User } from 'lucide-react';
+import { LogOut, Bell, ChevronDown, Building2, ClipboardCheck } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../../api/client';
-import type { Company } from '../../types';
+import type { Company, Engagement } from '../../types';
+import { AUDIT_TYPE_LABEL } from '../../api/labels';
 
 export default function Topbar() {
-  const { user, companyId, setCompanyId, logout } = useAuthStore();
+  const { user, companyId, setCompanyId, engagement, setEngagement, logout } = useAuthStore();
   const navigate = useNavigate();
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [engagements, setEngagements] = useState<Engagement[]>([]);
   const [showCompanyMenu, setShowCompanyMenu] = useState(false);
   const companyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     apiClient.get('/companies').then(r => setCompanies(r.data)).catch(() => {});
   }, []);
+
+  // engagements of the selected company; refreshed when the Engagements page announces a change
+  useEffect(() => {
+    if (!companyId) { setEngagements([]); return; }
+    const load = () => apiClient.get(`/engagements?company_id=${companyId}`).then(r => setEngagements(r.data)).catch(() => setEngagements([]));
+    load();
+    window.addEventListener('cae:engagements-changed', load);
+    return () => window.removeEventListener('cae:engagements-changed', load);
+  }, [companyId]);
+
+  const pickEngagement = (id: string) => {
+    const e = engagements.find(x => x.id === id);
+    setEngagement(e ? { id: e.id, label: e.label, audit_type: e.audit_type } : null);
+  };
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -68,14 +84,32 @@ export default function Topbar() {
         )}
       </div>
 
-      <div className="text-sm text-gray-600 hidden lg:block">
-        Continuous Audit Engine — <span className="text-gray-400">Real-time Risk Intelligence</span>
+      {/* Engagement (audit) selector — scopes every screen and report */}
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        <ClipboardCheck className="w-4 h-4 text-gold shrink-0" />
+        <select
+          aria-label="Audit engagement"
+          value={engagement?.id || ''}
+          onChange={e => pickEngagement(e.target.value)}
+          className="bg-navy-700 border border-navy-border text-sm text-gray-200 rounded-lg px-2 py-1.5 max-w-[340px] focus:outline-none focus:border-gold"
+        >
+          <option value="">Continuous monitoring (no engagement)</option>
+          {engagements.map(e => <option key={e.id} value={e.id}>{e.label}</option>)}
+        </select>
+        {engagement && (
+          <span className={`text-xs font-semibold px-2 py-0.5 rounded border whitespace-nowrap ${engagement.audit_type === 'statutory'
+            ? 'bg-blue-900/40 text-blue-300 border-blue-800/60' : 'bg-purple-900/40 text-purple-300 border-purple-800/60'}`}>
+            {AUDIT_TYPE_LABEL[engagement.audit_type]}
+          </span>
+        )}
+        <button onClick={() => navigate('/engagements')} className="text-xs text-gray-500 hover:text-gold whitespace-nowrap">
+          Manage
+        </button>
       </div>
 
       <div className="flex items-center gap-3">
-        <button className="relative p-2 text-gray-400 hover:text-gray-100">
+        <button aria-label="Notifications" className="relative p-2 text-gray-400 hover:text-gray-100">
           <Bell className="w-5 h-5" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
         </button>
 
         {/* Profile button */}
@@ -92,7 +126,7 @@ export default function Topbar() {
           </div>
         </button>
 
-        <button onClick={handleLogout} className="btn-ghost flex items-center gap-1 text-sm text-gray-400 hover:text-red-400">
+        <button aria-label="Sign out" onClick={handleLogout} className="btn-ghost flex items-center gap-1 text-sm text-gray-400 hover:text-red-400">
           <LogOut className="w-4 h-4" />
         </button>
       </div>

@@ -14,13 +14,13 @@ _SIGNED_QTY = """CASE WHEN movement_type IN ('goods_receipt', 'opening', 'adjust
 def inv_001(conn, company_id, rule):
     """Negative Stock Balance (item level)."""
     rows = conn.execute(f"""
-        SELECT item_code, SUM({_SIGNED_QTY}) AS balance, MIN(movement_date), MAX(movement_date)
-        FROM inventory_movements
+        SELECT item_code, SUM({_SIGNED_QTY}) AS balance, MIN(movement_date), MAX(movement_date),
+               ARG_MAX(unit_cost, movement_date) AS last_cost
+        FROM inventory_movements_all
         WHERE company_id = ?
         GROUP BY item_code
         HAVING SUM({_SIGNED_QTY}) < 0
         ORDER BY balance
-        LIMIT 20
     """, [company_id]).fetchall()
     return [
         {
@@ -28,8 +28,9 @@ def inv_001(conn, company_id, rule):
             "description": f"Item {r[0]} nets to {float(r[1]):,.2f} units on hand — more issued than received. "
                            "Issues booked without receipts, or a missing opening balance.",
             "severity": "critical",
-            "financial_impact": 0,
-            "evidence": {"item_code": r[0], "balance": float(r[1]), "first_movement": str(r[2]), "last_movement": str(r[3])},
+            "financial_impact": round(abs(float(r[1])) * float(r[4] or 0), 2),
+            "evidence": {"item_code": r[0], "balance": float(r[1]), "first_movement": str(r[2]), "last_movement": str(r[3]),
+                         "last_unit_cost": float(r[4] or 0), "value_basis": "shortfall qty x last unit cost"},
         }
         for r in rows
     ]
@@ -48,7 +49,6 @@ def inv_002(conn, company_id, rule):
         WHERE company_id = ?
         GROUP BY item_code
         HAVING receipts > 0 AND shrinkage / receipts * 100 > ?
-        LIMIT 20
     """, [company_id, max_pct]).fetchall()
     return [
         {
@@ -71,7 +71,7 @@ def inv_005(conn, company_id, rule):
         WITH items AS (
             SELECT item_code, MAX(movement_date) AS last_movement, SUM({_SIGNED_QTY}) AS on_hand,
                    ARG_MAX(unit_cost, movement_date) AS last_cost
-            FROM inventory_movements
+            FROM inventory_movements_all
             WHERE company_id = ? AND movement_date <= ?
             GROUP BY item_code
         )
@@ -80,7 +80,6 @@ def inv_005(conn, company_id, rule):
         FROM items
         WHERE on_hand > 0 AND DATEDIFF('day', last_movement, CAST(? AS DATE)) > ?
         ORDER BY value DESC
-        LIMIT 30
     """, [company_id, as_on, as_on, as_on, max_idle]).fetchall()
     return [
         {
@@ -105,7 +104,7 @@ def inv_007(conn, company_id, rule):
         WITH items AS (
             SELECT item_code, COUNT(*) AS movements, SUM({_SIGNED_QTY}) AS on_hand,
                    ARG_MAX(unit_cost, movement_date) AS last_cost
-            FROM inventory_movements
+            FROM inventory_movements_all
             WHERE company_id = ?
             GROUP BY item_code
         )
@@ -113,7 +112,6 @@ def inv_007(conn, company_id, rule):
         FROM items
         WHERE on_hand > 0 AND on_hand * COALESCE(last_cost, 0) > ? AND movements <= ?
         ORDER BY value DESC
-        LIMIT 20
     """, [company_id, min_value, max_movements]).fetchall()
     return [
         {
@@ -136,7 +134,6 @@ def inv_010(conn, company_id, rule):
         FROM inventory_movements
         WHERE company_id = ? AND total_value > ? AND ISODOW(movement_date) IN (6, 7)
         ORDER BY total_value DESC
-        LIMIT 20
     """, [company_id, min_value]).fetchall()
     return [
         {
@@ -162,7 +159,6 @@ def inv_015(conn, company_id, rule):
           AND reference_document_number IS NOT NULL AND TRIM(reference_document_number) != ''
         GROUP BY reference_document_number, item_code
         HAVING COUNT(*) > ?
-        LIMIT 20
     """, [company_id, max_grns]).fetchall()
     return [
         {

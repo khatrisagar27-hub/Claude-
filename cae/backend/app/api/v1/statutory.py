@@ -135,13 +135,41 @@ def msme_interest(
     )
     if as_on is None:
         as_on = max((p.invoice_date for p, _ in rows), default=date.today())
+    fy = as_on.year if as_on.month >= 4 else as_on.year - 1
+    fy_start = date(fy, 4, 1)
     bills, total_interest, unpaid_beyond_limit = [], 0.0, 0.0
+    # s.43B(h) / s.37(2)(g): an MSE sum is deductible only when paid, unless paid within the s.15
+    # limit. For the year ending on as_on that means bills OF THIS YEAR unpaid at year-end with the
+    # limit already passed; earlier years' bills were disallowed in their own year (deductible when
+    # paid); bills before 01-04-2023 predate the provision. Expense value = taxable value where ITC
+    # is taken (GST is not expensed).
+    s43 = {"this_year": 0.0, "this_year_bills": 0, "within_limit_at_year_end": 0.0, "within_limit_bills": 0,
+           "earlier_years_unpaid": 0.0, "before_provision_unpaid": 0.0}
     for p, v in rows:
+        if p.invoice_date > as_on:
+            continue
         paid_on = p.payment_date if p.status == "paid" else None
-        principal = float(p.total_amount) if paid_on else float(p.outstanding_amount or 0)
+        if paid_on and paid_on > as_on:            # settled after as_on: still due on as_on
+            paid_on = None
+        outstanding = float(p.total_amount) if (p.status == "paid" and not paid_on) else float(p.outstanding_amount or 0)
+        principal = float(p.total_amount) if paid_on else outstanding
         if principal <= 0:
             continue
-        calc = msme.bill_interest(principal, p.receipt_date or p.invoice_date, paid_on, as_on, v.payment_terms_days)
+        acceptance = p.receipt_date or p.invoice_date
+        calc = msme.bill_interest(principal, acceptance, paid_on, as_on, v.payment_terms_days)
+        if not paid_on:
+            share = principal / float(p.total_amount) if float(p.total_amount or 0) else 1.0
+            expense = (float(p.taxable_amount) if p.itc_eligible else float(p.total_amount)) * share
+            if p.invoice_date < msme.S43BH_FROM:
+                s43["before_provision_unpaid"] += expense
+            elif p.invoice_date < fy_start:
+                s43["earlier_years_unpaid"] += expense
+            elif calc["delay_days"] > 0:
+                s43["this_year"] += expense
+                s43["this_year_bills"] += 1
+            else:
+                s43["within_limit_at_year_end"] += expense
+                s43["within_limit_bills"] += 1
         if calc["delay_days"] <= 0:
             continue
         total_interest += calc["interest"]
@@ -156,8 +184,12 @@ def msme_interest(
         "bills": bills,
         "total_interest_s16": round(total_interest, 2),
         "unpaid_beyond_s15_limit": round(unpaid_beyond_limit, 2),
+        "s43bh": {"financial_year": f"{fy}-{str(fy + 1)[-2:]}", **{k: round(val, 2) if isinstance(val, float) else val
+                                                                   for k, val in s43.items()}},
         "disallowance_ref": income_tax.section_ref("msme_disallowance", as_on),
         "notes": ["Interest u/s 16 is not deductible (s.23 MSMED) and is disclosed under s.22 MSMED / Form 3CD.",
+                  "Disallowance = this year's bills unpaid at year-end beyond the s.15 limit, at expense value (taxable value "
+                  "where ITC is taken). Bills still within the limit at year-end are allowed only if paid by their due date.",
                   "Bank rate table in app/statutory/msme.py — confirm the latest RBI rate before signing."],
     }
 

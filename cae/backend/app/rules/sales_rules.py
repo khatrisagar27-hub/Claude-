@@ -7,7 +7,7 @@ def _turnover_by_fy(conn, company_id) -> dict[int, float]:
     """Taxable sales per financial year (start year) from the books."""
     rows = conn.execute(f"""
         SELECT {fy_sql('invoice_date')} AS fy, SUM(taxable_amount)
-        FROM sales_invoices
+        FROM sales_invoices_all
         WHERE company_id = ? AND status != 'cancelled'
         GROUP BY 1
     """, [company_id]).fetchall()
@@ -18,11 +18,12 @@ def _turnover_by_fy(conn, company_id) -> dict[int, float]:
 def sal_001(conn, company_id, rule):
     """Duplicate Invoice Number within a financial year (Rule 46(b) CGST Rules)."""
     rows = conn.execute(f"""
-        SELECT invoice_number, {fy_sql('invoice_date')} AS fy, COUNT(*) AS cnt, SUM(total_amount) AS total
-        FROM sales_invoices
+        SELECT invoice_number, {fy_sql('invoice_date')} AS fy, COUNT(*) AS cnt, SUM(total_amount) AS total,
+               STRING_AGG(CAST(invoice_date AS VARCHAR) || ' ₹' || CAST(ROUND(total_amount, 2) AS VARCHAR), '; ') AS lines
+        FROM sales_invoices_all
         WHERE company_id = ? AND status != 'cancelled'
         GROUP BY invoice_number, fy
-        HAVING COUNT(*) > 1
+        HAVING COUNT(*) > 1 AND COUNT(*) FILTER (WHERE id IN (SELECT id FROM sales_invoices)) > 0
     """, [company_id]).fetchall()
     return [
         {
@@ -31,8 +32,8 @@ def sal_001(conn, company_id, rule):
                            f"Rule 46(b) requires a serial number unique for a financial year. Total value: ₹{float(r[3]):,.2f}",
             "severity": "critical",
             "financial_impact": float(r[3]),
-            "evidence": {"invoice_number": r[0], "financial_year": int(r[1]), "count": r[2], "total": float(r[3]),
-                         "statutory_ref": "Rule 46(b), CGST Rules 2017"},
+            "evidence": {"invoice_number": r[0], "financial_year": f"{r[1]}-{str(r[1] + 1)[-2:]}", "count": r[2],
+                         "total": float(r[3]), "invoices": r[4], "statutory_ref": "Rule 46(b), CGST Rules 2017"},
         }
         for r in rows
     ]
@@ -50,7 +51,6 @@ def sal_002(conn, company_id, rule):
           AND CAST(total_amount AS DECIMAL(18, 2)) % ? = 0
           AND status != 'cancelled'
         ORDER BY total_amount DESC
-        LIMIT 50
     """, [company_id, min_amount, multiple]).fetchall()
     return [
         {
@@ -72,7 +72,7 @@ def sal_003(conn, company_id, rule):
     min_months = int(param(rule, "min_months", 6))
     rows = conn.execute("""
         SELECT DATE_TRUNC('month', invoice_date) AS month, SUM(total_amount) AS monthly_total
-        FROM sales_invoices
+        FROM sales_invoices_all
         WHERE company_id = ? AND status != 'cancelled'
         GROUP BY 1
         HAVING SUM(total_amount) > 0
@@ -84,9 +84,12 @@ def sal_003(conn, company_id, rule):
     mean, std = float(totals.mean()), float(totals.std())
     if std == 0:
         return []
+    first = conn.execute("SELECT DATE_TRUNC('month', MIN(invoice_date)) FROM sales_invoices").fetchone()[0]
     out = []
     for (month, value) in rows:
         value = float(value)
+        if first is not None and month < first:
+            continue
         if value > mean + sigma * std:
             out.append({
                 "title": f"Monthly Sales Spike: {str(month)[:7]}",
@@ -110,11 +113,10 @@ def sal_004(conn, company_id, rule):
         FROM sales_invoices
         WHERE company_id = ?
           AND CAST(created_at AS DATE) > LAST_DAY(invoice_date) + TO_DAYS(CAST(? AS INTEGER))
-          AND CAST(created_at AS DATE) NOT IN {bulk_load_days_sql('sales_invoices', 'invoice_date')}
+          AND CAST(created_at AS DATE) NOT IN {bulk_load_days_sql('sales_invoices_all', 'invoice_date')}
           AND status != 'cancelled'
           AND total_amount > ?
         ORDER BY total_amount DESC
-        LIMIT 30
     """, [company_id, grace_days, company_id, bulk_months, min_amount]).fetchall()
     return [
         {
@@ -140,7 +142,6 @@ def sal_005(conn, company_id, rule):
           AND gross_amount > 0
           AND discount_amount / gross_amount * 100 > ?
         ORDER BY discount_amount DESC
-        LIMIT 30
     """, [company_id, max_pct]).fetchall()
     return [
         {
@@ -164,8 +165,9 @@ def sal_007(conn, company_id, rule):
         WHERE company_id = ? AND total_amount > ?
           AND (e_way_bill_number IS NULL OR e_way_bill_number = '')
           AND status != 'cancelled'
+          -- Tally imports record whether the invoice moved stock; a services-only invoice needs no e-way bill
+          AND COALESCE(json_extract_string(CAST(raw_data AS VARCHAR), '$.has_inventory'), 'true') != 'false'
         ORDER BY total_amount DESC
-        LIMIT 50
     """, [company_id, threshold]).fetchall()
     return [
         {
@@ -192,7 +194,6 @@ def sal_009(conn, company_id, rule):
         WHERE company_id = ? AND {source_test}
           AND total_amount > ? AND status != 'cancelled'
         ORDER BY total_amount DESC
-        LIMIT 30
     """, [company_id, min_amount]).fetchall()
     return [
         {
@@ -211,14 +212,13 @@ def sal_010(conn, company_id, rule):
     """Credit Limit Breach — customer outstanding above the approved limit."""
     rows = conn.execute("""
         SELECT c.id, c.name, c.credit_limit, SUM(s.outstanding_amount) AS outstanding
-        FROM sales_invoices s
+        FROM sales_invoices_all s
         JOIN customers c ON c.id = s.customer_id
         WHERE s.company_id = ? AND s.status != 'cancelled'
           AND c.credit_limit IS NOT NULL AND c.credit_limit > 0
         GROUP BY c.id, c.name, c.credit_limit
         HAVING SUM(s.outstanding_amount) > c.credit_limit
         ORDER BY SUM(s.outstanding_amount) - c.credit_limit DESC
-        LIMIT 30
     """, [company_id]).fetchall()
     return [
         {
@@ -266,14 +266,13 @@ def sal_019(conn, company_id, rule):
           AND ISODOW(invoice_date) IN (6, 7)
           AND total_amount > ?
         ORDER BY total_amount DESC
-        LIMIT 30
     """, [company_id, min_amount]).fetchall()
     return [
         {
             "title": f"Weekend Invoicing: {r[1]}",
             "description": f"Invoice {r[1]} (₹{float(r[3]):,.0f}) is dated {r[2]}, a {r[4]}.",
             "severity": "medium",
-            "financial_impact": 0,
+            "financial_impact": float(r[3]),
             "evidence": {"invoice_number": r[1], "date": str(r[2]), "weekday": r[4], "amount": float(r[3])},
         }
         for r in rows
@@ -314,8 +313,6 @@ def sal_021(conn, company_id, rule):
                          "amount": float(r[3]), "aato_used": aato,
                          "statutory_ref": "Rule 48(4), CGST Rules 2017; Notf 13/2020-CT as amended"},
         })
-        if len(out) >= int(param(rule, "limit", 50)):
-            break
     return out
 
 
@@ -333,7 +330,6 @@ def sal_022(conn, company_id, rule):
         GROUP BY counterparty_name, transaction_date
         HAVING SUM(amount) >= ?
         ORDER BY total DESC
-        LIMIT 30
     """, [company_id, limit]).fetchall()
     out = []
     for r in rows:

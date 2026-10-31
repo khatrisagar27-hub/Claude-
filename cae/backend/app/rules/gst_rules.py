@@ -1,7 +1,7 @@
 """GST compliance rules GST-001 to GST-003."""
 from datetime import timedelta
 
-from app.rules import register, param, as_date, as_on_date, bulk_load_days_sql
+from app.rules import register, param, as_date, as_on_date, bulk_load_days_sql, capped
 from app.statutory import gst
 
 
@@ -35,7 +35,7 @@ def gst_001(conn, company_id, rule):
                              "taxable": float(r[3]), "effective_rate": round(rate, 2), "party_id": str(r[5]),
                              "statutory_ref": "Notf 9/2025-Central Tax (Rate), w.e.f. 22-09-2025"},
             })
-    return out[: int(param(rule, "limit", 50))]
+    return capped(out, rule)
 
 
 @register("GST-002")
@@ -46,7 +46,7 @@ def gst_002(conn, company_id, rule):
     rows = conn.execute("""
         SELECT id, vendor_id, invoice_number, invoice_date, total_amount, outstanding_amount,
                cgst_amount + sgst_amount + igst_amount AS tax
-        FROM purchase_invoices
+        FROM purchase_invoices_all
         WHERE company_id = ? AND itc_eligible = true AND reverse_charge = false
           AND status NOT IN ('cancelled', 'paid')
           AND outstanding_amount > 0 AND invoice_date < ?
@@ -69,7 +69,7 @@ def gst_002(conn, company_id, rule):
                          "outstanding": outstanding, "itc_to_reverse": round(reversal, 2), "as_on": str(as_on),
                          "statutory_ref": "s.16(2) second proviso CGST Act; Rule 37 CGST Rules"},
         })
-    return out[: int(param(rule, "limit", 50))]
+    return capped(out, rule)
 
 
 @register("GST-003")
@@ -83,7 +83,7 @@ def gst_003(conn, company_id, rule):
         FROM purchase_invoices
         WHERE company_id = ? AND itc_eligible = true AND status != 'cancelled'
           AND created_at IS NOT NULL AND (cgst_amount + sgst_amount + igst_amount) > 0
-          AND CAST(created_at AS DATE) NOT IN {bulk_load_days_sql('purchase_invoices', 'invoice_date')}
+          AND CAST(created_at AS DATE) NOT IN {bulk_load_days_sql('purchase_invoices_all', 'invoice_date')}
     """, [company_id, company_id, bulk_months]).fetchall()
     out = []
     for r in rows:
@@ -101,4 +101,4 @@ def gst_003(conn, company_id, rule):
                          "booked_on": str(booked), "time_limit": str(limit), "tax": float(r[5]),
                          "statutory_ref": "s.16(4) CGST Act"},
         })
-    return out[: int(param(rule, "limit", 50))]
+    return capped(out, rule)

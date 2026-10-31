@@ -25,8 +25,18 @@ exports.
 
 ### What it does
 
-- **Ingestion** — Tally Prime connector and Excel/CSV importer, with job tracking
-  (`app/connectors/`)
+- **Statutory or Internal audit** — create an *engagement*: a Statutory audit of
+  a financial year (CARO 2020 / IFC / tax-audit applicability, SA 320
+  materiality) or an Internal audit of any period. The run is scoped to the
+  period and to the rules that audit type covers; findings carry their CARO
+  2020 clause, Form 3CD clause, IFC or SA reference (statutory) or business
+  process (internal); reports follow — a statutory working paper with CARO and
+  tax-audit clause matrices, or an internal audit report with management
+  responses and action plan (`app/statutory/reporting.py`,
+  `app/utils/engagement_export.py`)
+- **Ingestion** — **live Tally Prime** import over the XML gateway (read-only,
+  month by month, idempotent per period), Excel/CSV importer with column
+  mapping, job tracking (`app/connectors/`)
 - **Exception rule engine** — 55 rules across sales, purchase, GST, TDS,
   journal, payroll, treasury and inventory (`app/rules/`); thresholds are
   per-company parameters, and rules can be toggled and test-run individually.
@@ -44,7 +54,8 @@ exports.
 - **GST** — invoice-level GSTR-2B ↔ books match on supplier GSTIN + invoice
   number from the portal Excel/CSV, with an **input-tax-credit-at-risk** figure
   (`app/engines/gst_engine.py`, `gst_match.py`)
-- **Working capital** — working-capital analysis engine (`app/engines/wc_engine.py`)
+- **Working capital** — DSO / DPO / DIO (on cost), ageing and a stress score
+  built from overdue, DSO and CCC signals (`app/engines/wc_engine.py`)
 - **Audit workflow** — exceptions → client queries → remediation tracking, each
   with status transitions
 - **Reports** — working papers, exception summaries and audit decks (PDF via

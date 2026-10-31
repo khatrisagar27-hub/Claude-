@@ -17,7 +17,6 @@ def pay_001(conn, company_id, rule):
         WHERE pr.company_id = ? AND e.is_active = false AND e.date_of_leaving IS NULL
           AND pr.net_pay > 0 AND pr.status = 'paid'
         GROUP BY pr.employee_id, e.full_name
-        LIMIT 20
     """, [company_id]).fetchall()
     return [
         {
@@ -40,13 +39,12 @@ def pay_002(conn, company_id, rule):
                prev.gross_earnings, curr.gross_earnings,
                (curr.gross_earnings - prev.gross_earnings) / NULLIF(prev.gross_earnings, 0) * 100 AS increase_pct
         FROM payroll_records curr
-        JOIN payroll_records prev
+        JOIN payroll_records_all prev
           ON prev.employee_id = curr.employee_id AND prev.company_id = curr.company_id
          AND prev.pay_period_year * 12 + prev.pay_period_month = curr.pay_period_year * 12 + curr.pay_period_month - 1
         WHERE curr.company_id = ? AND prev.gross_earnings > 0
           AND (curr.gross_earnings - prev.gross_earnings) / prev.gross_earnings * 100 > ?
         ORDER BY increase_pct DESC
-        LIMIT 20
     """, [company_id, pct]).fetchall()
     return [
         {
@@ -71,7 +69,6 @@ def pay_003(conn, company_id, rule):
         WHERE pr.company_id = ? AND e.bank_account_number IS NOT NULL AND TRIM(e.bank_account_number) != ''
         GROUP BY e.bank_account_number
         HAVING COUNT(DISTINCT pr.employee_id) > 1
-        LIMIT 20
     """, [company_id]).fetchall()
     return [
         {
@@ -96,7 +93,6 @@ def pay_004(conn, company_id, rule):
           AND MAKE_DATE(pr.pay_period_year, pr.pay_period_month, 1) > e.date_of_leaving
           AND pr.net_pay > 0
         GROUP BY pr.employee_id, e.full_name
-        LIMIT 20
     """, [company_id]).fetchall()
     return [
         {
@@ -133,7 +129,7 @@ def pay_005(conn, company_id, rule):
     """, [company_id]).fetchall()
     payments = conn.execute("""
         SELECT transaction_date, amount, COALESCE(description, '') || ' ' || COALESCE(counterparty_name, '')
-        FROM bank_transactions
+        FROM bank_transactions_all
         WHERE company_id = ? AND transaction_type = 'debit'
         ORDER BY transaction_date
     """, [company_id]).fetchall()
@@ -193,7 +189,6 @@ def pay_009(conn, company_id, rule):
         WHERE company_id = ? AND gross_earnings > ?
           AND (gross_earnings - net_pay) > gross_earnings * ?
         ORDER BY gross_earnings - net_pay DESC
-        LIMIT 20
     """, [company_id, min_gross, max_share]).fetchall()
     return [
         {

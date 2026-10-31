@@ -2,11 +2,12 @@ import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, AlertTriangle, MessageSquare, Wrench,
   BookOpen, Activity, TrendingUp, Receipt, Package,
-  BarChart3, Upload, FileText, Shield, Landmark
+  BarChart3, Upload, FileText, Shield, Landmark, ClipboardCheck
 } from 'lucide-react';
 
 const nav = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/engagements', icon: ClipboardCheck, label: 'Engagements' },
   { to: '/exceptions', icon: AlertTriangle, label: 'Exceptions' },
   { to: '/queries', icon: MessageSquare, label: 'Queries' },
   { to: '/remediation', icon: Wrench, label: 'Remediation' },

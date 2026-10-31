@@ -1,7 +1,7 @@
 """TDS rules TDS-001 to TDS-002 (s.393 of the 2025 Act / Chapter XVII-B of the 1961 Act)."""
 from collections import defaultdict
 
-from app.rules import register, param, fy_sql, as_date
+from app.rules import register, param, fy_sql, as_date, capped
 from app.statutory import income_tax
 
 
@@ -13,21 +13,21 @@ def tds_001(conn, company_id, rule):
     buyer_limit = float(param(rule, "buyer_turnover_limit", 100_000_000))
     threshold = float(param(rule, "threshold", income_tax.TDS_GOODS_THRESHOLD))
     turnover = dict(conn.execute(f"""
-        SELECT {fy_sql('invoice_date')}, SUM(taxable_amount) FROM sales_invoices
+        SELECT {fy_sql('invoice_date')}, SUM(taxable_amount) FROM sales_invoices_all
         WHERE company_id = ? AND status != 'cancelled' GROUP BY 1
     """, [company_id]).fetchall())
     override = param(rule, "buyer_turnover_override", None)
     rows = conn.execute(f"""
         SELECT vendor_id, {fy_sql('invoice_date')} AS fy, invoice_number, invoice_date, taxable_amount,
-               tds_amount, tds_section
-        FROM purchase_invoices
+               tds_amount, tds_section, id IN (SELECT id FROM purchase_invoices) AS in_period
+        FROM purchase_invoices_all
         WHERE company_id = ? AND status != 'cancelled' AND taxable_amount > 0
         ORDER BY vendor_id, invoice_date, invoice_number
     """, [company_id]).fetchall()
 
     running = defaultdict(float)
     misses: dict[tuple, dict] = {}
-    for vendor, fy, inv_no, inv_date, taxable, tds, section in rows:
+    for vendor, fy, inv_no, inv_date, taxable, tds, section, in_period in rows:
         fy = int(fy)
         prior_turnover = float(override) if override is not None else float(turnover.get(fy - 1) or 0)
         if prior_turnover <= buyer_limit:
@@ -35,7 +35,7 @@ def tds_001(conn, company_id, rule):
         before = running[(vendor, fy)]
         running[(vendor, fy)] += float(taxable)
         excess = running[(vendor, fy)] - max(before, threshold)
-        if excess <= 0 or float(tds or 0) > 0:
+        if excess <= 0 or float(tds or 0) > 0 or not in_period:   # FY-to-date threshold, in-period misses
             continue
         m = misses.setdefault((vendor, fy), {"invoices": [], "excess": 0.0, "first_date": as_date(inv_date)})
         m["invoices"].append(inv_no)
@@ -91,4 +91,4 @@ def tds_002(conn, company_id, rule):
                          "section_recorded": r[6], "statutory_ref": ref},
         })
     out.sort(key=lambda e: -e["financial_impact"])
-    return out[: int(param(rule, "limit", 50))]
+    return capped(out, rule)

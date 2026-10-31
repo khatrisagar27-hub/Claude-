@@ -1,5 +1,5 @@
 """Purchase audit rules PUR-001 to PUR-031."""
-from app.rules import register, param, fy_sql, as_date, as_on_date
+from app.rules import register, param, fy_sql, as_date, as_on_date, capped
 from app.statutory import income_tax, msme
 
 
@@ -10,10 +10,10 @@ def pur_001(conn, company_id, rule):
         SELECT vendor_id, UPPER(REGEXP_REPLACE(invoice_number, '[^0-9A-Za-z]', '', 'g')) AS inv_key,
                {fy_sql('invoice_date')} AS fy, COUNT(*) AS cnt, SUM(total_amount) AS total,
                STRING_AGG(invoice_number, ', ') AS numbers
-        FROM purchase_invoices
+        FROM purchase_invoices_all
         WHERE company_id = ? AND status != 'cancelled'
         GROUP BY vendor_id, inv_key, fy
-        HAVING COUNT(*) > 1
+        HAVING COUNT(*) > 1 AND COUNT(*) FILTER (WHERE id IN (SELECT id FROM purchase_invoices)) > 0
     """, [company_id]).fetchall()
     return [
         {
@@ -22,7 +22,7 @@ def pur_001(conn, company_id, rule):
                            f"Risk of duplicate payment and double ITC: ₹{float(r[4]):,.0f}.",
             "severity": "critical",
             "financial_impact": float(r[4]) * (r[3] - 1) / r[3],
-            "evidence": {"vendor_id": str(r[0]), "invoice_numbers": r[5], "financial_year": int(r[2]),
+            "evidence": {"vendor_id": str(r[0]), "invoice_numbers": r[5], "financial_year": f"{r[2]}-{str(r[2] + 1)[-2:]}",
                          "count": r[3], "total": float(r[4])},
         }
         for r in rows
@@ -44,7 +44,6 @@ def pur_002(conn, company_id, rule):
         FROM po
         WHERE po_value > 0 AND ABS(total_amount - po_value) / po_value > ?
         ORDER BY ABS(total_amount - po_value) DESC
-        LIMIT 30
     """, [company_id, tolerance]).fetchall()
     return [
         {
@@ -69,7 +68,6 @@ def pur_004(conn, company_id, rule):
           AND (our_po_number IS NULL OR our_po_number = '')
           AND status NOT IN ('cancelled', 'disputed')
         ORDER BY total_amount DESC
-        LIMIT 30
     """, [company_id, min_amount]).fetchall()
     return [
         {
@@ -108,7 +106,6 @@ def pur_006(conn, company_id, rule):
         FROM windows
         GROUP BY vendor_id
         ORDER BY MAX(total) DESC
-        LIMIT 30
     """, [company_id, limit, window_days, min_count, limit]).fetchall()
     return [
         {
@@ -135,7 +132,6 @@ def pur_010(conn, company_id, rule):
           AND v.bank_account_number IS NOT NULL AND TRIM(v.bank_account_number) != ''
           AND REGEXP_REPLACE(t.counterparty_account, '\\s', '', 'g') != REGEXP_REPLACE(v.bank_account_number, '\\s', '', 'g')
         ORDER BY t.amount DESC
-        LIMIT 30
     """, [company_id, company_id]).fetchall()
     return [
         {
@@ -163,7 +159,6 @@ def pur_013(conn, company_id, rule):
           AND status IN ('pending', 'approved', 'part_paid', 'paid')
           AND (our_po_number IS NULL OR our_po_number = '')
         ORDER BY total_amount DESC
-        LIMIT 20
     """, [company_id, min_amount]).fetchall()
     return [
         {
@@ -191,7 +186,6 @@ def pur_016(conn, company_id, rule):
          AND ABS(DATEDIFF('day', a.invoice_date, b.invoice_date)) <= ?
         WHERE a.company_id = ? AND a.status = 'paid' AND b.status = 'paid' AND a.total_amount > 0
         ORDER BY a.total_amount DESC
-        LIMIT 20
     """, [window_days, company_id]).fetchall()
     return [
         {
@@ -219,7 +213,6 @@ def pur_021(conn, company_id, rule):
           AND DATEDIFF('day', receipt_date, invoice_date) >= ?
           AND total_amount > ? AND status != 'cancelled'
         ORDER BY DATEDIFF('day', receipt_date, invoice_date) DESC
-        LIMIT 20
     """, [company_id, min_gap, min_amount]).fetchall()
     return [
         {
@@ -246,7 +239,6 @@ def pur_022(conn, company_id, rule):
                AND REGEXP_REPLACE(v.bank_account_number, '\\s', '', 'g') = REGEXP_REPLACE(e.bank_account_number, '\\s', '', 'g'))
            OR (v.pan IS NOT NULL AND LENGTH(TRIM(v.pan)) = 10 AND UPPER(TRIM(v.pan)) = UPPER(TRIM(e.pan))))
         WHERE v.company_id = ?
-        LIMIT 20
     """, [company_id]).fetchall()
     return [
         {
@@ -269,7 +261,7 @@ def pur_031(conn, company_id, rule):
     rows = conn.execute("""
         SELECT pi.id, v.name, v.msme_status, pi.invoice_number, pi.invoice_date, pi.receipt_date,
                pi.total_amount, pi.outstanding_amount, pi.payment_date, pi.status, v.payment_terms_days
-        FROM purchase_invoices pi
+        FROM purchase_invoices_all pi
         JOIN vendors v ON v.id = pi.vendor_id
         WHERE pi.company_id = ? AND pi.status != 'cancelled'
           AND LOWER(TRIM(v.msme_status)) IN ('micro', 'small')
@@ -280,6 +272,8 @@ def pur_031(conn, company_id, rule):
         agreed = r[10] if r[10] is not None else default_days
         outstanding = float(r[7] or 0)
         paid_on = as_date(r[8]) if (r[9] == "paid" and r[8]) else None
+        if paid_on and paid_on > as_on:           # settled after the as-on date: still due on it
+            paid_on, outstanding = None, float(r[6])
         if paid_on is None and outstanding <= 0:
             continue
         principal = outstanding if paid_on is None else float(r[6])
@@ -302,4 +296,4 @@ def pur_031(conn, company_id, rule):
                          "statutory_ref": f"MSMED Act ss.15-16; {ref}"},
         })
     out.sort(key=lambda e: -e["financial_impact"])
-    return out[: int(param(rule, "limit", 50))]
+    return capped(out, rule)

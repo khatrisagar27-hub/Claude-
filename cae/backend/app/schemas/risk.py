@@ -45,6 +45,7 @@ class FraudIndicatorOut(BaseModel):
     score: float
     affected_transactions: int
     financial_exposure: float | None = None
+    details_json: dict | None = None
 
     model_config = {"from_attributes": True}
 

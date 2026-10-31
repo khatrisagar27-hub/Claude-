@@ -30,6 +30,37 @@ def param(rule, key: str, default: Any) -> Any:
     return default
 
 
+def capped(out: list, rule) -> list:
+    """Audit populations are reported in full. Only an explicit max_results parameter trims
+    the list — never a silent default (a capped list understated exposure and risk)."""
+    n = param(rule, "max_results", None)
+    return out[: int(n)] if n else out
+
+
+# Transaction tables and the date that places a row in a period. The engine loads each as
+# <table>_all (every row up to the period end) and exposes <table> as a view of the rows
+# inside the period. Transaction tests read <table>; balance and cumulative tests (stock on
+# hand, MSME dues, FY-to-date thresholds, duplicates within a FY) read <table>_all.
+PERIOD_TABLES = {
+    "sales_invoices": "invoice_date",
+    "purchase_invoices": "invoice_date",
+    "journal_entries": "entry_date",
+    "bank_transactions": "transaction_date",
+    "inventory_movements": "movement_date",
+    "payroll_records": "MAKE_DATE(CAST(pay_period_year AS INTEGER), CAST(pay_period_month AS INTEGER), 1)",
+}
+
+
+def apply_period(conn, period_from=None, period_to=None) -> None:
+    """(Re)create the in-period views over the loaded <table>_all tables."""
+    lo = f"DATE '{as_date(period_from)}'" if period_from else "DATE '1900-01-01'"
+    hi = f"DATE '{as_date(period_to)}'" if period_to else "DATE '9999-12-31'"
+    for table, col in PERIOD_TABLES.items():
+        conn.execute(f"CREATE OR REPLACE VIEW {table} AS SELECT * FROM {table}_all WHERE {col} BETWEEN {lo} AND {hi}")
+    conn.execute("""CREATE OR REPLACE VIEW journal_entry_lines AS
+                    SELECT l.* FROM journal_entry_lines_all l JOIN journal_entries je ON je.id = l.journal_entry_id""")
+
+
 def fy_sql(col: str) -> str:
     """DuckDB expression for the Indian financial year (Apr-Mar) start year of a date column."""
     return f"(CASE WHEN MONTH({col}) >= 4 THEN YEAR({col}) ELSE YEAR({col}) - 1 END)"

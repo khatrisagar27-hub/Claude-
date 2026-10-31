@@ -214,14 +214,14 @@ export default function Rules() {
         <table className="w-full">
           <thead>
             <tr>
-              {['Rule Code', 'Name', 'Business Area', 'Severity', 'Frequency', 'Parameters', 'Enabled'].map(h => (
+              {['Rule Code', 'Name', 'Business Area', 'Audit scope', 'Severity', 'Frequency', 'Parameters', 'Enabled'].map(h => (
                 <th key={h} className="table-header text-left">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={7} className="text-center py-12 text-gray-500">Loading…</td></tr>
+              <tr><td colSpan={8} className="text-center py-12 text-gray-500">Loading…</td></tr>
             ) : rules.map(rule => (
               <Fragment key={rule.id}>
                 <tr className="table-row">
@@ -230,6 +230,11 @@ export default function Rules() {
                     <p className="truncate">{rule.name}</p>
                   </td>
                   <td className="table-cell text-gray-400 text-xs">{AREAS.find(a => a.value === rule.business_area)?.label || rule.business_area}</td>
+                  <td className="table-cell text-xs whitespace-nowrap" title={rule.process || ''}>
+                    {rule.audit_scope === 'statutory' ? <span className="text-blue-300">Statutory + Internal</span>
+                      : rule.audit_scope === 'ifc' ? <span className="text-cyan-300">Internal; Statutory if IFC</span>
+                      : <span className="text-purple-300">Internal only</span>}
+                  </td>
                   <td className="table-cell"><SeverityBadge severity={rule.severity} /></td>
                   <td className="table-cell text-gray-500 text-xs capitalize">{rule.frequency}</td>
                   <td className="table-cell">
@@ -254,7 +259,7 @@ export default function Rules() {
                 </tr>
                 {editing === rule.id && (
                   <tr className="border-b border-navy-border">
-                    <td colSpan={7} className="px-4 py-3">
+                    <td colSpan={8} className="px-4 py-3">
                       <ParamEditor rule={rule} onClose={() => setEditing(null)}
                         onSaved={params => {
                           setRules(rs => rs.map(r => r.id === rule.id ? { ...r, parameters: params } : r));

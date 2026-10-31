@@ -61,6 +61,34 @@ _FIELD_ALIASES: dict[str, list[str]] = {
     "pay_period_month":["pay_period_month", "period_month", "month"],
 }
 
+# Fields each data type reads — the column mapping is restricted to these, so one source
+# column (say "Invoice Date") is not offered as entry_date / movement_date as well.
+_TYPE_FIELDS: dict[str, list[str]] = {
+    "sales_invoices": ["invoice_number", "invoice_date", "total_amount", "taxable_amount", "cgst_amount",
+                       "sgst_amount", "igst_amount", "customer_id"],
+    "purchase_invoices": ["invoice_number", "invoice_date", "total_amount", "taxable_amount", "cgst_amount",
+                          "sgst_amount", "igst_amount", "vendor_id"],
+    "journal_entries": ["voucher_number", "entry_date", "total_debit", "total_credit", "narration"],
+    "bank_transactions": ["transaction_date", "amount", "transaction_type", "reference_number",
+                          "counterparty_name", "transaction_mode", "narration"],
+    "inventory": ["movement_date", "item_code", "item_name", "warehouse_from", "movement_type", "quantity",
+                  "unit_cost", "total_value"],
+    "payroll": ["employee_id", "gross_earnings", "total_deductions", "net_pay", "pay_period_year", "pay_period_month"],
+}
+
+
+def map_columns(columns: list, data_type: str) -> dict[str, str]:
+    """canonical field -> source column, for the fields this data type reads (each column used once)."""
+    mapping: dict[str, str] = {}
+    used: set = set()
+    for field in _TYPE_FIELDS.get(data_type, list(_FIELD_ALIASES)):
+        match = _fuzzy_match_column(_FIELD_ALIASES.get(field, [field]), [c for c in columns if c not in used])
+        if match:
+            mapping[field] = match
+            used.add(match)
+    return mapping
+
+
 _TYPE_LABELS = {
     "sales_invoices":    "Sales Invoices",
     "purchase_invoices": "Purchase / Vendor Invoices",
@@ -116,12 +144,8 @@ class ExcelImporter:
         total_signals = len(_SIGNALS[best_type])
         confidence = round(best_score / total_signals, 2) if total_signals else 0.0
 
-        # Map known fields to actual columns
-        column_mapping: dict[str, str] = {}
-        for field, aliases in _FIELD_ALIASES.items():
-            match = _fuzzy_match_column(aliases, columns_found)
-            if match:
-                column_mapping[field] = match
+        # Map the detected type's fields to actual columns
+        column_mapping = map_columns(columns_found, best_type)
 
         mapped_cols = set(column_mapping.values())
         unmapped = [c for c in columns_found if c not in mapped_cols]
@@ -160,6 +184,11 @@ class ExcelImporter:
         resolved_type = file_type
         if file_type == "auto":
             resolved_type = detected_type or self.detect_schema(file_path)["detected_type"]
+        # Apply the same mapping the Analyse step showed: source headers -> canonical fields
+        mapping = map_columns(list(df.columns), resolved_type)
+        df = df.rename(columns={src: field for field, src in mapping.items() if src != field})
+        df = df.loc[:, ~df.columns.duplicated()]
+        df = df.astype(object).where(df.notna(), None)
 
         importers = {
             "sales_invoices": self._import_sales,
@@ -186,9 +215,9 @@ class ExcelImporter:
                 inv = SalesInvoice(
                     id=uuid.uuid4(),
                     company_id=self.company_id,
-                    invoice_number=str(row.get("invoice_number", row.get("invoice_no", ""))),
-                    invoice_date=self._parse_date(row.get("invoice_date")),
-                    customer_id=self._get_uuid(row, "customer_id"),
+                    invoice_number=self._required_str(row, "invoice_number"),
+                    invoice_date=self._parse_date(row.get("invoice_date"), required=True),
+                    customer_id=self._party_id("customer", row.get("customer_id")),
                     gross_amount=self._decimal(row.get("gross_amount", total)),
                     discount_amount=self._decimal(row.get("discount_amount", 0)),
                     taxable_amount=self._decimal(row.get("taxable_amount", row.get("taxable_value", total))),
@@ -219,10 +248,10 @@ class ExcelImporter:
                 inv = PurchaseInvoice(
                     id=uuid.uuid4(),
                     company_id=self.company_id,
-                    vendor_id=self._get_uuid(row, "vendor_id"),
-                    invoice_number=str(row.get("invoice_number", row.get("invoice_no", ""))),
+                    vendor_id=self._party_id("vendor", row.get("vendor_id")),
+                    invoice_number=self._required_str(row, "invoice_number"),
                     our_po_number=self._get_str(row, "our_po_number") or self._get_str(row, "po_no"),
-                    invoice_date=self._parse_date(row.get("invoice_date")),
+                    invoice_date=self._parse_date(row.get("invoice_date"), required=True),
                     receipt_date=self._parse_date(row.get("receipt_date")),
                     gross_amount=self._decimal(row.get("gross_amount", total)),
                     discount_amount=self._decimal(row.get("discount_amount", 0)),
@@ -254,7 +283,7 @@ class ExcelImporter:
                     id=uuid.uuid4(),
                     company_id=self.company_id,
                     voucher_number=str(row.get("voucher_number", row.get("je_no", ""))),
-                    entry_date=self._parse_date(row.get("entry_date", row.get("je_date"))),
+                    entry_date=self._parse_date(row.get("entry_date"), required=True),
                     voucher_type=str(row.get("voucher_type", row.get("je_type", "journal"))),
                     narration=self._get_str(row, "narration"),
                     total_debit=total_debit,
@@ -279,7 +308,7 @@ class ExcelImporter:
                 bt = BankTransaction(
                     id=uuid.uuid4(),
                     company_id=self.company_id,
-                    transaction_date=self._parse_date(row.get("transaction_date", row.get("txn_date"))),
+                    transaction_date=self._parse_date(row.get("transaction_date"), required=True),
                     amount=self._decimal(row.get("amount", 0)),
                     transaction_type=str(row.get("transaction_type", row.get("txn_type", "debit"))),
                     reference_number=self._get_str(row, "reference_number") or self._get_str(row, "reference_no"),
@@ -304,7 +333,7 @@ class ExcelImporter:
                 mv = InventoryMovement(
                     id=uuid.uuid4(),
                     company_id=self.company_id,
-                    movement_date=self._parse_date(row.get("movement_date")),
+                    movement_date=self._parse_date(row.get("movement_date"), required=True),
                     item_code=str(row.get("item_code", row.get("material_code", ""))),
                     item_name=self._get_str(row, "item_name"),
                     warehouse_from=self._get_str(row, "warehouse_from") or self._get_str(row, "warehouse"),
@@ -358,23 +387,63 @@ class ExcelImporter:
         return {"rows_imported": imported, "errors": errors[:10]}
 
     @staticmethod
-    def _parse_date(val):
-        if val is None:
-            return date.today()
+    def _parse_date(val, required: bool = False):
+        """ISO or Indian day-first dates. A blank optional date stays blank; a blank required or
+        unreadable date fails the row (it used to become today's date silently)."""
+        import pandas as pd
+        if val is None or (isinstance(val, float) and val != val) or str(val).strip() == "":
+            if required:
+                raise ValueError("date is blank")
+            return None
         if hasattr(val, "date"):
             return val.date()
+        text = str(val).strip()
         try:
-            from datetime import datetime
-            return datetime.fromisoformat(str(val)).date()
+            iso = len(text) >= 10 and text[4] == "-"
+            return pd.to_datetime(text, dayfirst=not iso, errors="raise").date()
         except Exception:
-            return date.today()
+            raise ValueError(f"unreadable date {text!r}")
 
     @staticmethod
     def _decimal(val) -> Decimal:
         try:
-            return Decimal(str(val))
+            d = Decimal(str(val).replace(",", ""))
+            return d if d.is_finite() else Decimal("0")
         except Exception:
             return Decimal("0")
+
+    @staticmethod
+    def _required_str(row, key) -> str:
+        val = row.get(key)
+        if val is None or str(val).strip() in ("", "nan"):
+            raise ValueError(f"{key} is blank")
+        return str(val).strip()
+
+    def _party_id(self, kind: str, value) -> uuid.UUID | None:
+        """A UUID, a party code or a party name -> master id; unknown names are added to the master."""
+        if value is None or str(value).strip() in ("", "nan"):
+            return None
+        text = str(value).strip()
+        try:
+            return uuid.UUID(text)
+        except ValueError:
+            pass
+        from sqlalchemy import func, or_
+        from app.models.master import Customer, Vendor
+        model, code_col = (Customer, Customer.customer_code) if kind == "customer" else (Vendor, Vendor.vendor_code)
+        cache = self.__dict__.setdefault("_party_cache", {})
+        if (kind, text.lower()) in cache:
+            return cache[(kind, text.lower())]
+        found = self.db.query(model).filter(model.company_id == self.company_id,
+                                            or_(func.lower(model.name) == text.lower(), code_col == text)).first()
+        if found is None:
+            code = f"IMP-{uuid.uuid4().hex[:8].upper()}"
+            found = model(id=uuid.uuid4(), company_id=self.company_id, name=text[:200],
+                          **({"customer_code": code} if kind == "customer" else {"vendor_code": code}))
+            self.db.add(found)
+            self.db.flush()
+        cache[(kind, text.lower())] = found.id
+        return found.id
 
     @staticmethod
     def _get_str(row, key) -> str | None:
