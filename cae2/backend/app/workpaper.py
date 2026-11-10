@@ -121,6 +121,14 @@ def build_workpaper(db: Session, eng: Engagement, prepared_by: str, include_clos
            [[ref(f), f"{n.created_at:%d-%m-%Y %H:%M}", n.author, n.kind, n.body] for f in listed for n in f.notes],
            widths=[14, 17, 25, 10, 100])
 
+    # Client text beginning with "=" (a narration, a party name) must stay text:
+    # this workbook contains no formulas, so any formula cell is neutralised.
+    for sheet in wb.worksheets:
+        for row in sheet.iter_rows():
+            for cell in row:
+                if cell.data_type == "f":
+                    cell.data_type = "s"
+
     out = io.BytesIO()
     wb.save(out)
     return out.getvalue()

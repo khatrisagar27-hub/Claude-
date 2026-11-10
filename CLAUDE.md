@@ -6,12 +6,16 @@ to *change* the code.
 
 ## What's in here
 
-Two unrelated projects share this repo:
+Three projects share this repo:
 
-1. **`cae/` — Continuous Audit Engine.** FastAPI + Postgres + Redis/Celery +
-   React, Docker Compose. The substantial project; assume a task is about this
-   one unless LexComply is named.
-2. **Repo root — LexComply India.** Dependency-free static web app
+1. **`cae/` — Continuous Audit Engine (version 1).** FastAPI + Postgres +
+   Redis/Celery + React, Docker Compose. Most of this file describes it.
+2. **`cae2/` — Continuous Audit Engine, version 2.** A ground-up rebuild
+   developed alongside `cae/`; it shares no code with it. See
+   [CAE version 2](#cae-version-2-cae2) below. **Ask which one a CAE task is
+   about if it is not clear** — the owner is moving to `cae2/`, and `cae/` is
+   kept only until the switch is approved. Do not port v1 code or design into v2.
+3. **Repo root — LexComply India.** Dependency-free static web app
    (`index.html` + `laws.js` + `app.js` + `excel-export.js`) plus an Excel
    workbook generator (`build_excel.py` → `LexComply_India.xlsm`, with
    `LexComply.bas` imported by hand). No build step, no package manager, no
@@ -71,7 +75,7 @@ queries a table `rules/schema.py` doesn't define will too. Add the table shape
 there when you add the rule.
 
 CI (`.github/workflows/ci.yml`) runs the same pytest suite with coverage on every
-push and PR. **Frontend has no tests** — `npm run lint` and `npx tsc --noEmit`
+push and PR, plus the `cae2` backend tests and frontend build as separate jobs. **Frontend has no tests** — `npm run lint` and `npx tsc --noEmit`
 are the only checks there, so verify UI work against the running stack.
 
 ## Architecture
@@ -141,6 +145,62 @@ running.
 React 18 + Vite + TypeScript + Tailwind, `@tremor/react` and `recharts` for
 charts, `zustand` for auth state (`src/store/authStore.ts`), axios wrapper in
 `src/api/client.ts`. One page per route in `src/pages/`.
+
+## CAE version 2 (`cae2/`)
+
+User docs: [`cae2/README.md`](cae2/README.md). Rule list: `cae2/docs/rules.md`
+(generated — never edit by hand).
+
+**Stack.** FastAPI + synchronous SQLAlchemy 2 + pandas; Postgres in Docker,
+SQLite locally and in tests; React + Vite + TypeScript + Tailwind with no chart
+or state library. No Redis, Celery, DuckDB, nginx or monitoring stack — don't
+add them back. The built frontend is served by the API process from one image.
+
+**Commands** (from `cae2/`): `make test` (backend pytest, SQLite) ·
+`make dev-api` + `make dev-web` (local, http://localhost:5173) · `make up`
+(Docker, http://localhost:8080; `make setup` writes `.env` with random secrets) ·
+`make demo`. Frontend checks: `npm run build` in `cae2/frontend` (type-check +
+build). Run the suite on Postgres with `CAE_TEST_DATABASE_URL=…` (wipes that DB).
+
+**Concepts to keep intact**
+
+- **Engagement** (client + period + materiality + settings) owns all data,
+  findings and reports. There is no tenant/company layer.
+- **A rule** is a function `fn(data, params, ctx) -> list[Hit]` registered with
+  `@rule(...)` in `app/audit/rules/<area>.py`. It reads pandas frames from
+  `Data` (loaded once per run in `audit/dataset.py`), never the database.
+- **`Hit.key` is the finding's identity.** It must be stable across runs for the
+  same item. The engine fingerprints it to update, clear and reopen findings;
+  a key that changes between runs creates duplicates and loses review history.
+- **Concluded findings (confirmed / dismissed / resolved) are never touched by
+  a run.** Only open/queried findings are cleared. There is a test per status.
+- **`needs=[...]`** on a rule lists datasets (or `dataset.column`) that must
+  hold data; otherwise the rule reports "no data" instead of passing silently.
+- **Every limit and rate lives in `app/statute.py`** with its provision, TDS
+  rates as dated versions. Never put a statutory number inside a rule.
+- **The importer never guesses.** Bad rows are rejected with reasons; derived
+  values are recorded as batch notes.
+
+**Adding a rule:** write the function with a docstring (it is shown to users),
+plant an example in `app/demo.py` (`test_every_rule_runs_and_finds_its_planted_exception`
+fails otherwise), add a hand-worked figure test in `tests/test_rules.py` if it
+computes an amount, then regenerate `docs/rules.md` with
+`python -m app.catalogue > ../docs/rules.md` (a test checks it is current).
+
+**Gotchas already hit**
+
+- Filtering to an empty frame and then `.assign(col=<Series>)` re-adds the
+  Series' rows as NaN. Assign first, filter second.
+- A boolean mask built with `.map()` on an empty frame has object dtype and
+  drops every column when used to index; add `.astype(bool)`.
+- `tests/test_rules.py::test_no_rule_fails_on_sparse_data` exists for exactly
+  these — keep new rules passing it.
+- Strings starting with `=` become formulas in openpyxl. `workpaper.py`
+  neutralises them at the end; keep that if you add sheets.
+- No default login or secret exists: first run creates the partner via
+  `/api/setup`; `CAE_SECRET_KEY` blank means a key file is generated in the data dir.
+- Tables are created with `create_all`; there is no migration tool yet. A
+  change to `models.py` needs one before it meets a database with client work.
 
 ## Non-negotiable design rule
 

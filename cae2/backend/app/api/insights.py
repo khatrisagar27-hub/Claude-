@@ -1,4 +1,6 @@
 """Read-only views built from findings and data: dashboard, GST, working capital, working paper."""
+import re
+
 from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -63,7 +65,7 @@ def wc(eng: Engagement = Depends(get_engagement), db: Session = Depends(get_db))
 @router.get("/engagements/{engagement_id}/workpaper")
 def workpaper(eng: Engagement = Depends(get_engagement), db: Session = Depends(get_db), user: User = Depends(current_user),
               include_closed: bool = False):
-    name = f"Working paper - {eng.client.name} - {eng.name}.xlsx".replace('"', "").replace("/", "-")
-    ascii_name = name.encode("ascii", "ignore").decode()
+    # Header value: keep to characters that cannot break out of the quoted filename.
+    ascii_name = re.sub(r"[^A-Za-z0-9 ._()&-]", "", f"Working paper - {eng.client.name} - {eng.name}")[:150] + ".xlsx"
     return Response(build_workpaper(db, eng, user.name, include_closed), media_type=XLSX,
                     headers={"Content-Disposition": f'attachment; filename="{ascii_name}"'})

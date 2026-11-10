@@ -9,6 +9,7 @@ practice:
 | Project | What it is |
 |---|---|
 | **[Continuous Audit Engine (CAE)](#continuous-audit-engine-cae)** (`cae/`) | Self-hosted continuous-auditing platform: ingest accounting data, run exception rules, score risk and fraud indicators, reconcile GSTR-2B, generate ICAI-format working papers |
+| **[CAE version 2](cae2/README.md)** (`cae2/`) | Ground-up rebuild of CAE, developed alongside `cae/`: engagement-based, findings that survive re-runs, TDS and GST rule packs, smaller stack. Pre-release |
 | **[LexComply India](#lexcomply-india)** (repo root) | Applicability engine for 69 Indian statutes — answers "which laws apply to this company, and what must it file when" |
 | **[Forex Gain/(Loss) workbook](#forex-gainloss-workbook)** (`build_forex_workbook.py`) | Formula-driven Excel workbook for exchange gain/loss on sales and purchases, handling part settlement and many-to-many invoice/receipt allocation |
 

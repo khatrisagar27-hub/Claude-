@@ -189,6 +189,21 @@ def test_working_paper_download(api, demo, staff):
     assert wb["Rules run"].max_row >= 61
 
 
+def test_working_paper_neutralises_formulas_and_odd_client_names(api, manager, staff):
+    client = api.post("/api/clients", json={"name": 'Evil "Co"\r\nX-Header: 1 / Ltd'}, headers=manager).json()
+    eng = api.post("/api/engagements", json={"client_id": client["id"], "name": "FY", "period_start": "2025-04-01",
+                                             "period_end": "2026-03-31"}, headers=manager).json()
+    rows = b"invoice_no,invoice_date,vendor_name,taxable_value\nA-1,05-04-2025,=HYPERLINK(\"http://x\"),1000\nA-1,05-04-2025,=HYPERLINK(\"http://x\"),1000\n"
+    assert api.post(f"/api/engagements/{eng['id']}/data/purchases", files={"file": ("p.csv", rows)}, headers=staff).json()["rows_loaded"] == 2
+    api.post(f"/api/engagements/{eng['id']}/runs", headers=staff)
+    out = api.get(f"/api/engagements/{eng['id']}/workpaper", headers=staff)
+    assert out.status_code == 200
+    assert out.headers["content-disposition"] == 'attachment; filename="Working paper - Evil CoX-Header 1  Ltd - FY.xlsx"'
+    wb = load_workbook(io.BytesIO(out.content))
+    cells = [c for ws in wb.worksheets for row in ws.iter_rows() for c in row if isinstance(c.value, str) and c.value.startswith("=")]
+    assert cells and all(c.data_type == "s" for c in cells)
+
+
 def test_gst_view_says_what_is_missing(api, engagement, staff):
     assert api.get(f"/api/engagements/{engagement['id']}/gst", headers=staff).json() == {"ready": False, "missing": ["purchases", "gstr2b"]}
 

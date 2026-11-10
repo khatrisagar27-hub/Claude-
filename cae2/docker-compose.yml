@@ -1,0 +1,32 @@
+# Two services: the app and its database. Secrets come from .env (run `make setup`);
+# there are no default passwords, and Postgres is not published on the host.
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cae
+      POSTGRES_DB: cae
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run "make setup" to create .env}
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cae -d cae"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      CAE_DATABASE_URL: postgresql+psycopg://cae:${POSTGRES_PASSWORD}@db:5432/cae
+      CAE_SECRET_KEY: ${CAE_SECRET_KEY:?Run "make setup" to create .env}
+    ports:
+      - "${CAE_BIND:-127.0.0.1}:${CAE_PORT:-8080}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db:

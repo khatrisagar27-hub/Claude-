@@ -31,6 +31,7 @@ htmlcov/
 # ---- Node / frontend (cae/frontend) ----
 node_modules/
 cae/frontend/dist/
+cae2/frontend/dist/
 .vite/
 *.tsbuildinfo
 npm-debug.log*
@@ -47,6 +48,8 @@ yarn-error.log*
 # ---- Runtime data ----
 # CAE writes ingested files here; they are client data, not source.
 cae/backend/uploads/
+# CAE v2 local SQLite database and generated signing key.
+cae2/backend/data/
 uploads/
 *.log
 

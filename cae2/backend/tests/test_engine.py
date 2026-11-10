@@ -136,3 +136,12 @@ def test_duplicate_keys_from_one_rule_make_one_finding(make_engagement, db, monk
     monkeypatch.setattr(load_rules()["PUR-001"], "fn", lambda data, p, ctx: [Hit("k", "t", "d"), Hit("k", "t", "d")])
     assert run_audit(db, eng).summary["new"] == 1
     assert registry.RULES["PUR-001"].code == "PUR-001"
+
+
+def test_committed_rule_catalogue_matches_the_code():
+    from pathlib import Path
+
+    from app.catalogue import catalogue_markdown
+
+    committed = Path(__file__).parents[2] / "docs" / "rules.md"
+    assert committed.read_text() == catalogue_markdown(), "Regenerate: python -m app.catalogue > ../docs/rules.md"

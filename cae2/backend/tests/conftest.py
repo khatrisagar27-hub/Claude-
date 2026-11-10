@@ -8,7 +8,8 @@ import tempfile
 from datetime import date
 
 _tmp = tempfile.mkdtemp(prefix="cae2-test-")
-os.environ["CAE_DATABASE_URL"] = f"sqlite:///{_tmp}/test.db"
+# Set CAE_TEST_DATABASE_URL to run the same suite against Postgres; that database is wiped first.
+os.environ["CAE_DATABASE_URL"] = os.environ.get("CAE_TEST_DATABASE_URL", f"sqlite:///{_tmp}/test.db")
 os.environ["CAE_DATA_DIR"] = _tmp
 os.environ["CAE_SECRET_KEY"] = "test-only-secret-key-not-used-anywhere-else"
 
@@ -17,13 +18,16 @@ import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 from sqlalchemy import select  # noqa: E402
 
-from app.db import SessionLocal, init_db  # noqa: E402
+from app.db import Base, SessionLocal, engine, init_db  # noqa: E402
 from app.demo import load_demo, to_xlsx  # noqa: E402
 from app.ingest.loader import import_file  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models import Client, Engagement, Finding, User  # noqa: E402
 from app.security import create_token, hash_password  # noqa: E402
 
+from app import models  # noqa: E402,F401
+
+Base.metadata.drop_all(engine)
 init_db()
 
 
