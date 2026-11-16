@@ -4,7 +4,7 @@ const FIRM_CONFIG = {
   shortName: 'SK & Associates, CA',
   email: 'khatrisagar27@gmail.com',
   whatsapp: '918866262545', // +91 8866262545
-  tagline: 'Expert Compliance | Audit | Advisory | Tax | Business Consulting'
+  tagline: 'Compliance | Audit | Advisory | Tax | Business Consulting'
 };
 
 // ── INDIAN STATES DATA ──

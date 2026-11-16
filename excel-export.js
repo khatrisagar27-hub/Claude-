@@ -330,7 +330,7 @@ function buildDashboardSheet() {
 
   // Title block
   rows += `<Row ss:Height="50">${C('Indian Law Compliance | Sagar Khatri & Associates, Chartered Accountants','title')}</Row>`;
-  rows += `<Row ss:Height="18">${C('Generated on ' + today + '  |  Expert Compliance · Audit · Advisory · Tax · Business Consulting','subtitle')}</Row>`;
+  rows += `<Row ss:Height="18">${C('Generated on ' + today + '  |  Compliance · Audit · Advisory · Tax · Business Consulting','subtitle')}</Row>`;
   rows += `<Row ss:Height="8">${C('','blank')}</Row>`;
 
   // Client contact section
