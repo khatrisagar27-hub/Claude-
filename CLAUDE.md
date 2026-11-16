@@ -6,7 +6,7 @@ to *change* the code.
 
 ## What's in here
 
-Two unrelated projects share this repo:
+Three unrelated projects share this repo:
 
 1. **`cae/` — Continuous Audit Engine.** FastAPI + Postgres + Redis/Celery +
    React, Docker Compose. The substantial project; assume a task is about this
@@ -16,6 +16,11 @@ Two unrelated projects share this repo:
    workbook generator (`build_excel.py` → `LexComply_India.xlsm`, with
    `LexComply.bas` imported by hand). No build step, no package manager, no
    framework. Don't introduce one.
+3. **`website/` — firm website.** Static single page for Sagar Khatri &
+   Associates (`index.html` + `site.css` + `site.js`, particulars in
+   `firm-config.js`, self-hosted fonts). Same rule: no build step, no framework,
+   no third-party requests. Its content is bound by the ICAI Website Guidelines —
+   see [Firm website content](#firm-website-content) before changing any copy.
 
 ## Build & run commands
 
@@ -40,6 +45,8 @@ Frontend (from `cae/frontend/`): `npm run dev`, `npm run build`,
 
 Ports: nginx 8080 (use this) · frontend 3000 · API 8000 (`/api/docs`) ·
 Grafana 3001 · Prometheus 9090 · Postgres 5432 · Redis 6379.
+
+Firm website: open `website/index.html` directly in a browser.
 
 LexComply: open `index.html` directly in a browser; `python build_excel.py` to
 regenerate the workbook.
@@ -154,6 +161,22 @@ reaches a report.
 
 Do not route a calculation through the model to avoid writing the rule. A wrong
 due date or ITC figure is a real penalty for a real taxpayer.
+
+## Firm website content
+
+`website/` and the firm-branded text in the LexComply pages are a practising CA
+firm's public material, so the ICAI Code of Ethics governs the wording. Breaking
+it is professional misconduct for the firm, not a style issue.
+
+- Factual particulars only, matching the firm's ICAI record. Firm particulars
+  live in `website/firm-config.js`; don't hardcode them in markup.
+- No firm logo or monogram. No client names or logos, fees, "free" offers,
+  testimonials, awards, rankings or superlatives ("expert", "leading", "best").
+- No lead capture, pop-up offers or wording that urges a visitor to engage the
+  firm. Showing contact details is fine; the visitor initiates.
+- Don't state due dates, rates or thresholds on the firm site — link to the
+  LexComply tool or the official portal instead.
+- Bump `lastUpdated` in `firm-config.js` when content changes.
 
 ## Gotchas earned the hard way
 

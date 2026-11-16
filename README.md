@@ -10,6 +10,7 @@ practice:
 |---|---|
 | **[Continuous Audit Engine (CAE)](#continuous-audit-engine-cae)** (`cae/`) | Self-hosted continuous-auditing platform: ingest accounting data, run exception rules, score risk and fraud indicators, reconcile GSTR-2B, generate ICAI-format working papers |
 | **[LexComply India](#lexcomply-india)** (repo root) | Applicability engine for 69 Indian statutes — answers "which laws apply to this company, and what must it file when" |
+| **[Firm website](#firm-website)** (`website/`) | Static website for Sagar Khatri & Associates, written to the ICAI Website Guidelines: firm particulars, practice areas, members, resources, contact |
 | **[Forex Gain/(Loss) workbook](#forex-gainloss-workbook)** (`build_forex_workbook.py`) | Formula-driven Excel workbook for exchange gain/loss on sales and purchases, handling part settlement and many-to-many invoice/receipt allocation |
 
 > **Status: pre-release.** Everything here is in active development and has not
@@ -166,6 +167,37 @@ Produces `LexComply_India.xlsm`. Import `LexComply.bas` via the VBA editor
 
 ---
 
+## Firm website
+
+`website/` is the firm's own site: one static page, no build step, no
+dependencies, no third-party requests (fonts are self-hosted). The background is
+a guilloche engraving drawn on a canvas that the pointer lights and bends; it
+falls back to a still plate under `prefers-reduced-motion`.
+
+```bash
+open website/index.html
+```
+
+`firm-config.js` holds every firm particular (name, FRN, address, members,
+contact, "last updated" date) — edit that file, not the markup. Empty fields
+show as "To be added".
+
+**Content rules.** The page is written to the ICAI Code of Ethics (13th edition,
+applicable from 1 April 2026) and the Institute's website advisory of
+14 October 2020, taking the stricter reading where they differ. Before adding
+anything, check it against these:
+
+- Only factual particulars that agree with the firm's ICAI record.
+- No firm logo or monogram; the firm name is set as plain text.
+- No client names or logos, fees, "free" offers, testimonials, awards,
+  rankings, superlatives ("leading", "expert", "best") or "why choose us".
+- No advertisements or banners, and nothing that pushes a visitor to engage
+  the firm. Contact details are shown; the visitor decides whether to use them.
+- Photographs of members, if added, are passport-style only.
+- Update `lastUpdated` whenever the content changes.
+
+---
+
 ## Forex Gain/(Loss) workbook
 
 ```bash
@@ -224,6 +256,8 @@ cae/                        Continuous Audit Engine
 .env.example                                 Deployment env template
 index.html app.js laws.js excel-export.js    LexComply web app
 lexcomply.html                               LexComply, single file
+website/                                     Firm website (index.html, site.css, site.js,
+                                             firm-config.js, fonts/)
 build_excel.py LexComply.bas                 LexComply Excel workbook + VBA
 build_forex_workbook.py                      Forex gain/(loss) workbook generator
 CAE_User_Guide.html                          CAE end-user guide
