@@ -172,6 +172,10 @@ it is professional misconduct for the firm, not a style issue.
   live in `website/firm-config.js`; don't hardcode them in markup.
 - No firm logo or monogram. No client names or logos, fees, "free" offers,
   testimonials, awards, rankings or superlatives ("expert", "leading", "best").
+- `website/assets/ca-logo.jpg` is ICAI's "CA India" logo. Use the file as it is:
+  don't recolour, crop, restyle or enlarge it past the firm name.
+- The FRN and ICAI membership number are left off the site by the owner's
+  choice. Don't add them back without being asked.
 - No lead capture, pop-up offers or wording that urges a visitor to engage the
   firm. Showing contact details is fine; the visitor initiates.
 - Don't state due dates, rates or thresholds on the firm site — link to the

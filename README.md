@@ -178,9 +178,10 @@ falls back to a still plate under `prefers-reduced-motion`.
 open website/index.html
 ```
 
-`firm-config.js` holds every firm particular (name, FRN, address, members,
-contact, "last updated" date) — edit that file, not the markup. Empty fields
-show as "To be added".
+`firm-config.js` holds every firm particular (name, proprietor, address,
+phones, members, "last updated" date) — edit that file, not the markup. Optional
+fields left empty are not shown; the FRN, ICAI membership number and working
+hours are blank by choice.
 
 **Content rules.** The page is written to the ICAI Code of Ethics (13th edition,
 applicable from 1 April 2026) and the Institute's website advisory of
@@ -188,7 +189,9 @@ applicable from 1 April 2026) and the Institute's website advisory of
 anything, check it against these:
 
 - Only factual particulars that agree with the firm's ICAI record.
-- No firm logo or monogram; the firm name is set as plain text.
+- No firm logo or monogram; the firm name is set as plain text. The only mark
+  is ICAI's "CA India" logo (`assets/ca-logo.jpg`), used exactly as issued: no
+  recolouring, cropping or effects, and never larger than the firm name.
 - No client names or logos, fees, "free" offers, testimonials, awards,
   rankings, superlatives ("leading", "expert", "best") or "why choose us".
 - No advertisements or banners, and nothing that pushes a visitor to engage

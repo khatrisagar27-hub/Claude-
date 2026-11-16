@@ -31,10 +31,13 @@
     $all('[data-firm]').forEach(function (el) {
       var v = valueOf(el.getAttribute('data-firm'));
       var empty = v == null || v === '' || (Array.isArray(v) && !v.length);
+      var row = el.closest('[data-optional]');
       if (empty) {
-        if (!el.textContent.trim()) { el.textContent = ''; el.appendChild(tbd()); }
+        if (row) row.hidden = true;
+        else if (!el.textContent.trim()) { el.textContent = ''; el.appendChild(tbd()); }
         return;
       }
+      if (row) row.hidden = false;
       if (Array.isArray(v)) {
         el.textContent = '';
         v.forEach(function (line, i) {
@@ -45,24 +48,48 @@
         el.textContent = v;
       }
     });
-    $all('[data-firm-href]').forEach(function (el) {
-      var kind = el.getAttribute('data-firm-href');
-      var href = '';
-      if (kind === 'mailto' && F.email) href = 'mailto:' + F.email;
-      if (kind === 'tel' && F.phone) href = 'tel:' + String(F.phone).replace(/[^\d+]/g, '');
-      if (kind === 'whatsapp' && F.whatsapp) href = 'https://wa.me/' + String(F.whatsapp).replace(/\D/g, '');
-      if (href) el.setAttribute('href', href); else el.removeAttribute('href');
+    $all('[data-firm-href="mailto"]').forEach(function (el) {
+      if (F.email) el.setAttribute('href', 'mailto:' + F.email); else el.removeAttribute('href');
     });
+
+    var phones = $('#phoneList');
+    if (phones && Array.isArray(F.phones) && F.phones.length) {
+      var wa = String(F.whatsapp || '').replace(/\D/g, '');
+      phones.textContent = '';
+      F.phones.forEach(function (num) {
+        var digits = String(num).replace(/\D/g, '');
+        var a = document.createElement('a');
+        a.className = 'plain num';
+        a.href = 'tel:+' + digits;
+        a.textContent = num;
+        phones.appendChild(a);
+        if (wa && digits === wa) {
+          var w = document.createElement('a');
+          w.className = 'chip';
+          w.href = 'https://wa.me/' + wa;
+          w.target = '_blank'; w.rel = 'noopener';
+          w.textContent = 'WhatsApp';
+          phones.appendChild(w);
+        }
+      });
+    }
+
+    var map = $('#mapLink');
+    if (map) {
+      if (F.mapQuery) map.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(F.mapQuery);
+      else map.hidden = true;
+    }
     var y = $('#year');
     if (y) y.textContent = String(new Date().getFullYear());
   }
 
   function ledgerRow(dl, label, value) {
+    if (!value) return;
     var row = document.createElement('div');
     var dt = document.createElement('dt');
     var dd = document.createElement('dd');
     dt.textContent = label;
-    if (value) dd.textContent = value; else dd.appendChild(tbd());
+    dd.textContent = value;
     row.appendChild(dt); row.appendChild(dd); dl.appendChild(row);
   }
   function renderPeople() {
@@ -91,10 +118,12 @@
       var h = document.createElement('h3');
       h.textContent = p.name || '';
       body.appendChild(h);
-      var role = document.createElement('p');
-      role.className = 'person__role';
-      if (p.role) role.textContent = p.role; else role.appendChild(tbd());
-      body.appendChild(role);
+      if (p.role) {
+        var role = document.createElement('p');
+        role.className = 'person__role';
+        role.textContent = p.role;
+        body.appendChild(role);
+      }
 
       var dl = document.createElement('dl');
       dl.className = 'ledger ledger--plain';

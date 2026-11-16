@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Sagar Khatri &amp; Associates, Chartered Accountants</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Sagar Khatri &amp; Associates, Chartered Accountants (FRN 157238W). Firm particulars, practice areas, members and contact details.">
+<meta name="description" content="Sagar Khatri &amp; Associates, Chartered Accountants, Vadodara (Proprietor: CA Sagar Khatri). Firm particulars, practice areas and contact details. Established 2022.">
 <link rel="stylesheet" href="site.css">
 <script>
 (function(){try{var t=localStorage.getItem('ska-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}document.documentElement.classList.add('js');})();
@@ -23,8 +23,12 @@
 <header class="site-head" id="siteHead">
   <div class="wrap head-row">
     <a class="firm-name" href="#top">
-      <span class="firm-name__main" data-firm="name">Sagar Khatri &amp; Associates</span>
-      <span class="firm-name__sub">Chartered Accountants</span>
+      <!-- The "CA India" logo, exactly as issued by ICAI. Do not recolour, crop or restyle it. -->
+      <img class="ca-logo" src="assets/ca-logo.jpg" alt="CA India logo" width="1162" height="920">
+      <span class="firm-name__text">
+        <span class="firm-name__main" data-firm="name">Sagar Khatri &amp; Associates</span>
+        <span class="firm-name__sub">Chartered Accountants</span>
+      </span>
     </a>
     <nav class="nav" id="nav" aria-label="Sections">
       <a href="#firm">The firm</a>
@@ -52,9 +56,9 @@
   <section class="hero" id="top">
     <div class="wrap hero-grid">
       <div class="hero-copy">
-        <p class="label">Chartered Accountants <span class="label-sep"></span> Firm Registration No. <span data-firm="frn">157238W</span></p>
+        <p class="label">Chartered Accountants <span class="label-sep"></span> <span class="nowrap">Established <span data-firm="established">2022</span></span></p>
         <h1>A practice in audit, taxation and <em>corporate compliance</em>.</h1>
-        <p class="lede">Sagar Khatri &amp; Associates is a firm of Chartered Accountants registered with the Institute of Chartered Accountants of India. Its work covers statutory and internal audit, accounting, GST, TDS, company law filings and income-tax returns.</p>
+        <p class="lede">Sagar Khatri &amp; Associates is a Chartered Accountancy firm in Vadodara, Gujarat, providing audit, taxation, GST and advisory services to individuals and businesses. This page sets out its professional particulars for those who wish to know more.</p>
         <div class="actions">
           <a class="btn btn--solid" href="#practice">View practice areas</a>
           <a class="btn btn--line" href="../index.html">Open the compliance tool
@@ -68,11 +72,12 @@
           <h2 class="label" id="particulars-h">Firm particulars</h2>
           <dl class="ledger">
             <div><dt>Name</dt><dd data-firm="name">Sagar Khatri &amp; Associates</dd></div>
-            <div><dt>Firm Registration No.</dt><dd class="num" data-firm="frn">157238W</dd></div>
-            <div><dt>Constitution</dt><dd data-firm="constitution"></dd></div>
-            <div><dt>Established</dt><dd class="num" data-firm="established"></dd></div>
-            <div><dt>Office</dt><dd data-firm="city"></dd></div>
-            <div><dt>Working hours</dt><dd data-firm="hours"></dd></div>
+            <div><dt>Proprietor</dt><dd data-firm="proprietor">CA Sagar Khatri</dd></div>
+            <div><dt>Constitution</dt><dd data-firm="constitution">Proprietorship</dd></div>
+            <div><dt>Established</dt><dd class="num" data-firm="established">2022</dd></div>
+            <div><dt>Office</dt><dd data-firm="city">Vadodara, Gujarat</dd></div>
+            <div data-optional hidden><dt>Firm Registration No.</dt><dd class="num" data-firm="frn"></dd></div>
+            <div data-optional hidden><dt>Working hours</dt><dd data-firm="hours"></dd></div>
           </dl>
           <p class="fine">Particulars as on record with the Institute of Chartered Accountants of India.</p>
         </div>
@@ -89,9 +94,9 @@
       </header>
       <div class="split-body">
         <div class="prose rise">
-          <p class="lede">Sagar Khatri &amp; Associates is a firm of Chartered Accountants holding Firm Registration No. <span data-firm="frn">157238W</span> with the Institute of Chartered Accountants of India.</p>
-          <p>The practice is organised around four areas of work: assurance, comprising statutory and internal audit; accounting and book-keeping; direct and indirect taxation; and corporate law compliance.</p>
-          <p>Assignments are carried out in accordance with the Standards on Auditing, the Code of Ethics and the other pronouncements of the Institute that apply to the engagement.</p>
+          <p class="lede">Sagar Khatri &amp; Associates is a firm of Chartered Accountants established in <span data-firm="established">2022</span>, founded and led by its proprietor, <span data-firm="proprietor">CA Sagar Khatri</span>.</p>
+          <p>Based in <span data-firm="city">Vadodara, Gujarat</span>, the firm serves individuals, professionals and small and medium enterprises with audit and assurance, accounting, direct and indirect taxation, corporate law compliance and financial advisory.</p>
+          <p>The firm conducts its practice in accordance with the Chartered Accountants Act, 1949 and the standards and guidelines issued by the Institute of Chartered Accountants of India.</p>
         </div>
 
         <h3 class="sub-head rise">Professional obligations the firm works under</h3>
@@ -134,6 +139,7 @@
             <button type="button" role="tab" id="tab-tds" aria-controls="panel-tds" aria-selected="false" tabindex="-1">TDS and TCS</button>
             <button type="button" role="tab" id="tab-roc" aria-controls="panel-roc" aria-selected="false" tabindex="-1">Company law and ROC</button>
             <button type="button" role="tab" id="tab-incometax" aria-controls="panel-incometax" aria-selected="false" tabindex="-1">Income-tax</button>
+            <button type="button" role="tab" id="tab-advisory" aria-controls="panel-advisory" aria-selected="false" tabindex="-1">Financial advisory</button>
           </div>
 
           <div class="practice-panels">
@@ -146,6 +152,7 @@
                 <li>Reporting on internal financial controls with reference to financial statements, where it applies</li>
                 <li>Audit of LLPs, trusts, societies and other entities under the laws that govern them</li>
                 <li>Tax audit under the income-tax law</li>
+                <li>Other attest and assurance engagements</li>
               </ul>
             </article>
 
@@ -184,6 +191,7 @@
                 <li>Reconciliation of input tax credit with GSTR-2B</li>
                 <li>E-invoicing and e-way bill compliance</li>
                 <li>Refund applications and replies to notices</li>
+                <li>Support during GST audit, and advisory</li>
               </ul>
             </article>
 
@@ -208,7 +216,7 @@
                 <li>Annual filings: AOC-4, MGT-7 and MGT-7A for companies; Form 8 and Form 11 for LLPs</li>
                 <li>DIR-3 KYC, ADT-1, DPT-3 and MSME-1</li>
                 <li>Event-based filings for changes in directors, share capital, registered office and charges</li>
-                <li>Statutory registers and minutes</li>
+                <li>Statutory registers, minutes and secretarial compliance support</li>
               </ul>
             </article>
 
@@ -217,10 +225,20 @@
               <p class="panel-lede">Returns of income, advance tax and proceedings before the income-tax authorities.</p>
               <ul class="scope">
                 <li>Returns of income for individuals, HUFs, firms, LLPs, companies and trusts</li>
-                <li>Computation of advance tax</li>
+                <li>Tax planning and computation of advance tax</li>
                 <li>Reports and certificates required under the income-tax law</li>
                 <li>Replies to intimations and notices</li>
                 <li>Representation in assessment and appellate proceedings</li>
+              </ul>
+            </article>
+
+            <article class="panel spot" role="tabpanel" id="panel-advisory" aria-labelledby="tab-advisory" tabindex="0">
+              <h3>Financial advisory</h3>
+              <p class="panel-lede">Business advisory, projections, and assistance with finance and regulatory matters.</p>
+              <ul class="scope">
+                <li>Business advisory</li>
+                <li>Financial projections</li>
+                <li>Assistance with finance and regulatory matters</li>
               </ul>
             </article>
           </div>
@@ -239,9 +257,10 @@
       <div class="split-body">
         <div class="people rise" id="peopleGrid">
           <article class="person spot">
-            <div class="person__photo"><span>Passport-size photograph</span></div>
+            <div class="person__photo has-img"><img src="assets/profile.jpg" alt="CA Sagar Khatri" width="480" height="480" loading="lazy"></div>
             <div class="person__body">
               <h3>CA Sagar Khatri</h3>
+              <p class="person__role">Proprietor</p>
               <dl class="ledger ledger--plain">
                 <div><dt>Areas of work</dt><dd>Internal audit, statutory audit, GST, TDS, company law compliance and income-tax</dd></div>
               </dl>
@@ -296,17 +315,17 @@
         <dl class="contact rise">
           <div>
             <dt>Office</dt>
-            <dd><address data-firm="address"></address></dd>
+            <dd>
+              <address data-firm="address">18, 2nd Floor, Darshnam Trade Centre 3,<br>Near Surya Palace, Sayajigunj,<br>Vadodara, Gujarat</address>
+              <a class="chip" id="mapLink" href="https://www.google.com/maps/search/?api=1&amp;query=Darshnam%20Trade%20Centre%203%2C%20Sayajigunj%2C%20Vadodara" target="_blank" rel="noopener">Open in Google Maps</a>
+            </dd>
           </div>
           <div>
             <dt>Telephone</dt>
-            <dd><a class="plain" data-firm="phone" data-firm-href="tel"></a></dd>
-          </div>
-          <div>
-            <dt>WhatsApp</dt>
-            <dd>
-              <a class="plain num" data-firm="whatsappDisplay" data-firm-href="whatsapp" href="https://wa.me/918866262545" target="_blank" rel="noopener">+91 88662 62545</a>
-              <button class="copy" type="button" data-copy="whatsappDisplay">Copy</button>
+            <dd id="phoneList">
+              <a class="plain num" href="tel:+918866262545">+91 88662 62545</a>
+              <a class="chip" href="https://wa.me/918866262545" target="_blank" rel="noopener">WhatsApp</a>
+              <a class="plain num" href="tel:+919723807850">+91 97238 07850</a>
             </dd>
           </div>
           <div>
@@ -316,7 +335,7 @@
               <button class="copy" type="button" data-copy="email">Copy</button>
             </dd>
           </div>
-          <div>
+          <div data-optional hidden>
             <dt>Working hours</dt>
             <dd data-firm="hours"></dd>
           </div>
@@ -330,9 +349,12 @@
 <footer class="site-foot">
   <div class="wrap">
     <div class="foot-top">
-      <div>
-        <p class="foot-name"><span data-firm="name">Sagar Khatri &amp; Associates</span>, Chartered Accountants</p>
-        <p class="foot-meta">Firm Registration No. <span class="num" data-firm="frn">157238W</span></p>
+      <div class="foot-brand">
+        <img class="ca-logo ca-logo--foot" src="assets/ca-logo.jpg" alt="CA India logo" width="1162" height="920" loading="lazy">
+        <div>
+          <p class="foot-name"><span data-firm="name">Sagar Khatri &amp; Associates</span>, Chartered Accountants</p>
+          <p class="foot-meta"><span data-firm="city">Vadodara, Gujarat</span><span data-optional hidden> &middot; Firm Registration No. <span class="num" data-firm="frn"></span></span></p>
+        </div>
       </div>
       <nav class="foot-nav" aria-label="Footer">
         <a href="#firm">The firm</a>

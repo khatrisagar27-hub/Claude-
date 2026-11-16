@@ -30,6 +30,7 @@
   --shadow:0 40px 90px -40px rgba(0,0,0,.85);
   --sun-d:block;
   --moon-d:none;
+  --logo-plate:#ffffff;     /* the CA India logo always sits on white, in both themes */
 
   --font-display:"Fraunces","Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
   --font-text:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
@@ -98,6 +99,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
 ::selection{background:var(--gold);color:var(--on-solid);}
 :focus-visible{outline:2px solid var(--gold);outline-offset:3px;}
 .num{font-variant-numeric:tabular-nums;}
+.nowrap{white-space:nowrap;}
 
 .wrap{max-width:1220px;margin-inline:auto;padding-left:max(var(--gutter),env(safe-area-inset-left,0px));padding-right:max(var(--gutter),env(safe-area-inset-right,0px));}
 
@@ -120,7 +122,11 @@ main,.site-foot{position:relative;z-index:1;}
 .site-head.is-stuck{border-bottom-color:var(--line-soft);background:color-mix(in srgb,var(--bg) 86%,transparent);}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:19;background:var(--bg);}
 .head-row{display:flex;align-items:center;justify-content:space-between;gap:1.5rem;min-height:4.5rem;}
-.firm-name{display:grid;gap:.1rem;text-decoration:none;min-width:0;}
+.firm-name{display:flex;align-items:center;gap:.8rem;text-decoration:none;min-width:0;}
+.firm-name__text{display:grid;gap:.1rem;min-width:0;}
+/* CA India logo: shown as issued, on white, never larger than the firm name block. */
+.ca-logo{flex:none;height:2.4rem;width:auto;max-width:none;padding:3px;border-radius:var(--radius);background:var(--logo-plate);}
+.ca-logo--foot{height:2.1rem;}
 .firm-name__main{font-family:var(--font-display);font-size:1.2rem;font-weight:500;letter-spacing:-.005em;line-height:1.15;}
 .firm-name__sub{font-size:.66rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);}
 .nav{display:flex;align-items:center;gap:clamp(1rem,2.2vw,2rem);}
@@ -135,6 +141,13 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .progress{position:absolute;left:0;right:0;bottom:-1px;height:2px;overflow:hidden;pointer-events:none;}
 .progress span{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-hi));transform-origin:0 50%;transform:scaleX(0);}
 
+@media (max-width:460px){
+  .head-row{gap:.75rem;}
+  .firm-name{gap:.6rem;}
+  .firm-name__main{font-size:1.02rem;}
+  .firm-name__sub{font-size:.58rem;letter-spacing:.16em;}
+  .ca-logo{height:2rem;}
+}
 @media (max-width:899px){
   .js .menu-btn{display:grid;}
   .js .nav{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;align-items:stretch;gap:0;background:var(--bg-raised);border-bottom:1px solid var(--line);padding:.25rem max(var(--gutter),env(safe-area-inset-right,0px)) 1rem max(var(--gutter),env(safe-area-inset-left,0px));}
@@ -279,8 +292,8 @@ html:not(.js) .practice-list{display:none;}
 .contact dd{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem 1rem;font-family:var(--font-display);font-size:clamp(1.15rem,.8vw + 1rem,1.45rem);font-weight:400;line-height:1.35;letter-spacing:-.006em;min-width:0;overflow-wrap:anywhere;}
 .contact .plain{text-decoration:none;background:linear-gradient(var(--gold),var(--gold)) 0 100%/0 1px no-repeat;transition:background-size .3s var(--ease);}
 .contact .plain[href]:hover{background-size:100% 1px;}
-.copy{font-family:var(--font-text);font-size:.72rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;padding:.3rem .7rem;border-radius:999px;border:1px solid var(--line);background:none;color:var(--muted);transition:border-color .2s,color .2s;}
-.copy:hover{border-color:var(--gold);color:var(--fg);}
+.copy,.chip{font-family:var(--font-text);font-size:.72rem;font-weight:500;letter-spacing:.06em;line-height:1.5;text-transform:uppercase;text-decoration:none;white-space:nowrap;padding:.3rem .7rem;border-radius:999px;border:1px solid var(--line);background:none;color:var(--muted);transition:border-color .2s,color .2s;}
+.copy:hover,.chip:hover{border-color:var(--gold);color:var(--fg);}
 @media (min-width:700px){
   .contact>div{grid-template-columns:minmax(9rem,3fr) minmax(0,9fr);gap:1.5rem;align-items:baseline;padding:1.3rem .25rem;}
 }
@@ -290,6 +303,7 @@ html:not(.js) .practice-list{display:none;}
 .site-foot>.wrap{display:grid;gap:1.75rem;}
 .site-foot>.wrap::before{content:"";display:block;border-top:3px double var(--line);}
 .foot-top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:1.5rem 3rem;}
+.foot-brand{display:flex;align-items:center;gap:.9rem;min-width:0;}
 .foot-name{font-family:var(--font-display);font-size:1.3rem;font-weight:450;line-height:1.25;}
 .foot-meta{font-size:.82rem;color:var(--dim);}
 .foot-nav{display:flex;flex-wrap:wrap;gap:.5rem 1.5rem;}
@@ -334,7 +348,7 @@ html:not(.js) .practice-list{display:none;}
 
 /* ── PRINT ── */
 @media print{
-  .plate,.site-head,.notice,.copy,.actions{display:none!important;}
+  .plate,.site-head,.notice,.copy,.chip,.actions{display:none!important;}
   .rise,.hero-copy>*,.particulars{animation:none!important;}
   body{background:#fff;color:#000;}
   .js [role="tabpanel"][hidden]{display:grid!important;}
