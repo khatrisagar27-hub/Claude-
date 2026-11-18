@@ -48,6 +48,10 @@ yarn-error.log*
 # CAE writes ingested files here; they are client data, not source.
 cae/backend/uploads/
 uploads/
+# Audit-fieldwork agent working folders: engagement files, approval state,
+# briefs, outbox and downloaded working papers are client data.
+cae/fieldwork/*
+!cae/fieldwork/engagement.example.json
 *.log
 
 # ---- Excel lock / recovery files ----

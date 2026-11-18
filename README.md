@@ -113,6 +113,16 @@ and override via environment or `cae/backend/.env` (see
 | `CORS_ORIGINS` | JSON array of allowed origins |
 | `UPLOAD_DIR`, `MAX_UPLOAD_SIZE_MB` | File ingestion |
 
+### Audit-fieldwork agents
+
+A Claude Code agent system (researcher → decider → executor → reporter) runs
+fieldwork on a schedule: it ingests data, runs the rules, researches and decides
+each exception, raises queries, chases replies, records control deficiencies and
+sends the partner a one-page digest of the decisions only they can make. Query
+emails and anything on fraud, critical or material items wait for partner
+approval, and that gate is enforced in code (`cae/scripts/caectl.py`), not in a
+prompt. Setup and the daily loop: [`cae/docs/fieldwork-agents.md`](cae/docs/fieldwork-agents.md).
+
 > **Not yet hardened for production.** The bundled compose file uses default
 > database credentials, a default `SECRET_KEY`, publishes Postgres and Redis on
 > host ports, and the seed script creates a demo login with a known password
@@ -215,11 +225,14 @@ cae/                        Continuous Audit Engine
   backend/tests/            pytest suite (engines, rules, api, auth) — see its README
   frontend/src/pages/       React pages (Dashboard, Exceptions, GST, Rules,
                             RiskHeatmap, FraudAnalytics, Reports, ...)
-  scripts/                  seed_data.py, run_first_audit.py
-  docs/api.md               API reference
+  scripts/                  seed_data.py, run_first_audit.py, caectl.py (agent
+                            tool layer), fieldwork_cycle.sh (cron runner)
+  docs/                     api.md, fieldwork-agents.md
+  fieldwork/                per-client agent working folders (git-ignored)
   nginx/ monitoring/        reverse proxy, Prometheus config
   docker-compose.yml Makefile
 
+.claude/agents/ .claude/skills/fieldwork/    Audit-fieldwork agents + /fieldwork lead
 .github/workflows/ci.yml                     Backend pytest suite on push + PR
 .env.example                                 Deployment env template
 index.html app.js laws.js excel-export.js    LexComply web app

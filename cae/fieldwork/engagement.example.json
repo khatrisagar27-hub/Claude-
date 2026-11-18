@@ -1,0 +1,19 @@
+{
+  "company_id": "00000000-0000-4000-8000-000000000000",
+  "client_name": "Example Industries Pvt Ltd",
+  "period_label": "FY 2025-26",
+  "overall_materiality": 5000000,
+  "performance_materiality": 3750000,
+  "clearly_trivial": 250000,
+  "query_response_days": 7,
+  "remediation_target_days": 30,
+  "recurrence_threshold": 3,
+  "remediation_owner": "Head of Accounts (client)",
+  "partner": {"name": "Engagement Partner", "email": "partner@example-ca-firm.in"},
+  "management_contacts": [
+    {"name": "Client CFO", "email": "cfo@example-client.in", "role": "CFO"},
+    {"name": "Client Accounts Head", "email": "accounts@example-client.in", "role": "Accounts"}
+  ],
+  "auto_send_reminders": true,
+  "notes": "Amounts in INR. Thresholds are the partner's materiality decision (SA 320) — the agents never set or change them."
+}

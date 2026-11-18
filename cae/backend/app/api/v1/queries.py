@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.workflow import ManagementQuery, QueryResponse
 from app.models.audit import AuditException
+from app.api.v1.exceptions import _VALID_TRANSITIONS
 from app.schemas.queries import QueryCreate, QueryOut, QueryResponseCreate, QueryResponseOut, QueryStatusUpdate
 from app.utils.rbac import get_current_user, require_roles
 from app.models.user import User
@@ -47,11 +48,14 @@ def create_query(
         due_date=payload.due_date,
         status="open",
         raised_by_user_id=current_user.id,
+        raised_by_name=current_user.full_name,
         raised_at=datetime.utcnow(),
     )
     db.add(query)
 
-    exc.status = "query_raised"
+    # Only advance the exception; never move a resolved/closed one backwards.
+    if "management_query_sent" in _VALID_TRANSITIONS.get(exc.status, []):
+        exc.status = "management_query_sent"
     db.commit()
     db.refresh(query)
     return query
@@ -101,6 +105,7 @@ def respond_to_query(
         query_id=query_id,
         response_text=payload.response_text,
         responded_by_user_id=current_user.id,
+        responded_by_name=current_user.full_name,
         responded_at=datetime.utcnow(),
         attachment_url=payload.attachment_url,
     )

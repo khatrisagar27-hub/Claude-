@@ -17,6 +17,11 @@ Two unrelated projects share this repo:
    `LexComply.bas` imported by hand). No build step, no package manager, no
    framework. Don't introduce one.
 
+CAE also carries an **audit-fieldwork agent system**: `.claude/skills/fieldwork/`
+(the lead, `/fieldwork`), `.claude/agents/fw-*.md` (researcher, decider,
+executor, reporter) and `cae/scripts/caectl.py`, the stdlib-only tool layer that
+is the agents' only path into CAE. See [Fieldwork agents](#fieldwork-agents).
+
 ## Build & run commands
 
 All CAE commands run from `cae/` via the Makefile:
@@ -142,6 +147,26 @@ React 18 + Vite + TypeScript + Tailwind, `@tremor/react` and `recharts` for
 charts, `zustand` for auth state (`src/store/authStore.ts`), axios wrapper in
 `src/api/client.ts`. One page per route in `src/pages/`.
 
+### Fieldwork agents
+
+`caectl.py` is where the agents' figures, routes and approval gates live. The
+agent prompts assume its guarantees, so changes go there with tests
+(`tests/api/test_caectl.py`, which drives it through the real app via a
+TestClient transport):
+
+- **Routes** (`route_for`, `ROUTES`): order matters. The decider may raise
+  scrutiny but `draft-queries`/`close-trivial` refuse anything that lowers it.
+- **Approval gates**: query emails need an approved `queries` approval
+  (`release`). Resolving or marking false positive on fraud/critical/≥ PM items
+  goes through a `resolution` approval. Reminders are code-rendered and must
+  carry no amounts.
+- **Figure check**: model-written text may only contain ₹ amounts present in
+  the brief (`figures_in`/`unverified_figures`).
+- **Statutory candidates**: `STATUTORY_REFS` keyed by rule code. Add an entry
+  when a new rule has a specific section/CARO clause.
+- Per-client data lives in `cae/fieldwork/<client>/` (git-ignored). Never
+  commit it.
+
 ## Non-negotiable design rule
 
 **Deterministic code computes every number; the model only explains.**
@@ -156,6 +181,11 @@ Do not route a calculation through the model to avoid writing the rule. A wrong
 due date or ITC figure is a real penalty for a real taxpayer.
 
 ## Gotchas earned the hard way
+
+- **Query/remediation creates used to 500** on NOT NULL `raised_by_name` /
+  `responsible_name`; `RemediationOut` declared UUIDs as `str`. Both fixed and
+  pinned in `tests/api/test_queries_remediation.py`. Raising a query moves the
+  exception to `management_query_sent` (a valid transition), never backwards.
 
 These are all fixes already in the git history. Re-breaking them is the most
 likely way to waste an hour:

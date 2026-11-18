@@ -21,8 +21,9 @@ class RemediationCreate(BaseModel):
     control_gap_description: str
     root_cause: Optional[str] = None
     action_plan: str
+    responsible_name: str
     responsible_user_id: Optional[uuid.UUID] = None
-    target_date: Optional[date] = None
+    target_date: date
 
 
 class RemediationUpdate(BaseModel):
@@ -35,9 +36,9 @@ class RemediationUpdate(BaseModel):
 
 
 class RemediationOut(BaseModel):
-    id: str
-    company_id: str
-    exception_id: str
+    id: uuid.UUID
+    company_id: uuid.UUID
+    exception_id: Optional[uuid.UUID]
     control_gap_description: str
     root_cause: Optional[str]
     action_plan: str

@@ -105,10 +105,10 @@ Exception detail with evidence JSON.
 Update exception status. Body: `{ "status": "acknowledged", "comment": "..." }`
 
 Valid transitions:
-- open → acknowledged | query_raised | escalated | closed
-- acknowledged → query_raised | escalated | resolved | closed
-- query_raised → escalated | resolved | closed
-- escalated → resolved | closed
+- open → in_review | management_query_sent | remediation_in_progress | closed | false_positive
+- in_review → management_query_sent | remediation_in_progress | resolved | closed | false_positive
+- management_query_sent → remediation_in_progress | resolved | closed
+- remediation_in_progress → resolved | closed
 - resolved → closed
 
 ### POST /exceptions/{id}/ai-explain
@@ -128,13 +128,16 @@ Get Claude AI explanation for the exception. Returns:
 ## Management Queries
 
 ### POST /queries
-Raise a management query from an exception.
+Raise a management query from an exception. Body: `exception_id`, `process_area`,
+`severity`, `description`, `evidence_summary`, `suggested_question`, `due_date`
+(required), optional `assigned_to_user_id`. Moves an open/in-review exception to
+`management_query_sent`; never moves a resolved/closed one.
 
 ### GET /queries
 List queries. Filters: `?company_id=...&status=open&severity=critical`
 
 ### GET /queries/{id}
-Query detail.
+Query detail, including `responses[]` (management replies).
 
 ### POST /queries/{id}/respond
 Respond to a query. Body: `{ "response_text": "...", "attachment_url": "..." }`
@@ -150,7 +153,9 @@ Update query status. Body: `{ "status": "resolved", "auditor_comment": "..." }`
 List remediation actions. `?company_id=...&retest_outcome=pending`
 
 ### POST /remediation
-Create remediation action.
+Create remediation action. Body: `company_id`, `exception_id`,
+`control_gap_description`, `action_plan`, `responsible_name`, `target_date`
+(all required), optional `root_cause`, `responsible_user_id`.
 
 ### PUT /remediation/{id}
 Update remediation action (add evidence, retest outcome).
