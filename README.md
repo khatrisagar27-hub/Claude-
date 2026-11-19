@@ -10,7 +10,7 @@ practice:
 |---|---|
 | **[Continuous Audit Engine (CAE)](#continuous-audit-engine-cae)** (`cae/`) | Self-hosted continuous-auditing platform: ingest accounting data, run exception rules, score risk and fraud indicators, reconcile GSTR-2B, generate ICAI-format working papers |
 | **[LexComply India](#lexcomply-india)** (repo root) | Applicability engine for 69 Indian statutes — answers "which laws apply to this company, and what must it file when" |
-| **[Firm website](#firm-website)** (`website/`) | Static website for Sagar Khatri & Associates, written to the ICAI Website Guidelines: firm particulars, practice areas, members, resources, contact |
+| **[Firm website](#firm-website)** (`website/`) | Static website for Sagar Khatri & Associates, written to the ICAI Website Guidelines: firm particulars, practice areas, members, contact, and 21 in-browser tools for audit, accounting, GST, TDS, income-tax and company law |
 | **[Forex Gain/(Loss) workbook](#forex-gainloss-workbook)** (`build_forex_workbook.py`) | Formula-driven Excel workbook for exchange gain/loss on sales and purchases, handling part settlement and many-to-many invoice/receipt allocation |
 
 > **Status: pre-release.** Everything here is in active development and has not
@@ -199,6 +199,33 @@ anything, check it against these:
 - Photographs of members, if added, are passport-style only.
 - Update `lastUpdated` whenever the content changes.
 
+### Tools (`website/tools/`)
+
+`tools/index.html` is a directory of 21 calculators and checkers that run in the
+browser, plus links to LexComply, three Excel workbooks (`website/downloads/`)
+and the Declaration of Income generator. Nothing entered leaves the browser.
+
+| Area | Tools |
+|---|---|
+| Audit | Materiality · Sample size (attribute and monetary unit) · Sample selection (random, systematic, MUS, seeded) · Benford first-digit test · Duplicates and gaps · Two-list reconciliation (e.g. books vs GSTR-2B) · Schedule III ageing · Schedule III ratios |
+| Accounting | Schedule II depreciation · Loan schedule with current/non-current split · Amount in words |
+| GST | GST calculator · Late fee and interest · GSTIN/PAN/TAN/CIN checker |
+| TDS | TDS on a payment · TDS interest and late fee |
+| Income-tax | Old vs new regime · Advance tax instalments |
+| Company law and MSME | AGM, ADT-1, AOC-4, MGT-7 and LLP due dates · MSMED Act interest |
+| Compliance | Compliance calendar with CSV and `.ics` export |
+
+- `core.js` does every calculation; `tools.js` only reads inputs and lays out
+  what `core.js` returns.
+- **`statutory-data.js` holds every rate, threshold and due date**, each block
+  with its source. Until `verifiedOn` is set there, every tool that uses those
+  figures shows a "not yet checked by the firm" notice. The figures were
+  compiled from secondary sources in November 2026 and must be checked against
+  the Act and notifications before the site goes live.
+- `core.test.js` is a known-answer test suite (AICPA sampling tables, a valid
+  GSTIN check character, worked tax examples). Run it with
+  `node website/tools/core.test.js`; CI runs it too.
+
 ---
 
 ## Forex Gain/(Loss) workbook
@@ -261,6 +288,10 @@ index.html app.js laws.js excel-export.js    LexComply web app
 lexcomply.html                               LexComply, single file
 website/                                     Firm website (index.html, site.css, site.js,
                                              firm-config.js, fonts/)
+website/tools/                               In-browser tools: core.js (calculations),
+                                             statutory-data.js (rates and dates),
+                                             tools.js (UI), core.test.js
+website/downloads/                           Excel workbooks offered on the tools page
 build_excel.py LexComply.bas                 LexComply Excel workbook + VBA
 build_forex_workbook.py                      Forex gain/(loss) workbook generator
 CAE_User_Guide.html                          CAE end-user guide

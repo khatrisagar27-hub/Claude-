@@ -43,3 +43,19 @@ jobs:
 
       - name: Run tests
         run: pytest --cov=app --cov-report=term-missing
+
+  website-tools-tests:
+    name: Website tools tests (node)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # Known-answer tests for the tools' calculation library; no dependencies.
+      - name: Run tests
+        run: node website/tools/core.test.js

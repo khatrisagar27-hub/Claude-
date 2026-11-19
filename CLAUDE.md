@@ -18,9 +18,10 @@ Three unrelated projects share this repo:
    framework. Don't introduce one.
 3. **`website/` — firm website.** Static single page for Sagar Khatri &
    Associates (`index.html` + `site.css` + `site.js`, particulars in
-   `firm-config.js`, self-hosted fonts). Same rule: no build step, no framework,
-   no third-party requests. Its content is bound by the ICAI Website Guidelines —
-   see [Firm website content](#firm-website-content) before changing any copy.
+   `firm-config.js`, self-hosted fonts), plus a tools page in `website/tools/`.
+   Same rule: no build step, no framework, no third-party requests. Its content
+   is bound by the ICAI Website Guidelines — see
+   [Firm website content](#firm-website-content) before changing any copy.
 
 ## Build & run commands
 
@@ -46,7 +47,8 @@ Frontend (from `cae/frontend/`): `npm run dev`, `npm run build`,
 Ports: nginx 8080 (use this) · frontend 3000 · API 8000 (`/api/docs`) ·
 Grafana 3001 · Prometheus 9090 · Postgres 5432 · Redis 6379.
 
-Firm website: open `website/index.html` directly in a browser.
+Firm website: open `website/index.html` directly in a browser. Tools tests:
+`node website/tools/core.test.js` (no dependencies; CI runs it).
 
 LexComply: open `index.html` directly in a browser; `python build_excel.py` to
 regenerate the workbook.
@@ -178,8 +180,25 @@ it is professional misconduct for the firm, not a style issue.
   choice. Don't add them back without being asked.
 - No lead capture, pop-up offers or wording that urges a visitor to engage the
   firm. Showing contact details is fine; the visitor initiates.
-- Don't state due dates, rates or thresholds on the firm site — link to the
-  LexComply tool or the official portal instead.
+- Don't state due dates, rates or thresholds in page copy. The tools may use
+  them, but only from `website/tools/statutory-data.js`, each block with its
+  source; never hardcode a figure in `core.js`, `tools.js` or markup.
+- Until `verifiedOn` is set in `statutory-data.js`, the tools show a "not yet
+  checked by the firm" notice. Don't set it yourself: only the firm verifies.
+  Clear it when you change a figure.
+
+### Tools (`website/tools/`)
+
+- `core.js` computes every number (pure functions, runs in Node and the
+  browser); `tools.js` only reads inputs and renders. Add new arithmetic to
+  `core.js` with a known-answer test in `core.test.js`.
+- `tools.js` mounts a tool's view before calling its `build(form, out)`, so a
+  builder can look up its own fields by id. `build` returns the compute
+  function, which throws `UserError` for bad input.
+- Class names in `tools.css` must not collide with `site.css` (which already
+  uses `.tool`, `.panel`, `.chip`, `.copy`); the tool view uses `.sheet`.
+- `declaration-of-income.html` is a self-contained copy (pdf.js embedded) of
+  the generator on branch `claude/income-declaration-tool-j56w5j`.
 - Bump `lastUpdated` in `firm-config.js` when content changes.
 
 ## Gotchas earned the hard way

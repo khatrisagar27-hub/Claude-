@@ -31,7 +31,7 @@ window.FIRM = {
   hours: '',                  // optional, e.g. 'Monday to Saturday, 10:00 am to 7:00 pm'
 
   // ISO date. Change it every time the site content changes.
-  lastUpdated: '2026-11-16',
+  lastUpdated: '2026-11-19',
 
   // Proprietor / partners. A photograph must be passport-style.
   // membershipNo, qualifications and memberSince are optional.
