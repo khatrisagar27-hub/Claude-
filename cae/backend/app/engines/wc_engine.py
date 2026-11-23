@@ -301,7 +301,7 @@ class WorkingCapitalEngine:
             .subquery()
         )
         value, below = self.db.query(
-            func.sum(func.greatest(per_item.c.net, 0)),
+            func.sum(case((per_item.c.net > 0, per_item.c.net), else_=0)),
             func.count().filter(per_item.c.net < 0),
         ).one()
         return float(value or 0), int(below or 0)

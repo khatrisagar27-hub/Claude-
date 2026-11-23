@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+      - "claude/**"
+
+# Cancel superseded runs on the same ref to save CI minutes.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-tests:
+    name: Backend tests (pytest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cae/backend
+    env:
+      # Unit tests run against in-memory SQLite / DuckDB (see tests/conftest.py); the
+      # end-to-end suite brings its own embedded Postgres. No services are required.
+      ENVIRONMENT: test
+      SECRET_KEY: ci-test-secret-key-min-32-characters-long
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: cae/backend/requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Run tests
+        run: pytest --cov=app --cov-report=term-missing --ignore=tests/test_integration_pg.py
+
+      # Embedded Postgres (pgserver). Its own process: it sets DATABASE_URL before the app is imported.
+      - name: Run end-to-end tests (embedded Postgres)
+        run: pytest tests/test_integration_pg.py -q
