@@ -217,6 +217,13 @@ class AuditException(Base):
         sa.ForeignKey("rule_executions.id", ondelete="SET NULL"),
         nullable=True,
     )
+    engagement_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        sa.UUID(as_uuid=True),
+        sa.ForeignKey("audit_engagements.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+        comment="NULL = continuous monitoring outside an engagement",
+    )
 
     # Exception identity
     exception_number: Mapped[Optional[str]] = mapped_column(String(30), nullable=True, index=True)

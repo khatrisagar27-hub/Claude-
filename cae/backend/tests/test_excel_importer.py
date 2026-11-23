@@ -20,6 +20,13 @@ def _importer(db):
     return ExcelImporter(db, str(COMPANY_ID))
 
 
+def _mapped(df, data_type):
+    """Rename source headers to canonical fields, as import_file() does after the Analyse step."""
+    from app.connectors.excel_importer import map_columns
+    mapping = map_columns(list(df.columns), data_type)
+    return df.rename(columns={src: field for field, src in mapping.items() if src != field})
+
+
 # ---------------------------------------------------------------------------
 # Sales mapping
 # ---------------------------------------------------------------------------
@@ -57,7 +64,7 @@ def test_import_sales_accepts_alternate_column_names(db):
         "cgst": 25,                # -> cgst_amount
     }])
 
-    _importer(db)._import_sales(df)
+    _importer(db)._import_sales(_mapped(df, "sales_invoices"))
 
     inv = db.query(SalesInvoice).one()
     assert inv.invoice_number == "INV-2"
@@ -144,7 +151,7 @@ def test_import_bank_maps_alternate_columns(db):
         "party_name": "ACME", "channel": "NEFT", "narration": "settlement",
     }])
 
-    result = _importer(db)._import_bank(df)
+    result = _importer(db)._import_bank(_mapped(df, "bank_transactions"))
 
     assert result["rows_imported"] == 1
     bt = db.query(BankTransaction).one()
@@ -198,8 +205,10 @@ def test_get_str_treats_nan_as_none():
     assert ExcelImporter._get_str(pd.Series({"k": "v"}), "k") == "v"
 
 
-def test_parse_date_falls_back_to_today_on_garbage():
-    assert ExcelImporter._parse_date("not-a-date") == date.today()
+def test_parse_date_rejects_garbage_instead_of_using_today():
+    """An unreadable date fails the row; it used to become today's date silently."""
+    with pytest.raises(ValueError):
+        ExcelImporter._parse_date("not-a-date")
 
 
 def test_decimal_falls_back_to_zero_on_garbage():

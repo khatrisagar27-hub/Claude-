@@ -46,33 +46,34 @@ regenerate the workbook.
 
 ## Tests
 
-Backend has a pytest suite; **run it before reporting a backend change done.**
+Backend tests live in `cae/backend/tests/` (pytest; `pip install -r
+requirements-dev.txt`). **Run them before reporting a backend change done.**
+From `cae/backend/`:
 
-```bash
-cd cae/backend
-pip install -r requirements-dev.txt
-pytest                              # or: pytest --cov=app --cov-report=term-missing
-```
+| Suite | Command | Needs |
+|---|---|---|
+| Unit (engines, rules, API, auth, importers) | `pytest --ignore=tests/test_integration_pg.py` | nothing — in-memory SQLite + DuckDB |
+| End to end | `pytest tests/test_integration_pg.py -q` | `pgserver` (embedded Postgres) — no Docker |
 
-The suite runs entirely against **in-memory SQLite** — no Postgres, no Redis, no
-Docker. `tests/conftest.py` carries the Postgres→SQLite shims that make that
-work (JSONB compiled as JSON, `gen_random_uuid()` defaults stripped,
-string-tolerant UUID binds). If you add a model using a Postgres-specific type,
-expect to extend those shims. Config lives in `pytest.ini` (`testpaths = tests`,
-`asyncio_mode = auto`); layout is documented in
-[`cae/backend/tests/README.md`](cae/backend/tests/README.md) — `engines/`,
-`rules/`, `api/`, plus `test_security.py`, `test_rbac.py`,
-`test_excel_importer.py`, `test_tally_connector.py`, and shared row builders in
-`factories.py`.
+Unit tests: `tests/conftest.py` carries the Postgres→SQLite shims for ORM tests
+(JSONB compiled as JSON, `gen_random_uuid()` defaults stripped, string-tolerant
+UUID binds) — a model using a Postgres-specific type or function may need
+another shim. Rule tests run on DuckDB tables built by `tests/duckdb_harness.py`
+in the shapes AuditEngine loads (`<table>_all` plus an in-period view).
+`rules/test_registry.py` **executes every registered rule against an empty
+schema**, so invalid DuckDB SQL fails there. Every new rule needs a
+fire / don't-fire pair in `test_rules.py`. Layout:
+[`cae/backend/tests/README.md`](cae/backend/tests/README.md).
 
-Note `rules/test_registry.py` **executes every registered rule against an empty
-schema** — so a new rule with invalid DuckDB SQL fails there, and a new rule that
-queries a table `rules/schema.py` doesn't define will too. Add the table shape
-there when you add the rule.
+The end-to-end suite migrates a throwaway Postgres, runs `scripts/seed_data.py`
+and `scripts/run_first_audit.py`, asserts all catalogue rules run with zero
+errors, then drives the API through `TestClient`. Run it in its own process (it
+sets `DATABASE_URL` before the app is imported; `conftest.py` imports the app
+lazily for that reason).
 
-CI (`.github/workflows/ci.yml`) runs the same pytest suite with coverage on every
-push and PR. **Frontend has no tests** — `npm run lint` and `npx tsc --noEmit`
-are the only checks there, so verify UI work against the running stack.
+CI (`.github/workflows/ci.yml`) runs both, as separate steps, on every push and
+PR. **Frontend has no tests** — `npm run lint` and `npx tsc --noEmit` are the
+only checks there, so verify UI work against the running stack.
 
 ## Architecture
 
@@ -82,8 +83,27 @@ are the only checks there, so verify UI work against the running stack.
 `app/main.py` mounts `app/api/v1/router.py` under `/api/v1`; that router
 aggregates one module per domain (`auth`, `companies`, `ingestion`, `rules`,
 `exceptions`, `queries`, `remediation`, `risk`, `gst`, `dashboard`, `reports`,
-`working_capital`). Adding a domain means: new module in `app/api/v1/`, then
-register it in `router.py`.
+`working_capital`, `statutory`, `engagements`, `tally`). Adding a domain means:
+new module in `app/api/v1/`, then register it in `router.py`.
+
+### Engagements — Statutory vs Internal audit
+
+`app/models/engagement.py` (`audit_engagements`): one audit of one company — a
+**Statutory** audit of a financial year (period forced to 1 Apr–31 Mar, CARO /
+IFC / tax-audit flags, SA 320 materiality) or an **Internal** audit of any
+period. `audit_exceptions.engagement_id` and `sync_jobs.engagement_id` scope
+everything: NULL = continuous monitoring outside any engagement. Every screen
+and report takes `engagement_id`; without it they show continuous monitoring
+only (`app/utils/engagement.py: exception_scope`), so audits never mix.
+
+`app/statutory/reporting.py` is the single source of truth for *where a rule's
+findings land*: per rule a `process` (internal audit), a `scope`
+(`statutory` / `ifc` = statutory only when IFC applies / `internal` only) and
+reporting `refs` (CARO 2020 clause, Form 3CD clause, IFC, SA / law). A test
+fails if a catalogue rule is missing there. Reports: `app/utils/engagement_export.py`
+(statutory working paper with CARO / tax-audit matrices + IFC sheet; internal
+audit report with process summary, observations, management response, action
+plan; PDF for both).
 
 ### The audit engine — Postgres for state, DuckDB for analysis
 
@@ -95,37 +115,98 @@ DuckDB table. Rules then run as plain analytical SQL against DuckDB.
 Consequences to respect:
 
 - Rule SQL is **DuckDB dialect** with `?` positional params — not SQLAlchemy,
-  not Postgres.
-- A rule can only query tables `_load_data_to_duckdb()` actually loads. Needing
-  a new table means loading it there first.
+  not Postgres. DuckDB day codes differ: use `ISODOW()` (Mon=1..Sun=7), never
+  `DAYOFWEEK()` (Sun=0).
+- A rule can only query tables listed in `AuditEngine._TABLES`. Needing a new
+  table means adding it there first.
+- Each DuckDB table is created from the ORM schema (`_duck_type`), then filled.
+  Don't go back to `CREATE TABLE AS SELECT * FROM df`: an all-NULL column then
+  becomes INTEGER and `TRIM()` / `DATEDIFF()` on it fails — that broke 8 rules
+  on real data. UUIDs arrive as VARCHAR, JSON as text (`json_extract_string`).
 - Every rule run reloads the company's data. Keep that in mind before adding
   per-rule loads.
+- **Period scoping.** Transaction tables (`PERIOD_TABLES` in `app/rules/__init__.py`)
+  load as `<table>_all` — every row up to the engagement's period end — and
+  `<table>` is a **view** of the period itself (`apply_period`). Transaction
+  tests read `<table>`; balance / cumulative tests (stock on hand, MSME dues,
+  credit exposure, FY-to-date TDS threshold, duplicates within a FY, suspense
+  balance) read `<table>_all`. Without an engagement the two are identical.
+  Inside an engagement the engine injects `as_on` = period end (and
+  `period_from` / `period_to`) into a runtime copy of the rule — never saved.
+- **Never truncate a population.** No `LIMIT` in rule SQL and no `out[:50]`;
+  `capped(out, rule)` trims only when a rule sets `max_results`. Capped lists
+  understated exposure, risk scores and reports (fixed 31-10-2026).
+- `AuditEngine.run_all_rules()` with no frequency runs **every** active rule;
+  the UI / worker path used to run only the daily ones.
 
 ### Rule registry
 
 `app/rules/__init__.py` is a decorator registry: `@register("SAL-001")` maps a
 rule code to a callable, and the module's tail imports every rule module to
 trigger registration. Rule packs are `sales_rules`, `purchase_rules`,
-`inventory_rules`, `journal_rules`, `payroll_rules`, `treasury_rules`.
+`inventory_rules`, `journal_rules`, `payroll_rules`, `treasury_rules`,
+`gst_rules`, `tds_rules`.
 
 A rule is `fn(conn, company_id, rule)` returning a **list of exception dicts**
-with keys `title`, `description`, `severity`, `financial_impact`, `evidence`.
-To add one: write the function in the right pack with the next code in sequence,
-decorate it, and ensure a corresponding `AuditRule` row exists (rules are
-enabled/disabled from the DB, not from code).
+with keys `title`, `description`, `severity`, `financial_impact`, `evidence`
+(statutory rules put the section in `evidence["statutory_ref"]`). Thresholds
+come from `param(rule, key, default)` — `rule.parameters`, then
+`threshold_config` — never hard-coded. Ageing rules take `as_on` via
+`as_on_date()`, which defaults to the latest date in the data, not today.
+Financial years are Apr–Mar: group with `fy_sql()`.
+
+**`app/rules/catalogue.py` is the single source of truth** for which rules exist
+(name, category, severity, frequency, default parameters). `sync_rules()` (also
+`POST /rules/sync`) creates and refreshes a company's `AuditRule` rows from it;
+`seed_data.py` uses it too. To add a rule: function + `@register`, a catalogue
+row, a fire / don't-fire test, then `python scripts/gen_rule_docs.py` to
+refresh `docs/rules.md`. A test fails if the catalogue and registry disagree,
+and the engine marks an unregistered code as failed instead of returning [].
+
+`created_at` on imported rows is the CAE import date, not the books entry date.
+Entry-timing rules (SAL-004, GST-003) skip bulk-load days via
+`bulk_load_days_sql()`.
+
+### Statutory layer
+
+`app/statutory/` holds every legal threshold, rate and section number, each with
+its effective date and source: `income_tax` (1961→2025 Act concordance; the
+2025 Act applies from 01-04-2026 and `section_ref()` picks the right citation by
+transaction date), `gst`, `msme`, `companies` (small company / CARO / IFC),
+`labour`, `sampling` (SA 530), `clause44` (Form 3CD cl.44, GN para 79). Rules,
+engines and `/statutory` endpoints import from here. A change in law is a dated
+edit in one file plus a test — don't put a statutory figure anywhere else.
 
 ### Engines
 
 `app/engines/` — `audit_engine` (orchestrates rules), `risk_engine` (scores,
-heatmap, trend), `fraud_engine` (fraud indicators — these use **`score`**, not
-`severity`), `gst_engine` (GSTR-2B reconciliation, ITC at risk), `wc_engine`
-(working capital), `ai_engine` (narrative explanations only).
+heatmap, trend; live per engagement), `fraud_engine` (fraud indicators — these
+use **`score`**, not `severity`; `score` is NUMERIC(5,2), so cap it; a re-run
+replaces the day's rows), `gst_engine` + `gst_match` (deterministic GSTR-2B ↔
+books match on GSTIN + normalised invoice number, buckets in
+`gst_reconciliation.details_json`), `wc_engine` (working capital — DIO on cost
+of goods issued, stress score = weighted overdue / DSO / CCC signals, balances
+as of the reference date; bills marked `paid` count as settled, missing due
+dates take party credit days then Net-30, `data_quality` counts every fallback;
+`scripts/check_wc_metrics.py` recomputes the ratios in plain SQL),
+`ai_engine` (narrative explanations only; `claude-sonnet-5-5`, reads text
+blocks by type because replies can open with a thinking block).
 
 ### Connectors
 
-`app/connectors/` — `tally_connector.py` (Tally Prime XML voucher parsing),
-`excel_importer.py` (Excel/CSV upload with auto-detect ingestion and column
-aliasing).
+`app/connectors/` — `tally_live.py` (**live Tally Prime** over the XML gateway,
+read-only: masters, vouchers month by month, bill-wise outstanding and
+settlement dates → CAE tables; idempotent per period; `TALLY_URL`, from Docker
+`http://host.docker.internal:9000`), `tally_connector.py` (legacy XML-file
+parser, unused but tested), `excel_importer.py` (Excel/CSV upload with auto-detect; the
+Analyse step's column mapping is applied on import, Indian day-first dates,
+party names resolved to masters).
+
+Background work goes through `app/workers/dispatch.enqueue()`: Celery when a
+broker answers, otherwise the same function runs in-process (FastAPI
+`BackgroundTasks`) — never "queued" work that silently never runs. Task bodies
+are plain `execute_*` functions in `app/workers/tasks.py`. The `beat` service
+in docker-compose fires the daily continuous-monitoring run.
 
 ### Auth & shared utils
 
@@ -177,6 +258,21 @@ likely way to waste an hour:
 - **Fraud indicators are scored, not severity-graded** — read `score`.
 - **Frontend must set `companyId` after login**, or the dashboard hangs on
   loading forever.
+- **The backend image is Python 3.11.** Local venvs are often 3.12, which
+  accepts f-strings that reuse the outer quote inside `{}` — 3.11 rejects them
+  as a syntax error.
+- **Migration 001 only creates `pgcrypto` on PostgreSQL < 13** — `gen_random_uuid()`
+  is core from 13, and embedded test Postgres ships no contrib extensions.
+- **Pydantic `*Out` models must type ids as `uuid.UUID`**, not `str` — the ORM
+  hands back UUID objects and a `str` field 500s the whole endpoint
+  (`/companies` and `/remediation` did, 31-10-2026).
+- **Workflow tables have NOT NULL name/date columns** (`raised_by_name`,
+  `responded_by_name`, `responsible_name`, `due_date`, `target_date`). The API
+  fills them from the current user / sensible defaults; keep it that way.
+- **The integration test must not see the Docker stack's Redis** (localhost:6379)
+  — it sets `REDIS_URL` to a dead port so background work runs in-process.
+- **Tally gateway traps** are documented at the top of `app/connectors/tally_live.py`;
+  never fetch the bare `Voucher` collection or `CLOSINGBALANCE` on ledgers.
 
 ### Seed data quirks (`scripts/seed_data.py`)
 
@@ -186,6 +282,9 @@ looks odd:
 - some `due_date` values are NULL
 - some 2026 invoices are zero-value
 - inventory is recorded as **gross movements**, not net positions
+- no PF/ESI challan payments are seeded, so PAY-005 flags every wage month
+- GSTINs are valid-format (15 chars) but fictitious — needed for SAL-021 and the
+  2B matcher, which reject malformed GSTINs
 
 ## Security posture
 
@@ -206,7 +305,7 @@ is a test asserting it; don't loosen it.
 
 - Rule codes: `<PACK>-<NNN>`, sequential within a pack. Existing prefixes are
   `SAL-` (sales), `PUR-` (purchase), `INV-` (inventory), `JE-` (journal),
-  `PAY-` (payroll), `TRE-` (treasury).
+  `PAY-` (payroll), `TRE-` (treasury), `GST-` (GST), `TDS-` (TDS).
 - API modules are one-per-domain, plural, snake_case, mirrored by the router
   prefix.
 - Backend: pydantic schemas in `app/schemas/`, SQLAlchemy models in

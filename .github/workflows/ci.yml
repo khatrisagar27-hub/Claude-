@@ -21,8 +21,8 @@ jobs:
       run:
         working-directory: cae/backend
     env:
-      # The test suite runs entirely against in-memory SQLite (see
-      # tests/conftest.py), so no Postgres/Redis services are required.
+      # Unit tests run against in-memory SQLite / DuckDB (see tests/conftest.py); the
+      # end-to-end suite brings its own embedded Postgres. No services are required.
       ENVIRONMENT: test
       SECRET_KEY: ci-test-secret-key-min-32-characters-long
     steps:
@@ -42,4 +42,8 @@ jobs:
           pip install -r requirements-dev.txt
 
       - name: Run tests
-        run: pytest --cov=app --cov-report=term-missing
+        run: pytest --cov=app --cov-report=term-missing --ignore=tests/test_integration_pg.py
+
+      # Embedded Postgres (pgserver). Its own process: it sets DATABASE_URL before the app is imported.
+      - name: Run end-to-end tests (embedded Postgres)
+        run: pytest tests/test_integration_pg.py -q

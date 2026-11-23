@@ -18,6 +18,7 @@ from app.models.audit import AuditRule, RuleExecution, AuditException
 from app.models.workflow import ManagementQuery, QueryResponse, RemediationAction
 from app.models.risk import RiskScore, FraudIndicator, GSTReconciliation, WorkingCapitalMetric
 from app.models.ingestion import SyncJob, UploadedFile
+from app.models.engagement import AuditEngagement
 
 __all__ = [
     "Tenant",
@@ -47,4 +48,5 @@ __all__ = [
     "WorkingCapitalMetric",
     "SyncJob",
     "UploadedFile",
+    "AuditEngagement",
 ]

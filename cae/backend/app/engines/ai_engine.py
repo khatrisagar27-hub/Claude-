@@ -7,6 +7,9 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from app.models.audit import AuditException
 
+# Narrative only — the model never computes or changes a figure.
+MODEL = "claude-sonnet-5-5"
+
 
 class AIEngine:
     def __init__(self):
@@ -19,15 +22,27 @@ class AIEngine:
 
         try:
             import anthropic
-            client = anthropic.Anthropic(api_key=self.api_key)
+            client = anthropic.AsyncAnthropic(api_key=self.api_key)
 
             prompt = self._build_prompt(exception)
-            message = client.messages.create(
-                model="claude-sonnet-4-6",
-                max_tokens=1024,
+            # Current models think by default and the reply can open with a thinking block,
+            # so read text blocks by type. Low effort keeps a short explanation cheap; the
+            # server-side fallback re-runs a declined request on another model.
+            message = await client.messages.create(
+                model=MODEL,
+                max_tokens=4096,
                 messages=[{"role": "user", "content": prompt}],
+                extra_headers={"anthropic-beta": "server-side-fallback-2026-07-01"},
+                extra_body={"output_config": {"effort": "low"}, "fallbacks": "default"},
             )
-            text = message.content[0].text
+            if getattr(message, "stop_reason", None) == "refusal":
+                return self._fallback_explanation(exception)
+            text = "".join(
+                getattr(block, "text", "") for block in message.content
+                if getattr(block, "type", None) == "text"
+            )
+            if not text.strip():
+                return self._fallback_explanation(exception)
             return self._parse_response(text)
         except Exception:
             return self._fallback_explanation(exception)
@@ -36,7 +51,7 @@ class AIEngine:
         return f"""You are an expert Chartered Accountant and Internal Auditor in India. Analyze this audit exception and provide a structured response.
 
 Exception Details:
-- Rule Code: {exc.rule_id}
+- Rule Code: {getattr(getattr(exc, "rule", None), "rule_code", None) or exc.rule_id}
 - Title: {exc.title}
 - Category: {exc.category}
 - Severity: {exc.severity}

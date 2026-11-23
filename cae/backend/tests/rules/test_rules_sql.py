@@ -78,7 +78,8 @@ def test_pur_001_flags_duplicate_vendor_invoice(duck):
     results = run(duck, "PUR-001")
 
     assert len(results) == 1
-    assert results[0]["financial_impact"] == 40000  # SUM(total_amount)
+    assert results[0]["financial_impact"] == 20000  # the duplicate copy only, not both bills
+    assert results[0]["evidence"]["total"] == 40000
 
 
 def test_pur_004_flags_high_value_invoice_without_po(duck):

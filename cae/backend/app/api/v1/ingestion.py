@@ -2,7 +2,7 @@
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -25,8 +25,22 @@ class SyncJobOut(BaseModel):
     exceptions_raised: int
     error_message: Optional[str]
     created_at: str
+    engagement_id: Optional[str] = None
+    run_mode: Optional[str] = None
+    result: Optional[dict] = None
+    completed_at: Optional[str] = None
 
     model_config = {"from_attributes": True}
+
+
+def job_out(j: SyncJob, run_mode: Optional[str] = None) -> "SyncJobOut":
+    return SyncJobOut(
+        id=str(j.id), company_id=str(j.company_id), job_type=j.job_type, status=j.status,
+        records_processed=j.records_processed or 0, exceptions_raised=j.exceptions_raised or 0,
+        error_message=j.error_message, created_at=j.created_at.isoformat(),
+        engagement_id=str(j.engagement_id) if j.engagement_id else None, run_mode=run_mode,
+        result=j.result_json, completed_at=j.completed_at.isoformat() if j.completed_at else None,
+    )
 
 
 class UploadedFileOut(BaseModel):
@@ -39,8 +53,18 @@ class UploadedFileOut(BaseModel):
     rows_imported: Optional[int]
     status: str
     created_at: str
+    parse_errors: Optional[list] = None
+    run_mode: Optional[str] = None
 
     model_config = {"from_attributes": True}
+
+
+def upload_out(u: UploadedFile, run_mode: Optional[str] = None) -> UploadedFileOut:
+    return UploadedFileOut(
+        id=str(u.id), company_id=str(u.company_id), filename=u.filename, file_type=u.file_type,
+        file_size=u.file_size, rows_parsed=u.rows_parsed, rows_imported=u.rows_imported, status=u.status,
+        created_at=u.created_at.isoformat(), parse_errors=u.parse_errors, run_mode=run_mode,
+    )
 
 
 @router.post("/analyze")
@@ -70,6 +94,7 @@ async def analyze_file(
 
 @router.post("/upload", response_model=UploadedFileOut, status_code=status.HTTP_201_CREATED)
 async def upload_file(
+    background: BackgroundTasks,
     company_id: uuid.UUID = Form(...),
     file_type: str = Form(...),
     file: UploadFile = File(...),
@@ -102,30 +127,30 @@ async def upload_file(
     db.commit()
     db.refresh(uploaded)
 
-    # Trigger async processing in background
-    try:
-        from app.workers.tasks import process_uploaded_file
-        process_uploaded_file.delay(str(file_id), detected_type)
-    except Exception:
-        pass  # worker may not be running; file is stored, can process manually
+    from app.workers.dispatch import enqueue
+    from app.workers.tasks import process_uploaded_file, execute_file_import
+    mode = enqueue(process_uploaded_file, execute_file_import, str(file_id), detected_type, background=background)
+    return upload_out(uploaded, mode)
 
-    return UploadedFileOut(
-        id=str(uploaded.id),
-        company_id=str(uploaded.company_id),
-        filename=uploaded.filename,
-        file_type=uploaded.file_type,
-        file_size=uploaded.file_size,
-        rows_parsed=uploaded.rows_parsed,
-        rows_imported=uploaded.rows_imported,
-        status=uploaded.status,
-        created_at=uploaded.created_at.isoformat(),
-    )
+
+@router.get("/uploads", response_model=list[UploadedFileOut])
+def list_uploads(
+    company_id: uuid.UUID,
+    limit: int = 20,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    rows = (db.query(UploadedFile).filter(UploadedFile.company_id == company_id)
+            .order_by(UploadedFile.created_at.desc()).limit(limit).all())
+    return [upload_out(u) for u in rows]
 
 
 @router.post("/sync", response_model=SyncJobOut, status_code=status.HTTP_201_CREATED)
 def trigger_sync(
     company_id: uuid.UUID,
+    background: BackgroundTasks,
     job_type: str = "full_audit",
+    engagement_id: Optional[uuid.UUID] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles("super_admin", "partner", "manager")),
 ):
@@ -134,28 +159,26 @@ def trigger_sync(
         company_id=company_id,
         job_type=job_type,
         status="queued",
-        triggered_by=str(current_user.id),
+        triggered_by=current_user.full_name or str(current_user.id),
+        engagement_id=engagement_id,
     )
     db.add(job)
     db.commit()
     db.refresh(job)
 
-    try:
-        from app.workers.tasks import run_audit_cycle
-        run_audit_cycle.delay(str(company_id), str(job.id))
-    except Exception:
-        pass
+    from app.workers.dispatch import enqueue
+    from app.workers.tasks import run_audit_cycle, execute_audit_cycle
+    eid = str(engagement_id) if engagement_id else None
+    mode = enqueue(run_audit_cycle, execute_audit_cycle, str(company_id), str(job.id), eid, background=background)
+    return job_out(job, mode)
 
-    return SyncJobOut(
-        id=str(job.id),
-        company_id=str(job.company_id),
-        job_type=job.job_type,
-        status=job.status,
-        records_processed=job.records_processed,
-        exceptions_raised=job.exceptions_raised,
-        error_message=job.error_message,
-        created_at=job.created_at.isoformat(),
-    )
+
+@router.get("/jobs/{job_id}", response_model=SyncJobOut)
+def get_job(job_id: uuid.UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    job = db.query(SyncJob).filter(SyncJob.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job_out(job)
 
 
 @router.get("/jobs", response_model=list[SyncJobOut])
@@ -172,16 +195,4 @@ def list_jobs(
         .limit(limit)
         .all()
     )
-    return [
-        SyncJobOut(
-            id=str(j.id),
-            company_id=str(j.company_id),
-            job_type=j.job_type,
-            status=j.status,
-            records_processed=j.records_processed,
-            exceptions_raised=j.exceptions_raised,
-            error_message=j.error_message,
-            created_at=j.created_at.isoformat(),
-        )
-        for j in jobs
-    ]
+    return [job_out(j) for j in jobs]

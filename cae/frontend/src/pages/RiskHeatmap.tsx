@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import apiClient from '../api/client';
 import { useAuthStore } from '../store/authStore';
+import { areaLabel, engagementQS } from '../api/labels';
 
 const bandColors: Record<string, string> = {
   critical: 'bg-red-900/60 border-red-700 text-red-300',
@@ -10,21 +11,23 @@ const bandColors: Record<string, string> = {
 };
 
 export default function RiskHeatmap() {
-  const { companyId } = useAuthStore();
+  const { companyId, engagement } = useAuthStore();
   const [cells, setCells] = useState<any[]>([]);
   const [scores, setScores] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!companyId) return;
+    if (!companyId) { setLoading(false); return; }
+    const scope = engagementQS(engagement?.id);
+    setLoading(true);
     Promise.all([
-      apiClient.get(`/risk/heatmap?company_id=${companyId}`),
-      apiClient.get(`/risk/scores?company_id=${companyId}`),
+      apiClient.get(`/risk/heatmap?company_id=${companyId}${scope}`),
+      apiClient.get(`/risk/scores?company_id=${companyId}${scope}`),
     ]).then(([h, s]) => {
       setCells(h.data.cells || []);
       setScores(s.data);
     }).finally(() => setLoading(false));
-  }, [companyId]);
+  }, [companyId, engagement?.id]);
 
   if (loading) return <div className="text-center py-20 text-gray-500">Loading risk heatmap…</div>;
 
@@ -32,7 +35,10 @@ export default function RiskHeatmap() {
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-bold text-white">Risk Heatmap</h1>
-        <p className="text-sm text-gray-500">Process-level risk scores — updated daily</p>
+        <p className="text-sm text-gray-500">
+          {engagement ? `${engagement.label} — computed from this engagement's open findings` : 'Continuous monitoring — latest daily scores'}
+          {' '}· score = likelihood × impact × materiality × frequency × (1 + control weakness), capped at 100
+        </p>
       </div>
 
       {/* Heatmap grid */}
@@ -45,7 +51,7 @@ export default function RiskHeatmap() {
           cells.map((cell, i) => (
             <div key={i} className={`border rounded-lg p-4 ${bandColors[cell.band] || bandColors.low}`}>
               <div className="text-xs uppercase tracking-wider opacity-70 mb-1">{cell.process}</div>
-              <div className="font-semibold">{cell.entity}</div>
+              <div className="font-semibold">{areaLabel(cell.entity)}</div>
               <div className="text-3xl font-bold font-mono mt-2">{cell.score?.toFixed(0)}</div>
               <div className="text-xs uppercase mt-1 opacity-80">{cell.band} risk</div>
               <div className="text-xs opacity-60 mt-0.5">{cell.exception_count} exceptions</div>
@@ -60,7 +66,7 @@ export default function RiskHeatmap() {
           <table className="w-full">
             <thead>
               <tr>
-                {['Process', 'Likelihood', 'Impact', 'Frequency', 'Control Weakness', 'Score', 'Band'].map(h => (
+                {['Process', 'Likelihood', 'Impact', 'Materiality', 'Frequency', 'Control Weakness', 'Score', 'Band'].map(h => (
                   <th key={h} className="table-header text-left">{h}</th>
                 ))}
               </tr>
@@ -68,9 +74,10 @@ export default function RiskHeatmap() {
             <tbody>
               {scores.map((s: any) => (
                 <tr key={s.id} className="table-row">
-                  <td className="table-cell text-gray-300">{s.entity_name}</td>
+                  <td className="table-cell text-gray-300">{areaLabel(s.entity_name)}</td>
                   <td className="table-cell text-gray-400">{s.likelihood?.toFixed(1)}</td>
                   <td className="table-cell text-gray-400">{s.impact?.toFixed(1)}</td>
+                  <td className="table-cell text-gray-400">{s.materiality?.toFixed(2)}</td>
                   <td className="table-cell text-gray-400">{s.frequency?.toFixed(1)}</td>
                   <td className="table-cell text-gray-400">{(s.control_weakness * 100).toFixed(0)}%</td>
                   <td className="table-cell font-mono font-bold text-white">{s.composite_score?.toFixed(1)}</td>

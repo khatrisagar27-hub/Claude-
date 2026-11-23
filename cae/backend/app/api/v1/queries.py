@@ -1,6 +1,6 @@
 """Management query lifecycle endpoints."""
 import uuid
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -44,14 +44,15 @@ def create_query(
         evidence_summary=payload.evidence_summary,
         suggested_question=payload.suggested_question,
         assigned_to_user_id=payload.assigned_to_user_id,
-        due_date=payload.due_date,
+        due_date=payload.due_date or (date.today() + timedelta(days=7)),
         status="open",
         raised_by_user_id=current_user.id,
+        raised_by_name=current_user.full_name,
         raised_at=datetime.utcnow(),
     )
     db.add(query)
 
-    exc.status = "query_raised"
+    exc.status = "management_query_sent"
     db.commit()
     db.refresh(query)
     return query
@@ -101,6 +102,7 @@ def respond_to_query(
         query_id=query_id,
         response_text=payload.response_text,
         responded_by_user_id=current_user.id,
+        responded_by_name=current_user.full_name,
         responded_at=datetime.utcnow(),
         attachment_url=payload.attachment_url,
     )
@@ -124,5 +126,7 @@ def update_query_status(
     query.status = payload.status
     if payload.auditor_comment:
         query.auditor_comment = payload.auditor_comment
+    if payload.status in ("closed", "resolved") and not query.resolved_at:
+        query.resolved_at = datetime.utcnow()
     db.commit()
     return {"query_id": str(query.id), "status": query.status}

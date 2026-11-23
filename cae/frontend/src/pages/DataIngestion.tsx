@@ -1,7 +1,9 @@
-import { useState, useRef } from 'react';
-import { Upload, Play, CheckCircle, AlertCircle, Scan, ArrowRight, RotateCcw } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { Upload, Play, CheckCircle, AlertCircle, Scan, ArrowRight, RotateCcw, Database, RefreshCw } from 'lucide-react';
 import apiClient from '../api/client';
 import { useAuthStore } from '../store/authStore';
+import { JobStatus, useJobPoller } from './Engagements';
+import { AUDIT_TYPE_LABEL } from '../api/labels';
 
 const FILE_TYPE_LABELS: Record<string, string> = {
   sales_invoices: 'Sales Invoices',
@@ -24,9 +26,135 @@ type AnalysisResult = {
 
 type Tab = 'smart' | 'manual';
 
+type Upload = { id: string; filename: string; file_type: string; status: string; rows_imported: number | null;
+  parse_errors: string[] | null; created_at: string };
+
+function RecentUploads({ companyId, refreshKey }: { companyId: string | null; refreshKey: number }) {
+  const [rows, setRows] = useState<Upload[]>([]);
+  useEffect(() => {
+    if (!companyId) return;
+    let timer: any;
+    const load = () => apiClient.get(`/ingestion/uploads?company_id=${companyId}&limit=8`).then(r => {
+      setRows(r.data);
+      if (r.data.some((u: Upload) => ['uploaded', 'processing'].includes(u.status))) timer = setTimeout(load, 2500);
+    }).catch(() => {});
+    load();
+    return () => clearTimeout(timer);
+  }, [companyId, refreshKey]);
+  if (!rows.length) return null;
+  return (
+    <div className="card p-0 overflow-hidden">
+      <div className="px-4 py-3 text-sm font-semibold text-gray-300 uppercase tracking-wider">Recent file imports</div>
+      <table className="w-full"><thead><tr>{['File', 'Status', 'Rows imported', 'Errors', 'When'].map(h => <th key={h} className="table-header text-left">{h}</th>)}</tr></thead>
+        <tbody>{rows.map(u => (
+          <tr key={u.id} className="table-row">
+            <td className="table-cell text-sm text-gray-300">{u.filename}</td>
+            <td className={`table-cell text-xs font-semibold ${u.status === 'imported' ? 'text-green-400' : u.status === 'failed' ? 'text-red-400' : 'text-yellow-400'}`}>{u.status}</td>
+            <td className="table-cell text-sm">{u.rows_imported ?? '—'}</td>
+            <td className="table-cell text-xs text-red-300 max-w-md">{(u.parse_errors || []).slice(0, 3).join('; ')}</td>
+            <td className="table-cell text-xs text-gray-500">{new Date(u.created_at).toLocaleString('en-IN')}</td>
+          </tr>))}
+        </tbody></table>
+    </div>
+  );
+}
+
+function TallyLive() {
+  const { companyId, engagement, setCompanyId } = useAuthStore();
+  const [status, setStatus] = useState<any>(null);
+  const [checking, setChecking] = useState(false);
+  const [tallyCo, setTallyCo] = useState('');
+  const fy = (() => { const d = new Date(); const y = d.getMonth() >= 3 ? d.getFullYear() - 1 : d.getFullYear() - 2; return y; })();
+  const [from, setFrom] = useState(`${fy}-04-01`);
+  const [to, setTo] = useState(`${fy + 1}-03-31`);
+  const [target, setTarget] = useState<'new' | 'current'>('new');
+  const [extended, setExtended] = useState(false);
+  const [error, setError] = useState('');
+  const [result, setResult] = useState<any>(null);
+  const [job, setJob] = useJobPoller();
+
+  const check = () => {
+    setChecking(true);
+    apiClient.get('/tally/status').then(r => {
+      setStatus(r.data);
+      if (r.data.companies?.length && !tallyCo) setTallyCo(r.data.companies[0].name);
+    }).finally(() => setChecking(false));
+  };
+  useEffect(check, []);
+  useEffect(() => {
+    if (engagement) {
+      apiClient.get(`/engagements/${engagement.id}`).then(r => { setFrom(r.data.period_from); setTo(r.data.period_to); }).catch(() => {});
+    }
+  }, [engagement?.id]);
+
+  const start = async () => {
+    setError('');
+    try {
+      const r = await apiClient.post('/tally/import', {
+        tally_company: tallyCo, from_date: from, to_date: to, extended_ledger_details: extended,
+        company_id: target === 'current' ? companyId : null,
+      });
+      setResult(r.data);
+      setJob(r.data.job);
+    } catch (err: any) {
+      const d = err.response?.data?.detail;
+      setError(Array.isArray(d) ? d.map((x: any) => x.msg).join('; ') : d || 'Import failed to start');
+    }
+  };
+  const busy = !!job && ['queued', 'running'].includes(job.status);
+
+  return (
+    <div className="card space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wider flex items-center gap-2"><Database className="w-4 h-4 text-gold" /> Tally Prime — live data</h2>
+        <button onClick={check} className="btn-ghost text-xs flex items-center gap-1"><RefreshCw className={`w-3 h-3 ${checking ? 'animate-spin' : ''}`} /> Check Tally</button>
+      </div>
+      {status && (
+        <div className={`text-sm rounded px-3 py-2 border ${status.running ? 'border-green-800 bg-green-900/20 text-green-300' : 'border-red-800 bg-red-900/20 text-red-300'}`}>
+          {status.running ? `Connected to ${status.url} — ${status.companies.length} compan${status.companies.length === 1 ? 'y' : 'ies'} open in Tally` : status.message}
+        </div>
+      )}
+      {status?.running && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <label className="text-sm text-gray-400 md:col-span-2">Tally company
+            <select value={tallyCo} onChange={e => setTallyCo(e.target.value)} className="input-field mt-1">
+              {status.companies.map((c: any) => <option key={c.name} value={c.name}>{c.name}{c.books_from ? ` (books from ${c.books_from})` : ''}</option>)}
+            </select>
+          </label>
+          <label className="text-sm text-gray-400">From<input type="date" value={from} onChange={e => setFrom(e.target.value)} className="input-field mt-1" /></label>
+          <label className="text-sm text-gray-400">To<input type="date" value={to} onChange={e => setTo(e.target.value)} className="input-field mt-1" /></label>
+          <div className="md:col-span-2 flex flex-wrap gap-5 text-sm text-gray-300">
+            <label className="flex items-center gap-2"><input type="radio" checked={target === 'new'} onChange={() => setTarget('new')} /> Load into a CAE company named after the Tally company</label>
+            <label className="flex items-center gap-2"><input type="radio" checked={target === 'current'} onChange={() => setTarget('current')} disabled={!companyId} /> Load into the company selected above</label>
+            <label className="flex items-center gap-2"><input type="checkbox" checked={extended} onChange={e => setExtended(e.target.checked)} /> Read ledger GSTIN / MSME details (slower on large files)</label>
+          </div>
+          <p className="md:col-span-2 text-xs text-gray-500">
+            Read-only on Tally. Pulls masters, then vouchers month by month (sales, purchases, bank / cash, journals, stock), bill-wise outstanding and settlement dates.
+            Re-importing the same period replaces the earlier Tally rows. {engagement ? `Dates follow the selected ${AUDIT_TYPE_LABEL[engagement.audit_type]}.` : ''}
+          </p>
+          <div className="md:col-span-2">
+            <button onClick={start} disabled={busy || !tallyCo} className="btn-primary flex items-center gap-2 text-sm disabled:opacity-50">
+              <Database className="w-4 h-4" /> {busy ? 'Importing…' : 'Import from Tally'}
+            </button>
+          </div>
+        </div>
+      )}
+      {error && <div className="text-sm text-red-400">{error}</div>}
+      <JobStatus job={job} />
+      {job?.status === 'completed' && result && result.company_id !== companyId && (
+        <button onClick={() => setCompanyId(result.company_id)} className="btn-ghost text-sm border border-navy-border">
+          Switch to “{result.company_name}” to audit it
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function DataIngestion() {
-  const { companyId } = useAuthStore();
+  const { companyId, engagement } = useAuthStore();
   const [tab, setTab] = useState<Tab>('smart');
+  const [uploadsKey, setUploadsKey] = useState(0);
+  const [auditJob, setAuditJob] = useJobPoller();
 
   // Smart (auto-detect) state
   const smartFileRef = useRef<HTMLInputElement>(null);
@@ -84,6 +212,7 @@ export default function DataIngestion() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setImportResult({ success: true, data: r.data, type: confirmedType });
+      setUploadsKey(k => k + 1);
     } catch (err: any) {
       setImportResult({ success: false, error: err.response?.data?.detail || 'Import failed' });
     } finally {
@@ -106,6 +235,7 @@ export default function DataIngestion() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setUploadResult({ success: true, data: r.data });
+      setUploadsKey(k => k + 1);
     } catch (err: any) {
       setUploadResult({ success: false, error: err.response?.data?.detail || 'Upload failed' });
     } finally {
@@ -118,8 +248,10 @@ export default function DataIngestion() {
     setSyncing(true);
     setSyncResult(null);
     try {
-      const r = await apiClient.post(`/ingestion/sync?company_id=${companyId}&job_type=full_audit`);
+      const scope = engagement ? `&engagement_id=${engagement.id}` : '';
+      const r = await apiClient.post(`/ingestion/sync?company_id=${companyId}&job_type=${engagement ? `${engagement.audit_type}_audit` : 'full_audit'}${scope}`);
       setSyncResult({ success: true, data: r.data });
+      setAuditJob(r.data);
     } catch (err: any) {
       setSyncResult({ success: false, error: err.response?.data?.detail || 'Sync failed' });
     } finally {
@@ -313,7 +445,7 @@ export default function DataIngestion() {
                 : <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />}
               <div className="text-sm">
                 {importResult.success
-                  ? `Imported "${importResult.data.filename}" as ${FILE_TYPE_LABELS[importResult.type]}. Processing started in background.`
+                  ? `Uploaded "${importResult.data.filename}" as ${FILE_TYPE_LABELS[importResult.type]} — see Recent file imports below for the result.`
                   : importResult.error}
               </div>
             </div>
@@ -351,7 +483,7 @@ export default function DataIngestion() {
               {uploadResult.success ? <CheckCircle className="w-4 h-4 text-green-400 shrink-0 mt-0.5" /> : <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />}
               <div className="text-sm">
                 {uploadResult.success
-                  ? `Uploaded: ${uploadResult.data.filename}. Processing started.`
+                  ? `Uploaded: ${uploadResult.data.filename} — see Recent file imports below for the result.`
                   : uploadResult.error}
               </div>
             </div>
@@ -359,11 +491,17 @@ export default function DataIngestion() {
         </div>
       )}
 
+      <RecentUploads companyId={companyId} refreshKey={uploadsKey} />
+
+      <TallyLive />
+
       {/* ─── Audit Trigger ───────────────────────────────────────── */}
       <div className="card">
         <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-2">Run Audit Cycle</h2>
         <p className="text-sm text-gray-500 mb-4">
-          Trigger a full audit cycle — runs all enabled rules, computes fraud indicators, risk scores, and working capital metrics against imported data.
+          {engagement
+            ? `Runs the ${AUDIT_TYPE_LABEL[engagement.audit_type]} (${engagement.label}): every in-scope rule over the engagement period, then fraud analytics, risk scores and working capital.`
+            : 'Continuous monitoring run — every enabled rule (daily, weekly and monthly) over all data, then fraud analytics, risk scores and working capital. Select an engagement at the top to audit a period.'}
         </p>
         <button onClick={handleSync} disabled={syncing || !companyId}
           className="btn-primary flex items-center gap-2 disabled:opacity-50">
@@ -371,16 +509,13 @@ export default function DataIngestion() {
           {syncing ? 'Triggering…' : 'Run Full Audit Now'}
         </button>
 
-        {syncResult && (
-          <div className={`mt-4 rounded p-3 flex items-start gap-2 ${syncResult.success ? 'bg-green-900/20 border border-green-800/40' : 'bg-red-900/20 border border-red-800/40'}`}>
-            {syncResult.success ? <CheckCircle className="w-4 h-4 text-green-400 shrink-0 mt-0.5" /> : <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />}
-            <div className="text-sm">
-              {syncResult.success
-                ? `Audit cycle queued — Job ID: ${syncResult.data.id}. Status: ${syncResult.data.status}`
-                : syncResult.error}
-            </div>
+        {syncResult && !syncResult.success && (
+          <div className="mt-4 rounded p-3 flex items-start gap-2 bg-red-900/20 border border-red-800/40">
+            <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+            <div className="text-sm">{syncResult.error}</div>
           </div>
         )}
+        <div className="mt-4"><JobStatus job={auditJob} /></div>
       </div>
     </div>
   );

@@ -15,7 +15,9 @@ depends_on = None
 
 def upgrade() -> None:
     bind = op.get_bind()
-    bind.execute(text("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
+    # gen_random_uuid() is core from PostgreSQL 13; older servers need pgcrypto for it.
+    if int(bind.execute(text("SHOW server_version_num")).scalar()) < 130000:
+        bind.execute(text("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
 
     from app.database import Base
     import app.models  # noqa: registers all ORM models with Base

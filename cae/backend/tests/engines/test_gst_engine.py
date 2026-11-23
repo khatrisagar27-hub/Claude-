@@ -5,7 +5,7 @@ columns that do not exist on the ORM models (``taxable_value``, ``cgst``,
 ``is_cancelled``).  The engine now uses the real columns (``taxable_amount``,
 ``cgst_amount``, ``status``), and these tests pin that behaviour.
 """
-from datetime import date, datetime
+from datetime import date
 
 import pytest
 
@@ -59,7 +59,9 @@ def test_itc_variance_and_risk_amount(db):
     assert result["risk_amount"] == pytest.approx(6000.0)
 
 
-def test_turnover_variance_contributes_18pct_to_risk(db):
+def test_turnover_variance_alone_adds_no_estimated_risk(db):
+    """Risk is ITC at risk plus the output-tax gap, both computed from figures. A turnover
+    gap alone is reported as a variance, not priced at an assumed 18% rate."""
     _seed_march_books(db)
 
     result = GSTEngine(db, str(COMPANY_ID)).reconcile(
@@ -69,8 +71,7 @@ def test_turnover_variance_contributes_18pct_to_risk(db):
 
     assert result["variance_turnover"] == 50000
     assert result["variance_itc"] == 0
-    # risk = 50,000 * 0.18 + 0
-    assert result["risk_amount"] == pytest.approx(9000.0)
+    assert result["risk_amount"] == 0
 
 
 def test_reconcile_persists_and_upserts(db):
@@ -86,6 +87,6 @@ def test_reconcile_persists_and_upserts(db):
     assert rows[0].status == "reconciled"
 
 
-def test_next_month_rolls_over_december():
-    assert GSTEngine._next_month(2024, 12) == datetime(2025, 1, 1)
-    assert GSTEngine._next_month(2024, 3) == datetime(2024, 4, 1)
+def test_period_bounds_roll_over_december():
+    assert GSTEngine._period_bounds(None, "2024-12") == (date(2024, 12, 1), date(2025, 1, 1))
+    assert GSTEngine._period_bounds(None, "2024-03") == (date(2024, 3, 1), date(2024, 4, 1))

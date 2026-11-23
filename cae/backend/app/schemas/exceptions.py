@@ -21,6 +21,11 @@ class ExceptionOut(BaseModel):
     supporting_data: Any | None
     ai_analysis: str | None
     status: str
+    rule_code: str | None = None
+    engagement_id: UUID | None = None
+    process: str | None = None
+    audit_refs: list[dict] = []
+    material: bool | None = None
 
     model_config = {"from_attributes": True}
 

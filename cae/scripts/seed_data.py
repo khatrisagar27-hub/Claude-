@@ -102,7 +102,7 @@ for i in range(1, 61):
         id=uid(), company_id=company_id,
         customer_code=f"CUST-{i:04d}",
         name=f"{'Related Party Co' if i <= 2 else 'Industrial Corp'} {i}",
-        gstin=f"27CUST{i:04d}Z1Z{i%9+1}" if i not in (58, 59) else None,
+        gstin=f"27AABC{chr(65 + i % 26)}{i:04d}L1Z{i % 9 + 1}" if i not in (58, 59) else None,
         city=rng.choice(["Mumbai", "Pune", "Nagpur", "Nashik"]),
         state="Maharashtra",
         credit_limit=dec(rng.randint(500, 5000) * 10000),
@@ -117,7 +117,7 @@ for i in range(1, 81):
         id=uid(), company_id=company_id,
         vendor_code=f"VEND-{i:04d}",
         name=f"{'Related Vendor' if i <= 5 else 'Steel Suppliers'} {i}",
-        gstin=f"27VEND{i:04d}Z1Z{i%9+1}" if i not in (78, 79, 80) else None,
+        gstin=f"27AAAC{chr(65 + i % 26)}{i:04d}K1Z{i % 9 + 1}" if i not in (78, 79, 80) else None,
         bank_account_number=f"SBI{i:010d}",
         is_related_party=i <= 5,
         msme_status="Small" if i > 60 else None,
@@ -304,73 +304,10 @@ print("  Payroll done.")
 
 print("Seeding audit rules…")
 
-from app.models.audit import AuditRule
+from app.rules.catalogue import sync_rules
 
-RULES = [
-    ("SAL-001","Duplicate Invoice Number","revenue","Fraud","critical","daily"),
-    ("SAL-002","Round Amount Invoice","revenue","Fraud","medium","daily"),
-    ("SAL-003","Month-End Sales Spike","revenue","Financial Reporting","high","monthly"),
-    ("SAL-004","Revenue Cut-Off Manipulation","revenue","Financial Reporting","critical","monthly"),
-    ("SAL-005","Excessive Discount","revenue","Revenue Leakage","high","daily"),
-    ("SAL-007","Missing E-Way Bill","revenue","GST","high","daily"),
-    ("SAL-009","Manual Invoice Override","revenue","Authorization","critical","daily"),
-    ("SAL-010","Credit Limit Breach","revenue","Financial","high","daily"),
-    ("SAL-016","Invoice Cancellation Abuse","revenue","Fraud","high","monthly"),
-    ("SAL-019","Weekend Invoicing","revenue","Fraud","medium","daily"),
-    ("SAL-022","Cash Invoice >₹2L","revenue","Compliance","critical","daily"),
-    ("SAL-034","Duplicate Sale Same Customer-Day-Amount","revenue","Fraud","critical","daily"),
-    ("PUR-001","Duplicate Vendor Invoice","expenditure","Fraud","critical","daily"),
-    ("PUR-002","PO-Invoice Amount Mismatch","expenditure","Authorization","high","daily"),
-    ("PUR-004","Invoice Without PO","expenditure","Authorization","high","daily"),
-    ("PUR-006","Split Purchase Orders","expenditure","Authorization","high","monthly"),
-    ("PUR-010","Bank Account Changed Before Payment","expenditure","Fraud","critical","daily"),
-    ("PUR-013","Advance Payment Without Approval","expenditure","Authorization","high","daily"),
-    ("PUR-016","Duplicate Payment","expenditure","Fraud","critical","daily"),
-    ("PUR-021","Same Day PO and Invoice","expenditure","Fraud","high","daily"),
-    ("PUR-022","Vendor Address Matches Employee","expenditure","Fraud","critical","daily"),
-    ("PUR-031","MSME Payment Delayed","expenditure","Compliance","high","weekly"),
-    ("INV-001","Negative Stock Balance","inventory","Operational","critical","daily"),
-    ("INV-002","Inventory Shrinkage >2%","inventory","Fraud","high","monthly"),
-    ("INV-005","Slow Moving Stock","inventory","Working Capital","medium","monthly"),
-    ("INV-007","Ghost Inventory","inventory","Fraud","critical","monthly"),
-    ("INV-010","Off-Hours Inventory Movement","inventory","Fraud","high","daily"),
-    ("INV-015","Over-Receipt on PO","inventory","Fraud","high","daily"),
-    ("JE-001","Manual JE Without Narration","bank_reconciliation","Financial Reporting","high","daily"),
-    ("JE-002","Late Closing JE","bank_reconciliation","Financial Reporting","critical","monthly"),
-    ("JE-003","Large Manual JE","bank_reconciliation","Authorization","high","daily"),
-    ("JE-005","Uncleared Suspense Account","bank_reconciliation","Financial Reporting","high","weekly"),
-    ("JE-006","Orphan Reversal","bank_reconciliation","Fraud","critical","daily"),
-    ("JE-009","Unbalanced Journal Entry","bank_reconciliation","Financial Reporting","critical","daily"),
-    ("JE-011","SoD Violation Self Approval","bank_reconciliation","Authorization","critical","daily"),
-    ("JE-015","Prior Period JE","bank_reconciliation","Financial Reporting","high","monthly"),
-    ("PAY-001","Ghost Employee","payroll","Fraud","critical","monthly"),
-    ("PAY-002","Salary Spike >50%","payroll","Authorization","high","monthly"),
-    ("PAY-003","Duplicate Bank Account in Payroll","payroll","Fraud","critical","monthly"),
-    ("PAY-004","Post-Termination Pay","payroll","Fraud","critical","monthly"),
-    ("PAY-005","PF/ESI Not Deposited","payroll","Compliance","high","monthly"),
-    ("PAY-009","Bank Account Changed in Pay Month","payroll","Fraud","critical","monthly"),
-    ("TRE-001","Cash Payment >₹10K","bank_reconciliation","Compliance","high","daily"),
-    ("TRE-002","Circular Bank Transfer","bank_reconciliation","Fraud","critical","daily"),
-    ("TRE-004","Unapproved Transfer >₹5L","bank_reconciliation","Authorization","critical","daily"),
-    ("TRE-005","Multiple Payments Same Party Day","bank_reconciliation","Fraud","high","daily"),
-    ("TRE-006","Director Account Payment","bank_reconciliation","Fraud","critical","daily"),
-    ("TRE-010","Structured Cash Withdrawal","bank_reconciliation","Fraud","critical","daily"),
-]
-
-for rule_code, rule_name, category, risk_area, severity, frequency in RULES:
-    db.add(AuditRule(
-        id=uid(), company_id=company_id,
-        rule_code=rule_code, rule_name=rule_name,
-        category=category, risk_area=risk_area,
-        severity=severity, run_frequency=frequency,
-        rule_type="python", is_active=True,
-        auto_raise_exception=True,
-        description=f"Detects {rule_name} in {category} transactions.",
-        remediation_guidance=f"Review and obtain documentation for {rule_name}. Escalate if unresolved within 7 days.",
-    ))
-
-db.commit()
-print(f"  {len(RULES)} rules seeded.")
+result = sync_rules(db, company_id)
+print(f"  {result['created']} rules seeded from the catalogue.")
 
 print("\n✅ Seed complete!")
 print(f"   Company ID: {company_id}")

@@ -29,8 +29,11 @@ def test_benford_skips_when_too_few_invoices(db):
 
 def test_benford_flags_strong_deviation(db):
     """When every amount starts with 9, the leading-digit distribution is wildly
-    non-Benford and the chi-square test must raise an indicator."""
-    for i in range(80):
+    non-Benford: the mean absolute deviation (Nigrini) reads nonconformity. The test
+    needs at least MIN_BENFORD_N amounts."""
+    from app.engines.fraud_engine import MIN_BENFORD_N
+
+    for i in range(MIN_BENFORD_N):
         db.add(make_sales_invoice(total_amount=9000 + i))
     db.commit()
 
@@ -38,7 +41,7 @@ def test_benford_flags_strong_deviation(db):
 
     assert len(indicators) == 1
     assert indicators[0]["indicator_type"] == "benford_deviation"
-    assert indicators[0]["details_json"]["p_value"] < 0.05
+    assert indicators[0]["details_json"]["conformity"] == "nonconformity"
 
 
 # ---------------------------------------------------------------------------

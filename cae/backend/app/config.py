@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     # AI
     ANTHROPIC_API_KEY: str = ""
 
+    # Tally Prime XML gateway (from Docker: http://host.docker.internal:9000)
+    TALLY_URL: str = "http://localhost:9000"
+
     # Runtime environment
     ENVIRONMENT: str = "development"
 

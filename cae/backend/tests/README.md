@@ -1,25 +1,30 @@
 # CAE backend tests
 
-Unit tests for the business-logic engines. They run against an in-memory SQLite
-database (no Postgres/Redis required), so the suite is fast and self-contained.
+Unit tests run against in-memory SQLite (ORM) and DuckDB (rules), so they need no
+Postgres/Redis. `test_integration_pg.py` is the end-to-end suite on an embedded
+Postgres (`pgserver`); run it in its own process.
 
 ## Running
 
 ```bash
 cd cae/backend
 pip install -r requirements-dev.txt
-pytest
+pytest --ignore=tests/test_integration_pg.py    # unit tests
+pytest tests/test_integration_pg.py              # end to end, own process
 ```
 
 ## Layout
 
 | Path | What it covers |
 | --- | --- |
-| `conftest.py` | Shared `db` fixture (in-memory SQLite) + Postgres→SQLite shims (JSONB→JSON, strips `gen_random_uuid()` defaults, string-tolerant UUID binds). |
+| `conftest.py` | Shared `db` fixture (in-memory SQLite) + Postgres→SQLite shims (JSONB→JSON, strips `gen_random_uuid()` defaults, string-tolerant UUID binds), and the `conn_factory` DuckDB fixture. The app is imported lazily so the Postgres suite can set `DATABASE_URL` first. |
+| `duckdb_harness.py` | DuckDB tables in the shapes AuditEngine loads, stored as `<table>_all` with an in-period view `<table>`; `build_conn()`, `rule()` stub. |
+| `test_rules.py`, `test_engagement.py`, `test_statutory.py` | Fire / don't-fire pair for every catalogue rule, engagement scoping, statutory helpers. |
+| `test_integration_pg.py` | End to end on embedded Postgres: migrate, seed, first audit, API, working-capital figures. |
 | `factories.py` | Builders for transaction / exception / user rows with sane NOT-NULL defaults. |
 | `test_security.py` | Password hashing (salt, round-trip, rejection) and JWT create/verify (type, expiry, bad signature). |
 | `test_rbac.py` | `get_current_user` (valid/expired/garbage/no-sub/unknown/inactive, refresh-as-access rejection) and role enforcement. |
-| `rules/` | SQL audit rules run against in-memory DuckDB. `schema.py` builds the table shapes; `test_registry.py` checks the registry and **executes every registered rule against an empty schema** (SQL-validity net); `test_rules.py` asserts representative rules across all six modules (sales/purchase/journal/inventory/treasury/payroll). |
+| `rules/` | SQL audit rules run against in-memory DuckDB. `schema.py` builds the table shapes from `duckdb_harness.py`; `test_registry.py` checks the registry and **executes every registered rule against an empty schema** (SQL-validity net); `test_rules_sql.py` asserts representative rules across all six modules (sales/purchase/journal/inventory/treasury/payroll). |
 | `test_excel_importer.py` | ExcelImporter: column mapping + aliases, CSV/XLSX dispatch, unknown-type rejection, batch resilience to bad rows, per-type mappers. |
 | `test_tally_connector.py` | TallyConnector: XML voucher parsing, debit/credit split, thousands separators, multi-voucher counting, date fallback. |
 | `engines/test_audit_engine.py` | AuditEngine constructor: company_id UUID validation / SQL-injection guard. |

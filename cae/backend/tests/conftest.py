@@ -1,15 +1,10 @@
-"""
-Shared pytest fixtures for the CAE backend test suite.
+"""Shared fixtures.
 
-The application targets PostgreSQL, but the engine/business-logic tests only need
-a relational store to exercise the SQLAlchemy ORM queries.  We run them against an
-in-memory SQLite database so the suite stays fast and has zero external
-dependencies.  Two Postgres-specific constructs are shimmed so the schema can be
-created on SQLite:
-
-  * ``JSONB`` columns are rendered as the generic ``JSON`` type.
-  * ``server_default=text("gen_random_uuid()")`` is stripped (tests always supply
-    primary keys explicitly), since SQLite has no such function.
+* An in-memory DuckDB with the CAE table shapes, and a rule stub (rule tests).
+* An in-memory SQLite ORM session, ``db`` (engine, API and connector tests). The app targets
+  PostgreSQL; two Postgres-only constructs are shimmed so the schema builds on SQLite:
+  ``JSONB`` renders as ``JSON``, and ``gen_random_uuid()`` server defaults are stripped
+  (tests always supply primary keys).
 """
 import os
 
@@ -58,14 +53,13 @@ def _string_tolerant_uuid_bind_processor(self, dialect):
 Uuid.bind_processor = _string_tolerant_uuid_bind_processor
 
 
-# Importing the models package registers every ORM class on the shared Base and
-# resolves all string-based relationships, so create_all() builds the full schema.
-import app.models  # noqa: E402,F401
-from app.database import Base  # noqa: E402
-
-
 def _strip_pg_only_server_defaults() -> None:
     """Drop ``gen_random_uuid()`` server defaults that SQLite cannot evaluate."""
+    # Importing the models package registers every ORM class on the shared Base. Done here,
+    # not at import time, so tests/test_integration_pg.py can point the app at Postgres first.
+    import app.models  # noqa: F401
+    from app.database import Base
+
     for table in Base.metadata.tables.values():
         for column in table.columns:
             default = column.server_default
@@ -75,12 +69,19 @@ def _strip_pg_only_server_defaults() -> None:
                 column.server_default = None
 
 
-_strip_pg_only_server_defaults()
+@pytest.fixture(autouse=True)
+def _sqlite_schema(request):
+    """Strip Postgres-only defaults before any SQLite schema is built. The Postgres
+    end-to-end suite is left alone: it must import the app only after setting DATABASE_URL."""
+    if "test_integration_pg" not in request.node.nodeid:
+        _strip_pg_only_server_defaults()
 
 
 @pytest.fixture
 def db():
     """Yield a clean, isolated in-memory SQLite session for a single test."""
+    from app.database import Base
+
     engine = create_engine(
         "sqlite+pysqlite:///:memory:",
         connect_args={"check_same_thread": False},
@@ -94,3 +95,12 @@ def db():
     finally:
         session.close()
         engine.dispose()
+
+
+# ---------------------------------------------------------------- DuckDB rule harness
+from tests.duckdb_harness import build_conn  # noqa: E402
+
+
+@pytest.fixture
+def conn_factory():
+    return build_conn
