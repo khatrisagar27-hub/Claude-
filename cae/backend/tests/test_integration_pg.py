@@ -165,6 +165,50 @@ def test_statutory_endpoints(client, company_id):
     assert c44.json()["tie_out_difference"] == 0
 
 
+def test_working_capital_figures_on_seed_data(client, company_id, stack):
+    """Pinned against scripts/check_wc_metrics.py, which recomputes them in plain SQL.
+    DPO was 629.3 days while the 349 purchase bills marked paid (outstanding never cleared)
+    were still counted as payable."""
+    m = client.get(f"/api/v1/working-capital/metrics?company_id={company_id}").json()
+    assert (m["as_of"], m["days_in_period"]) == ("2024-12-29", 365)
+    assert (m["dso"], m["dio"], m["dpo"], m["ccc"]) == (331.3, 227.9, 263.3, 296.0)
+    assert m["payables_total"] == 287076160.0 and m["receivables_total"] == 1123876840.0
+    assert m["data_quality"] == {
+        "receivables_due_date_assumed": 386, "payables_due_date_assumed": 250,
+        "payables_paid_with_outstanding_ignored": 349, "receivables_paid_with_outstanding_ignored": 0,
+        "zero_value_sales_invoices": 0, "inventory_items_below_zero": 26}
+
+    import importlib.util
+    from sqlalchemy import create_engine
+    spec = importlib.util.spec_from_file_location("check_wc", SCRIPTS / "check_wc_metrics.py")
+    check = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(check)
+    with create_engine(stack["uri"]).connect() as conn:
+        independent = check.recompute(conn, company_id)
+    assert {k: independent[k] for k in ("dso", "dio", "dpo", "ccc")} == {k: m[k] for k in ("dso", "dio", "dpo", "ccc")}
+
+
+def test_working_capital_ignores_later_zero_value_invoice(company_id):
+    import uuid as _uuid
+    from datetime import date
+    from decimal import Decimal
+    from app.database import SessionLocal
+    from app.engines.wc_engine import WorkingCapitalEngine
+    from app.models.transaction import SalesInvoice
+    db = SessionLocal()
+    try:
+        db.add(SalesInvoice(id=_uuid.uuid4(), company_id=_uuid.UUID(company_id), invoice_number="ZERO/2026/1",
+                            invoice_date=date(2026, 6, 1), gross_amount=Decimal(0), taxable_amount=Decimal(0),
+                            total_amount=Decimal(0), outstanding_amount=Decimal(0), status="confirmed"))
+        db.flush()
+        m = WorkingCapitalEngine(db, company_id).compute_full()
+        assert m["as_of"] == "2024-12-29" and m["dso"] == 331.3
+        assert m["data_quality"]["zero_value_sales_invoices"] == 1
+    finally:
+        db.rollback()
+        db.close()
+
+
 def test_risk_and_working_capital_still_work(client, company_id):
     assert client.get(f"/api/v1/working-capital/metrics?company_id={company_id}").status_code == 200
     from app.database import SessionLocal

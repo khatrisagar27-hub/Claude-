@@ -137,6 +137,25 @@ def test_wc_stress_reads_overdue_receivables_not_only_ccc():
     assert 70 < score < 80 and parts["ccc_vs_180"] == 0.0
 
 
+def test_wc_due_date_falls_back_to_party_terms_then_net30():
+    from types import SimpleNamespace
+    from app.engines.wc_engine import WorkingCapitalEngine as W
+    bill = SimpleNamespace(invoice_date=date(2024, 4, 1), due_date=None)
+    assert W._effective_due(bill, 45) == (date(2024, 5, 16), True)
+    assert W._effective_due(bill, None) == (date(2024, 5, 1), True)
+    bill.due_date = date(2024, 4, 10)
+    assert W._effective_due(bill, 45) == (date(2024, 4, 10), False)
+
+
+def test_wc_short_history_is_not_annualised_over_365_days():
+    from app.engines.wc_engine import WorkingCapitalEngine as W
+    ref = date(2024, 12, 31)
+    start = date(2024, 1, 1)
+    assert W._days_in_window(date(2023, 1, 1), start, ref) == 365
+    assert W._days_in_window(date(2024, 8, 1), start, ref) == 153    # Aug-Dec only
+    assert W._days_in_window(None, start, ref) == 365
+
+
 # ---------------------------------------------------------------- importer
 def test_importer_maps_source_headers_and_reads_indian_dates():
     from app.connectors.excel_importer import ExcelImporter, map_columns

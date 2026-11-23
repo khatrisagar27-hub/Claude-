@@ -168,7 +168,9 @@ replaces the day's rows), `gst_engine` + `gst_match` (deterministic GSTR-2B ↔
 books match on GSTIN + normalised invoice number, buckets in
 `gst_reconciliation.details_json`), `wc_engine` (working capital — DIO on cost
 of goods issued, stress score = weighted overdue / DSO / CCC signals, balances
-as of the reference date),
+as of the reference date; bills marked `paid` count as settled, missing due
+dates take party credit days then Net-30, `data_quality` counts every fallback;
+`scripts/check_wc_metrics.py` recomputes the ratios in plain SQL),
 `ai_engine` (narrative explanations only; `claude-sonnet-5-5`, reads text
 blocks by type because replies can open with a thinking block).
 
