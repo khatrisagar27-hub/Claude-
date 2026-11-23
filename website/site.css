@@ -212,12 +212,6 @@ h2{font-family:var(--font-display);font-weight:400;font-size:clamp(1.75rem,2vw +
 .prose p{color:var(--muted);}
 .prose .lede{color:var(--fg);font-family:var(--font-display);font-variation-settings:"opsz" 20;font-size:clamp(1.3rem,1vw + 1.05rem,1.65rem);line-height:1.35;font-weight:380;letter-spacing:-.008em;}
 
-.obligations{display:grid;gap:1rem;}
-@media (min-width:1080px){.obligations{grid-template-columns:repeat(3,minmax(0,1fr));}}
-.obligations li{display:grid;gap:.7rem;align-content:start;grid-template-rows:auto 1fr auto;padding:1.4rem;border:1px solid var(--line);border-radius:var(--radius);background:color-mix(in srgb,var(--panel) 72%,transparent);}
-.obligations h4{font-family:var(--font-display);font-size:1.3rem;font-weight:450;line-height:1.2;}
-.obligations p{font-size:.94rem;color:var(--muted);}
-.obligations .cite{font-size:.74rem;line-height:1.45;color:var(--dim);border-top:1px solid var(--line-soft);padding-top:.75rem;}
 
 /* ── PRACTICE AREAS ── */
 .practice{display:grid;gap:1.25rem;}
