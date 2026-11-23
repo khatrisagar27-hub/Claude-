@@ -5,7 +5,7 @@ import pytest
 
 from app.rules import get_rule_fn, registered_codes
 from app.rules.catalogue import CATALOGUE_BY_CODE
-from conftest import CID, build_conn, rule
+from tests.duckdb_harness import CID, build_conn, rule
 
 
 def run(code, conn, **params):

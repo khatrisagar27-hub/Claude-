@@ -32,6 +32,9 @@ All CAE commands run from `cae/` via the Makefile:
 | Shell into backend / psql | `make shell-backend` / `make shell-db` |
 | Stop / wipe volumes | `make down` / `make clean` |
 
+Backend tests (from `cae/backend/`, no Docker needed): `pytest` — see
+[Tests](#tests).
+
 Frontend (from `cae/frontend/`): `npm run dev`, `npm run build`,
 `npm run lint` (eslint over `src`). Type-check via `npx tsc --noEmit`.
 
@@ -44,18 +47,33 @@ regenerate the workbook.
 ## Tests
 
 Backend tests live in `cae/backend/tests/` (pytest; `pip install -r
-requirements-dev.txt`). Run from `cae/backend/`:
+requirements-dev.txt`). **Run them before reporting a backend change done.**
+From `cae/backend/`:
 
 | Suite | Command | Needs |
 |---|---|---|
-| Rules + statutory + engagement units | `python -m pytest tests/test_rules.py tests/test_statutory.py tests/test_engagement.py -q` | nothing — in-memory DuckDB |
-| End to end | `python -m pytest tests/test_integration_pg.py -q` | `pgserver` (embedded Postgres) — no Docker |
+| Unit (engines, rules, API, auth, importers) | `pytest --ignore=tests/test_integration_pg.py` | nothing — in-memory SQLite + DuckDB |
+| End to end | `pytest tests/test_integration_pg.py -q` | `pgserver` (embedded Postgres) — no Docker |
+
+Unit tests: `tests/conftest.py` carries the Postgres→SQLite shims for ORM tests
+(JSONB compiled as JSON, `gen_random_uuid()` defaults stripped, string-tolerant
+UUID binds) — a model using a Postgres-specific type or function may need
+another shim. Rule tests run on DuckDB tables built by `tests/duckdb_harness.py`
+in the shapes AuditEngine loads (`<table>_all` plus an in-period view).
+`rules/test_registry.py` **executes every registered rule against an empty
+schema**, so invalid DuckDB SQL fails there. Every new rule needs a
+fire / don't-fire pair in `test_rules.py`. Layout:
+[`cae/backend/tests/README.md`](cae/backend/tests/README.md).
 
 The end-to-end suite migrates a throwaway Postgres, runs `scripts/seed_data.py`
 and `scripts/run_first_audit.py`, asserts all catalogue rules run with zero
-errors, then drives the API through `TestClient`. Run it on its own process (it
-sets `DATABASE_URL` before the app is imported). Every new rule needs a
-fire / don't-fire pair in `test_rules.py`. No frontend tests and no CI yet.
+errors, then drives the API through `TestClient`. Run it in its own process (it
+sets `DATABASE_URL` before the app is imported; `conftest.py` imports the app
+lazily for that reason).
+
+CI (`.github/workflows/ci.yml`) runs both, as separate steps, on every push and
+PR. **Frontend has no tests** — `npm run lint` and `npx tsc --noEmit` are the
+only checks there, so verify UI work against the running stack.
 
 ## Architecture
 
@@ -180,7 +198,7 @@ blocks by type because replies can open with a thinking block).
 read-only: masters, vouchers month by month, bill-wise outstanding and
 settlement dates → CAE tables; idempotent per period; `TALLY_URL`, from Docker
 `http://host.docker.internal:9000`), `tally_connector.py` (legacy XML-file
-parser, unused), `excel_importer.py` (Excel/CSV upload with auto-detect; the
+parser, unused but tested), `excel_importer.py` (Excel/CSV upload with auto-detect; the
 Analyse step's column mapping is applied on import, Indian day-first dates,
 party names resolved to masters).
 
@@ -189,6 +207,15 @@ broker answers, otherwise the same function runs in-process (FastAPI
 `BackgroundTasks`) — never "queued" work that silently never runs. Task bodies
 are plain `execute_*` functions in `app/workers/tasks.py`. The `beat` service
 in docker-compose fires the daily continuous-monitoring run.
+
+### Auth & shared utils
+
+`app/utils/security.py` — password hashing and JWT create/verify.
+`app/utils/rbac.py` — `get_current_user` plus role enforcement; access tokens and
+refresh tokens are distinct types and a refresh token must not be accepted as an
+access token. `app/utils/export.py` — export helpers. `app/database.py` — session
+and engine setup. All four are covered by tests; change them with the suite
+running.
 
 ### Frontend
 
@@ -266,8 +293,13 @@ default `SECRET_KEY`, Postgres and Redis published on host ports, and a seed
 login with a known password documented in `docs/api.md`. That is a known,
 accepted state for local dev — but **never add a new hardcoded secret**, and if
 a task touches deployment, raise hardening rather than copying the pattern.
-`ANTHROPIC_API_KEY` is optional; blank must keep the AI features cleanly
-disabled rather than erroring.
+`.env.example` at the repo root is the template for a real deployment — keep it
+in sync when you add a setting to `config.py`. `ANTHROPIC_API_KEY` is optional;
+blank must keep the AI features cleanly disabled rather than erroring.
+
+`AuditEngine` validates `company_id` as a UUID specifically as a SQL-injection
+guard — rule SQL is string-built for DuckDB, so that check is load-bearing. There
+is a test asserting it; don't loosen it.
 
 ## Conventions
 
@@ -290,8 +322,8 @@ disabled rather than erroring.
 - Read this file and the relevant module before assuming structure.
 - Don't add features, refactors or error handling beyond the task.
 - Prefer editing existing files over creating new ones.
-- Verify UI/API changes against the running stack before reporting done; say
-  plainly what you verified and what you didn't.
+- Run `pytest` for backend changes, and verify UI changes against the running
+  stack. Say plainly what you verified and what you didn't.
 - Feature branches: `<type>/<short-description>`. No direct pushes to `main`
   without a PR unless told otherwise. Don't amend pushed commits.
 - Confirm before destructive actions — `make clean` drops volumes, and force

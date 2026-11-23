@@ -7,7 +7,7 @@ import pytest
 from app.rules import get_rule_fn
 from app.rules.catalogue import RULE_CATALOGUE
 from app.statutory import reporting
-from tests.conftest import CID, build_conn, rule
+from tests.duckdb_harness import CID, build_conn, rule
 
 
 def _eng(audit_type="statutory", caro=True, ifc=False, tax=True, fy=2024):

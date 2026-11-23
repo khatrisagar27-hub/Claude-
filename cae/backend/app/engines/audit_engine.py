@@ -24,7 +24,9 @@ FREQUENCIES = ("daily", "weekly", "monthly")
 class AuditEngine:
     def __init__(self, db: Session, company_id: str, engagement=None):
         self.db = db
-        self.company_id = company_id
+        # Validate company_id as a real UUID up front: it normalises the value and blocks
+        # SQL injection through a crafted id.
+        self.company_id = str(uuid.UUID(str(company_id)))
         self.engagement = engagement
         self.conn = duckdb.connect(":memory:")
         self._data_loaded = False
