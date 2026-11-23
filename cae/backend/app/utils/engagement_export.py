@@ -225,6 +225,7 @@ def statutory_working_paper(db: Session, engagement) -> io.BytesIO:
         _table(ws, 1, ["Rule", "Control tested", "Exceptions", "Impact (₹)", "Classification"],
                [[d["rule_code"], d["rule_name"], d["findings"], round(d["financial_impact"], 2), d["classification"]]
                 for d in summary["ifc_deficiencies"]], [10, 46, 12, 16, 50])
+    _working_capital_sheets(wb, db, engagement)
     ws = wb.create_sheet("Scope")
     _table(ws, 1, ["Rule", "Test", "Active", "In statutory scope", "Findings"],
            [[s["rule_code"], s["rule_name"], "Yes" if s["active"] else "No", "Yes" if s["in_scope"] else "No", s["findings"]]
@@ -233,6 +234,46 @@ def statutory_working_paper(db: Session, engagement) -> io.BytesIO:
     wb.save(buf)
     buf.seek(0)
     return buf
+
+
+def _working_capital_sheets(wb, db: Session, engagement):
+    """Working capital as at the period end, and the Schedule III ageing schedules and ratios."""
+    from app.engines.wc_engine import WorkingCapitalEngine
+
+    m = WorkingCapitalEngine(db, str(engagement.company_id), engagement).compute_full()
+    s3 = m["schedule_iii"]
+    dq = m["data_quality"]
+    ws = wb.create_sheet("Working capital")
+    _table(ws, 1, ["Measure", "Value", "Basis"], [
+        ["As at", m["as_of"], f"Period {m['period_from']} to {m['as_of']}, {m['days_in_period']} days"],
+        ["Trade receivables (₹)", m["receivables_total"], "Open on the as-at date, incl. GST"],
+        ["Trade payables (₹)", m["payables_total"], "Open on the as-at date, incl. GST"],
+        ["Inventory (₹)", m["inventory_value"], "Net of movements per item at cost, floored at zero"],
+        ["DSO (days)", m["dso"], "Closing receivables / (sales incl. GST / days)"],
+        ["DIO (days)", m["dio"], f"Closing inventory / ({m['dio_basis']} / days)"],
+        ["DPO (days)", m["dpo"], "Closing payables / (purchases incl. GST / days)"],
+        ["Cash conversion cycle (days)", m["ccc"], "DSO + DIO - DPO"],
+        *[[f"Data quality: {k.replace('_', ' ')}", v if not isinstance(v, bool) else ("Yes" if v else "No"), ""]
+          for k, v in dq.items()],
+    ], [44, 18, 70])
+
+    ws = wb.create_sheet("Sch III ratios")
+    _table(ws, 1, ["Ratio", "Formula", "Current period", "Previous period", "Change %", "Explanation required (>25%)"],
+           [[r["ratio"], r["formula"], r["current"], r["previous"], r["change_pct"],
+             "Yes" if r["explanation_required"] else ("No" if r["change_pct"] is not None else "No previous period")]
+            for r in s3["ratios"]] + [[n, "", "", "", "", ""] for n in s3["not_computed"]],
+           [40, 46, 15, 15, 11, 26])
+
+    for title, key in (("Sch III receivables ageing", "trade_receivables"), ("Sch III payables ageing", "trade_payables")):
+        t = s3[key]
+        ws = wb.create_sheet(title)
+        basis = ", ".join(f"{k}: {v}" for k, v in t["aged_from"].items())
+        _table(ws, 1, ["Particulars", *[f"{c} (₹)" for c in t["columns"]], "Total (₹)"],
+               [[r["label"], *[float(v) for v in r["amounts"]], float(r["total"])] for r in t["rows"]]
+               + [["Total", *[float(sum(r["amounts"][i] for r in t["rows"])) for i in range(len(t["columns"]))],
+                   float(t["total"])],
+                  [f"As at {s3['as_of']}. Aged from: {basis}. {t['note']}"]],
+               [30, *[16] * (len(t["columns"]) + 1)])
 
 
 def _workflow(db: Session, exception_ids):

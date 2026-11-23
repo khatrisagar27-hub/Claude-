@@ -176,7 +176,9 @@ def test_working_capital_figures_on_seed_data(client, company_id, stack):
     assert m["data_quality"] == {
         "receivables_due_date_assumed": 386, "payables_due_date_assumed": 250,
         "payables_paid_with_outstanding_ignored": 349, "receivables_paid_with_outstanding_ignored": 0,
-        "zero_value_sales_invoices": 0, "inventory_items_below_zero": 26}
+        "zero_value_sales_invoices": 0, "inventory_items_below_zero": 26,
+        "paid_bills_without_payment_date_assumed_settled": 0, "books_end_before_as_of": False,
+        "latest_invoice_date": "2024-12-29"}
 
     import importlib.util
     from sqlalchemy import create_engine
@@ -338,3 +340,47 @@ def test_tally_load_handles_cross_side_parties_and_reimport(stack):
             "Purchase/1/FY26-27", "Sales/1/FY26-27", "Sales/2/FY26-27"}
     finally:
         db.close()
+
+
+def test_working_capital_as_at_engagement_period_end_with_schedule_iii(client, company_id):
+    """FY 2023-24 statutory audit: measured as at 31-03-2024 over the year, not as at the latest invoice."""
+    stat = client.post("/api/v1/engagements", json={"company_id": company_id, "audit_type": "statutory",
+                                                    "financial_year": 2023})
+    assert stat.status_code == 201, stat.text
+    sid = stat.json()["id"]
+    m = client.get(f"/api/v1/working-capital/metrics?company_id={company_id}&engagement_id={sid}").json()
+    assert (m["period_from"], m["as_of"], m["days_in_period"]) == ("2023-04-01", "2024-03-31", 366)
+    assert (m["dso"], m["dio"], m["dpo"], m["ccc"]) == (196.7, 67.6, 187.1, 77.3)
+    assert m["data_quality"]["paid_bills_without_payment_date_assumed_settled"] == 452
+    assert m["data_quality"]["books_end_before_as_of"] is False
+
+    s3 = m["schedule_iii"]
+    ar, ap = s3["trade_receivables"], s3["trade_payables"]
+    assert ar["total"] == m["receivables_total"] == 583316480.0 and ap["total"] == m["payables_total"] == 157594080.0
+    assert ar["rows"][0] == {"label": "Undisputed", "total": 583316480.0,
+                             "amounts": [0.0, 248836040.0, 228070400.0, 106410040.0, 0.0, 0.0]}
+    msme_row = next(r for r in ap["rows"] if r["label"] == "MSME")
+    assert msme_row["total"] == 47522720.0 and ap["aged_from"]["MSMED s.15 appointed day"] == 40
+    ratios = {r["key"]: r for r in s3["ratios"]}
+    assert (ratios["trade_receivables_turnover"]["current"], ratios["trade_payables_turnover"]["current"],
+            ratios["inventory_turnover"]["current"]) == (3.15, 3.22, 8.47)
+    assert ratios["inventory_turnover"]["previous"] is None    # FY 2022-23 is only partly in the books
+
+    import openpyxl
+    wp = client.post(f"/api/v1/reports/working-paper?company_id={company_id}&engagement_id={sid}")
+    assert wp.status_code == 200
+    wb = openpyxl.load_workbook(io.BytesIO(wp.content))
+    assert {"Working capital", "Sch III ratios", "Sch III receivables ageing", "Sch III payables ageing"} <= set(wb.sheetnames)
+    pay = wb["Sch III payables ageing"]
+    total_row = next(r for r in pay.iter_rows(values_only=True) if r[0] == "Total")
+    assert total_row[-1] == 157594080.0
+
+
+def test_schedule_iii_ratio_change_over_25_percent_is_flagged(client, company_id):
+    ia = client.post("/api/v1/engagements", json={"company_id": company_id, "audit_type": "internal",
+                                                  "period_from": "2024-01-01", "period_to": "2024-12-31"})
+    assert ia.status_code == 201, ia.text
+    m = client.get(f"/api/v1/working-capital/metrics?company_id={company_id}&engagement_id={ia.json()['id']}").json()
+    assert m["data_quality"]["books_end_before_as_of"] is True      # last sale is 29-12-2024
+    r = {x["key"]: x for x in m["schedule_iii"]["ratios"]}["trade_receivables_turnover"]
+    assert (r["current"], r["previous"], r["change_pct"], r["explanation_required"]) == (1.55, 4.64, -66.6, True)

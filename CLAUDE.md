@@ -170,7 +170,11 @@ books match on GSTIN + normalised invoice number, buckets in
 of goods issued, stress score = weighted overdue / DSO / CCC signals, balances
 as of the reference date; bills marked `paid` count as settled, missing due
 dates take party credit days then Net-30, `data_quality` counts every fallback;
-`scripts/check_wc_metrics.py` recomputes the ratios in plain SQL),
+`scripts/check_wc_metrics.py` recomputes the ratios in plain SQL; with an
+engagement it measures as at period end over the period, balances on a past
+date come from `payment_date` (`_open_at`), and `schedule_iii` holds the
+Schedule III receivable / payable ageing and turnover ratios that feed the
+statutory working paper's "Sch III" sheets),
 `ai_engine` (narrative explanations only; `claude-sonnet-5-5`, reads text
 blocks by type because replies can open with a thinking block).
 

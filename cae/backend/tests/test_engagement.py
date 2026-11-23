@@ -150,10 +150,42 @@ def test_wc_due_date_falls_back_to_party_terms_then_net30():
 def test_wc_short_history_is_not_annualised_over_365_days():
     from app.engines.wc_engine import WorkingCapitalEngine as W
     ref = date(2024, 12, 31)
-    start = date(2024, 1, 1)
+    start = date(2024, 1, 2)
     assert W._days_in_window(date(2023, 1, 1), start, ref) == 365
     assert W._days_in_window(date(2024, 8, 1), start, ref) == 153    # Aug-Dec only
     assert W._days_in_window(None, start, ref) == 365
+
+
+def test_wc_balance_on_an_earlier_date_uses_settlement_date():
+    from app.engines.wc_engine import Bill, WorkingCapitalEngine as W
+    on = date(2024, 3, 31)
+    paid_later = Bill("A", None, date(2024, 3, 1), None, 118.0, 0.0, "paid", date(2024, 5, 10), None)
+    paid_before = Bill("B", None, date(2024, 3, 1), None, 118.0, 0.0, "paid", date(2024, 3, 20), None)
+    unpaid = Bill("C", None, date(2024, 3, 1), None, 118.0, 50.0, "pending", None, None)
+    paid_no_date = Bill("D", None, date(2024, 3, 1), None, 118.0, 118.0, "paid", None, None)
+    after = Bill("E", None, date(2024, 4, 2), None, 118.0, 118.0, "pending", None, None)
+    assert [W._open_at(b, on) for b in (paid_later, paid_before, unpaid, paid_no_date, after)] == [118.0, 0, 50.0, 0, 0]
+
+
+def test_schedule_iii_ageing_buckets_and_basis():
+    from app.engines.wc_engine import Bill, WorkingCapitalEngine as W
+    on = date(2025, 3, 31)
+    assert W._sch3_bucket(date(2025, 4, 15), on, payable=False) == 0            # not due
+    assert W._sch3_bucket(date(2024, 10, 1), on, payable=False) == 1            # under 6 months
+    assert W._sch3_bucket(date(2024, 9, 30), on, payable=False) == 2            # exactly 6 months -> 6m-1y
+    assert W._sch3_bucket(date(2023, 3, 31), on, payable=False) == 4            # exactly 2 years -> 2-3 years
+    assert W._sch3_bucket(date(2021, 1, 1), on, payable=False) == 5
+    assert W._sch3_bucket(date(2024, 6, 1), on, payable=True) == 1              # under 1 year
+    assert W._sch3_bucket(date(2021, 1, 1), on, payable=True) == 4
+    msme_bill = Bill("V1", "Supplier", date(2025, 3, 1), None, 100.0, 100.0, "pending", None, None, msme=True)
+    assert W._sch3_age_from(msme_bill, payable=True) == (date(2025, 3, 16), "MSMED s.15 appointed day")
+    msme_bill.terms = 90                                                        # agreed terms capped at 45 days
+    assert W._sch3_age_from(msme_bill, payable=True) == (date(2025, 4, 15), "MSMED s.15 appointed day")
+    plain = Bill("S1", "Customer", date(2025, 3, 1), None, 100.0, 100.0, "pending", None, None)
+    assert W._sch3_age_from(plain, payable=False) == (date(2025, 3, 1), "transaction date")
+    t = W._sch3_ageing([Bill("V2", "x", date(2024, 1, 1), None, 10.0, 10.0, "disputed", None, None, msme=True)],
+                       on, payable=True)
+    assert next(r for r in t["rows"] if r["label"] == "Disputed dues - MSME")["amounts"] == [0, 0, 10.0, 0, 0]
 
 
 # ---------------------------------------------------------------- importer
